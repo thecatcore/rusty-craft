@@ -1,0 +1,11 @@
+[package]
+name = "minecraft-launcher"
+version = "0.1.0"
+authors = ["Cat Core <arthur.koalas@free.fr>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+directories = "3.0.1"
+reqwest = {version="0.11.2", features = ["blocking", "json"]}
