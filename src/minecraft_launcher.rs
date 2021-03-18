@@ -1,5 +1,4 @@
 use directories::BaseDirs;
-use reqwest::blocking::get as get_url;
 use serde_json;
 use std::{
     env::consts,
@@ -78,8 +77,11 @@ fn minecraft_folder(base_dir: &BaseDirs) {
     let version_folder = minecraft_folder.join("versions");
 
     upgrade_manifest(&version_folder);
+    let installed = get_local_versions(&version_folder);
 
-    get_local_versions(&version_folder);
+    for version in installed {
+        println!("Version {} of type {}", version.id, version._type);
+    }
 }
 
 fn upgrade_manifest(version_folder: &PathBuf) {
@@ -95,15 +97,6 @@ fn upgrade_manifest(version_folder: &PathBuf) {
         Some(string) => string,
     };
 
-    // match parse_manifest(&manifest_body, version_folder) {
-    //     Ok(_) => {
-    //         println!("Parsed");
-    //     }
-    //     Err(err) => {
-    //         println!("Not parsed: {}", err.to_string())
-    //     }
-    // }
-
     let mut manifest_file = File::create(&manifest_path).expect("Error with manifest file");
     match manifest_file.write(manifest_body.as_bytes()) {
         Ok(_) => {
@@ -112,7 +105,7 @@ fn upgrade_manifest(version_folder: &PathBuf) {
         Err(_) => {
             println!("Failed to update version manifest.")
         }
-    }
+    };
 }
 
 fn get_minecraft_directory_name() -> &'static str {
@@ -220,7 +213,7 @@ fn get_manifest_from_installed(version_name: &str, version_folder: &PathBuf) -> 
             .to_str()
             .expect("Can't turn path into &str?");
 
-        if i.is_dir() {
+        if i.is_file() {
             m_entries_name.push(nm.to_string());
             m_entries_path_buff.push(i);
         }
@@ -236,7 +229,7 @@ fn get_manifest_from_installed(version_name: &str, version_folder: &PathBuf) -> 
 
         let mut body = String::new();
         return match file.read_to_string(&mut body) {
-            Ok(_) => Some(body),
+            Ok(_) => return Some(body),
             Err(_) => None,
         };
     }

@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::io::Read;
 use std::path::PathBuf;
+use reqwest::blocking::get as get_url;
 
 pub fn get_body_from_url_else_from_file(url: &str, path: &PathBuf) -> Option<String> {
     match get_url(url) {

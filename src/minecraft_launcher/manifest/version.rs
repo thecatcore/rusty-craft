@@ -1,8 +1,9 @@
 use chrono::{DateTime, Utc};
 use serde;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use serde_derive::Deserialize;
 use std::collections::HashMap;
+use std::fmt::{Display, Formatter};
 
 #[derive(Deserialize, Clone)]
 pub struct Main {
@@ -12,7 +13,7 @@ pub struct Main {
     pub assets: Option<String>,
     #[serde(alias = "complianceLevel")]
     pub compliance_level: Option<u8>,
-    pub downloads: Downloads,
+    pub downloads: Option<Downloads>,
     pub id: String,
     #[serde(alias = "javaVersion")]
     pub java_version: Option<JavaVersion>,
@@ -26,7 +27,7 @@ pub struct Main {
     pub release_time: DateTime<Utc>,
     pub time: DateTime<Utc>,
     #[serde(alias = "type")]
-    pub _type: String,
+    pub _type: VersionType,
     #[serde(alias = "minecraftArguments")]
     pub minecraft_arguments: Option<String>,
     #[serde(alias = "inheritsFrom")]
@@ -70,7 +71,13 @@ impl Main {
             self.compliance_level = from.compliance_level;
         }
 
-        self.downloads = Downloads::inherit(self.downloads, from.downloads);
+        if self.downloads.is_none() && from.downloads.is_some() {
+            self.downloads = from.downloads
+        } else {
+            if from.downloads.is_some() {
+                self.downloads = Some(Downloads::inherit(self.downloads.expect("Concern"), from.downloads.expect("Concern")));
+            }
+        }
 
         if self.java_version.is_none() && from.java_version.is_some() {
             self.java_version = from.java_version;
@@ -264,6 +271,45 @@ pub struct ClientLoggingFile {
     pub size: u16,
     pub url: String,
 }
+
+#[derive(Deserialize, Clone)]
+pub enum VersionType {
+    #[serde(alias="release")]
+    Release,
+    #[serde(alias="snapshot")]
+    Snapshot,
+    #[serde(alias="old_beta")]
+    OldBeta,
+    #[serde(alias="old_alpha")]
+    OldAlpha
+}
+
+impl Display for VersionType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
+        match self {
+            VersionType::Release => {f.write_str("release")}
+            VersionType::Snapshot => {f.write_str("snapshot")}
+            VersionType::OldBeta => {f.write_str("old_beta")}
+            VersionType::OldAlpha => {f.write_str("old_alpha")}
+        }
+    }
+}
+
+// impl VersionType {
+//     fn de_from_str<'de, D>(deserializer: D) -> Result<VersionType, D::Error>
+//         where D: Deserializer<'de>
+//     {
+//         let s = String::deserialize(deserializer)?;
+//         let st: &str = s.as_str();
+//         match st {
+//             "release" => {Ok(VersionType::Release)},
+//             "snapshot" => {Ok(VersionType::Snapshot)},
+//             "old_beta" => {Ok(VersionType::OldBeta)},
+//             "old_alpha" => {Ok(VersionType::OldAlpha)},
+//             _ => {}
+//         }
+//     }
+// }
 
 pub fn parse_version_manifest(version_str: &String) -> serde_json::Result<Main> {
     let version_test: serde_json::Result<Main> = serde_json::from_str(version_str);
