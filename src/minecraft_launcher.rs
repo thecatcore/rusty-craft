@@ -31,7 +31,7 @@ fn minecraft_folder(base_dir: &BaseDirs) {
             println!(".minecraft folder doesn't exist, creating it...");
             match fs::create_dir(minecraft_folder) {
                 Ok(_) => {
-                    println!(".minecraft folder was created succefully!");
+                    println!(".minecraft folder was created successfully!");
                     fs::read_dir(minecraft_folder).expect("How")
                 }
                 Err(_) => {
@@ -79,6 +79,7 @@ fn minecraft_folder(base_dir: &BaseDirs) {
     upgrade_manifest(&version_folder);
     let installed = get_local_versions(&version_folder);
 
+    println!("Installed versions:");
     for version in installed {
         println!("Version {} of type {}", version.id, version._type);
     }
