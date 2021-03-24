@@ -450,6 +450,7 @@ dependencies = [
  "chrono",
  "directories",
  "java-locator",
+ "os_info",
  "reqwest",
  "serde",
  "serde_derive",
@@ -572,6 +573,16 @@ dependencies = [
  "libc",
  "pkg-config",
  "vcpkg",
+]
+
+[[package]]
+name = "os_info"
+version = "3.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a2127a5da3c69035537febc04cd07008bb643653303b213a49b036d944531207"
+dependencies = [
+ "log",
+ "winapi",
 ]
 
 [[package]]

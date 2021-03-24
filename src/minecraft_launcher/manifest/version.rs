@@ -156,7 +156,7 @@ pub struct CustomArguments {
 
 #[derive(Deserialize, Clone)]
 pub struct ArgumentRule {
-    pub action: String,
+    pub action: RuleAction,
     pub features: Option<HashMap<String, bool>>,
     pub os: Option<HashMap<String, String>>,
 }
@@ -242,13 +242,13 @@ pub struct LibraryDownloadArtifact {
 
 #[derive(Deserialize, Clone)]
 pub struct LibraryRule {
-    pub action: String,
+    pub action: RuleAction,
     pub os: Option<LibraryRuleOs>,
 }
 
 #[derive(Deserialize, Clone)]
 pub struct LibraryRuleOs {
-    pub name: String,
+    pub name: Os,
 }
 
 #[derive(Deserialize, Clone)]
@@ -292,6 +292,43 @@ impl Display for VersionType {
             VersionType::OldBeta => {f.write_str("old_beta")}
             VersionType::OldAlpha => {f.write_str("old_alpha")}
         }
+    }
+}
+
+#[derive(Deserialize, Clone)]
+pub enum RuleAction {
+    #[serde(alias="allow")]
+    Allow,
+    #[serde(alias="disallow")]
+    Disallow
+}
+
+#[derive(Deserialize, Clone)]
+pub enum Os {
+    #[serde(alias="windows")]
+    Windows,
+    #[serde(alias="osx")]
+    MacOS,
+    #[serde(alias="linux")]
+    Linux
+}
+
+impl Os {
+    pub fn from_str(string: &str) -> Option<Os> {
+        match string {
+            "windows" => Some(Os::Windows),
+            "osx" => Some(Os::MacOS),
+            "linux" => Some(Os::Linux),
+            &_ => {None}
+        }
+    }
+
+    pub fn to_str(&self) -> String {
+        String::from(match self {
+            Os::Windows => {"windows"}
+            Os::MacOS => {"osx"}
+            Os::Linux => {"linux"}
+        })
     }
 }
 

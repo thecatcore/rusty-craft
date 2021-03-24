@@ -1,5 +1,4 @@
 use directories::BaseDirs;
-use serde_json;
 use std::{
     env::consts,
     fs,
@@ -11,8 +10,10 @@ use std::{
 
 mod manifest;
 mod utils;
+mod options;
+mod arguments;
 
-use manifest::{main, version};
+use manifest::{version};
 
 pub fn main() {
     let base_dir = BaseDirs::new().expect("Can't get base directories!");
