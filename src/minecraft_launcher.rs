@@ -12,6 +12,7 @@ mod manifest;
 mod utils;
 mod options;
 mod arguments;
+mod rendering;
 
 use manifest::{version};
 
