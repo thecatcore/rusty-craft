@@ -15,6 +15,7 @@ mod arguments;
 mod rendering;
 
 use manifest::{version};
+use std::error::Error;
 
 pub fn main() {
     let base_dir = BaseDirs::new().expect("Can't get base directories!");
@@ -78,16 +79,41 @@ fn minecraft_folder(base_dir: &BaseDirs) {
 
     let version_folder = minecraft_folder.join("versions");
 
-    upgrade_manifest(&version_folder);
+    let manifest = upgrade_manifest(&version_folder);
     let installed = get_local_versions(&version_folder);
-
+    let mut installed_id: Vec<String> = Vec::new();
     println!("Installed versions:");
-    for version in installed {
+    for version in &installed {
         println!("Version {} of type {}", version.id, version._type);
+        installed_id.push(version.id.clone());
     }
+    let mut all_versions: Vec<(manifest::main::MinVersion, bool)> = Vec::new();
+
+    for version in &installed {
+        all_versions.push((version.to_min_version(), true));
+    }
+
+    for version in &manifest.versions {
+        if !installed_id.contains(&version.id) {
+            all_versions.push((version.to_min_version(), false));
+        }
+    }
+
+
+    all_versions.sort_by(|a, b| a.0.release_time.cmp(&b.0.release_time));
+    all_versions.reverse();
+
+    match rendering::main::main(&all_versions) {
+        Ok(_) => {
+            println!("It went ok!");
+        }
+        Err(err) => {
+            println!("It went wrong! {}", err);
+        }
+    };
 }
 
-fn upgrade_manifest(version_folder: &PathBuf) {
+fn upgrade_manifest(version_folder: &PathBuf) -> manifest::main::Main {
     let manifest_path = version_folder.join("version_manifest_v2.json");
 
     let manifest_body = match utils::get_body_from_url_else_from_file(
@@ -101,7 +127,7 @@ fn upgrade_manifest(version_folder: &PathBuf) {
     };
 
     let mut manifest_file = File::create(&manifest_path).expect("Error with manifest file");
-    match manifest_file.write(manifest_body.as_bytes()) {
+    match manifest_file.write(&manifest_body.as_bytes()) {
         Ok(_) => {
             println!("Successfully updated version manifest.")
         }
@@ -109,6 +135,11 @@ fn upgrade_manifest(version_folder: &PathBuf) {
             println!("Failed to update version manifest.")
         }
     };
+
+    match manifest::main::parse_manifest(&manifest_body) {
+        Ok(mani) => {mani}
+        Err(err) => {panic!("Manifest wrongly formatted! {}", err)}
+    }
 }
 
 fn get_minecraft_directory_name() -> &'static str {
@@ -178,12 +209,15 @@ fn get_local_versions(version_folder: &PathBuf) -> Vec<version::Main> {
                         installed.push(main);
                     }
                     Err(err) => {
-                        println!("Error while parsing version manifest: {}", err.to_string());
+                        println!("Error while parsing version manifest ({}): {}", m_entries_name.get(i).expect("Concern"), err.to_string());
                     }
                 };
             }
         };
     }
+
+    installed.sort_by(|a, b| a.release_time.cmp(&b.release_time));
+    installed.reverse();
 
     installed
 }

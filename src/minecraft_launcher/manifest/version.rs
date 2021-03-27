@@ -4,6 +4,8 @@ use serde::{Deserialize, Deserializer};
 use serde_derive::Deserialize;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
+use crate::minecraft_launcher::manifest::main::MinVersion;
+use crate::minecraft_launcher::manifest::main;
 
 #[derive(Deserialize, Clone)]
 pub struct Main {
@@ -253,7 +255,7 @@ pub struct LibraryRuleOs {
 
 #[derive(Deserialize, Clone)]
 pub struct Logging {
-    pub client: ClientLogging,
+    pub client: Option<ClientLogging>,
 }
 
 #[derive(Deserialize, Clone)]
@@ -332,21 +334,15 @@ impl Os {
     }
 }
 
-// impl VersionType {
-//     fn de_from_str<'de, D>(deserializer: D) -> Result<VersionType, D::Error>
-//         where D: Deserializer<'de>
-//     {
-//         let s = String::deserialize(deserializer)?;
-//         let st: &str = s.as_str();
-//         match st {
-//             "release" => {Ok(VersionType::Release)},
-//             "snapshot" => {Ok(VersionType::Snapshot)},
-//             "old_beta" => {Ok(VersionType::OldBeta)},
-//             "old_alpha" => {Ok(VersionType::OldAlpha)},
-//             _ => {}
-//         }
-//     }
-// }
+impl Main {
+    pub fn to_min_version(&self) -> MinVersion {
+        MinVersion {
+            id: self.id.clone(),
+            _type: main::VersionType::from_str(self._type.clone().to_string()),
+            release_time: self.release_time
+        }
+    }
+}
 
 pub fn parse_version_manifest(version_str: &String) -> serde_json::Result<Main> {
     let version_test: serde_json::Result<Main> = serde_json::from_str(version_str);
