@@ -342,6 +342,7 @@ impl Main {
             id: self.id.clone(),
             _type: main::VersionType::from_str(self._type.clone().to_string()),
             release_time: self.release_time,
+            installed: true
         }
     }
 }

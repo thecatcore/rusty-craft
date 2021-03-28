@@ -87,19 +87,19 @@ fn minecraft_folder(base_dir: &BaseDirs) {
         println!("Version {} of type {}", version.id, version._type);
         installed_id.push(version.id.clone());
     }
-    let mut all_versions: Vec<(manifest::main::MinVersion, bool)> = Vec::new();
+    let mut all_versions: Vec<manifest::main::MinVersion> = Vec::new();
 
     for version in &installed {
-        all_versions.push((version.to_min_version(), true));
+        all_versions.push(version.to_min_version());
     }
 
     for version in &manifest.versions {
         if !installed_id.contains(&version.id) {
-            all_versions.push((version.to_min_version(), false));
+            all_versions.push(version.to_min_version());
         }
     }
 
-    all_versions.sort_by(|a, b| a.0.release_time.cmp(&b.0.release_time));
+    all_versions.sort_by(|a, b| a.release_time.cmp(&b.release_time));
     all_versions.reverse();
 
     match rendering::main::main(&all_versions) {

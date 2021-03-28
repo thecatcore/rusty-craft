@@ -32,17 +32,17 @@ struct Cli {
     enhanced_graphics: bool,
 }
 
-pub fn main(versions: &Vec<(MinVersion, bool)>) -> Result<(), Box<dyn Error>> {
+pub fn main(versions: &Vec<MinVersion>) -> Result<(), Box<dyn Error>> {
     // let events = Events::new();
     let cli = Cli {
         tick_rate: 250,
         enhanced_graphics: true,
     };
 
-    let mut items: Vec<(MinVersion, bool)> = Vec::new();
+    let mut items: Vec<MinVersion> = Vec::new();
 
     for version in versions.clone() {
-        items.push((version.clone().0, version.1));
+        items.push(version.clone());
     }
 
     let mut list = StatefulTable::with_items(items);
@@ -130,7 +130,7 @@ pub fn main(versions: &Vec<(MinVersion, bool)>) -> Result<(), Box<dyn Error>> {
 fn draw_tab<B: Backend>(
     f: &mut Frame<B>,
     area: Rect,
-    versions: &mut StatefulTable<(MinVersion, bool)>,
+    versions: &mut StatefulTable<MinVersion>,
 ) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
@@ -142,11 +142,11 @@ fn draw_tab<B: Backend>(
         .iter()
         .map(|v| {
             let cells = vec![
-                Cell::from(Span::raw(format!("{}", v.0.id))),
-                Cell::from(Span::raw(format!("{}", v.0._type.to_string()))),
+                Cell::from(Span::raw(format!("{}", v.id))),
+                Cell::from(Span::raw(format!("{}", v._type.to_string()))),
                 Cell::from(Span::raw(format!(
                     "{}",
-                    match v.1 {
+                    match v.installed {
                         true => {
                             "Yes"
                         }
@@ -155,7 +155,7 @@ fn draw_tab<B: Backend>(
                         }
                     }
                 ))),
-                Cell::from(Span::raw(format!("{:?}", v.0.release_time))),
+                Cell::from(Span::raw(format!("{:?}", v.release_time))),
             ];
             Row::new(cells)
         })

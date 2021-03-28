@@ -35,6 +35,7 @@ pub struct MinVersion {
     pub id: String,
     pub _type: VersionType,
     pub release_time: DateTime<Utc>,
+    pub installed: bool
 }
 
 #[derive(Deserialize, Clone)]
@@ -60,6 +61,12 @@ impl Display for VersionType {
     }
 }
 
+impl PartialEq for VersionType {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_string() == other.to_string()
+    }
+}
+
 impl VersionType {
     pub fn from_str(string: String) -> VersionType {
         match string.as_str() {
@@ -72,6 +79,14 @@ impl VersionType {
             }
         }
     }
+
+    pub fn is_snapshot(&self) -> bool {
+        self == &VersionType::Snapshot
+    }
+
+    pub fn is_old(&self) -> bool {
+        self == &VersionType::OldAlpha || self == &VersionType::OldBeta
+    }
 }
 
 impl Version {
@@ -80,6 +95,7 @@ impl Version {
             id: self.id.clone(),
             _type: self._type.clone(),
             release_time: self.release_time,
+            installed: false
         }
     }
 }
