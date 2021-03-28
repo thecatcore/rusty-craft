@@ -6,12 +6,14 @@ use crossterm::{
 };
 use std::time::{Duration, Instant};
 use std::{error::Error, io, thread};
-use tui::backend::Backend;
-use tui::layout::{Constraint, Direction, Layout, Rect};
-use tui::style::{Color, Modifier, Style};
-use tui::text::{Span, Spans};
-use tui::widgets::{Block, Borders, Cell, List, ListItem, Row, Table, Tabs};
-use tui::{backend::CrosstermBackend, Frame, Terminal};
+use tui::{
+    backend::{Backend, CrosstermBackend},
+    layout::{Constraint, Direction, Layout, Rect},
+    style::{Color, Modifier, Style},
+    text::{Span, Spans},
+    widgets::{Block, Borders, Cell, List, ListItem, Row, Table, Tabs},
+    Frame, Terminal,
+};
 
 use crate::minecraft_launcher::rendering::utils::{StatefulList, StatefulTable};
 use std::sync::mpsc;
@@ -96,7 +98,6 @@ pub fn main(versions: &Vec<(MinVersion, bool)>) -> Result<(), Box<dyn Error>> {
 
         match rx.recv()? {
             Event::Input(key) => match key.code {
-                // Key::Backspace => {}
                 KeyCode::Left => {}
                 KeyCode::Right => {}
                 KeyCode::Up => {
