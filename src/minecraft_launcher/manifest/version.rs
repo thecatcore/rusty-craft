@@ -1,6 +1,5 @@
 use chrono::{DateTime, Utc};
 use serde;
-use serde::{Deserialize, Deserializer};
 use serde_derive::Deserialize;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};

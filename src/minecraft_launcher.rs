@@ -13,9 +13,9 @@ mod utils;
 mod options;
 mod arguments;
 mod rendering;
+mod app;
 
 use manifest::{version};
-use std::error::Error;
 
 pub fn main() {
     let base_dir = BaseDirs::new().expect("Can't get base directories!");

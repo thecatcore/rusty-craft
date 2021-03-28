@@ -1,5 +1,4 @@
 use serde;
-use serde::Deserialize;
 use serde_derive::Deserialize;
 
 use chrono::{DateTime, Utc};
@@ -31,6 +30,7 @@ pub struct Version {
     pub compliance_level: u8,
 }
 
+#[derive(Clone)]
 pub struct MinVersion {
     pub id: String,
     pub _type: VersionType,

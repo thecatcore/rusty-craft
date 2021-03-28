@@ -1,50 +1,83 @@
-use std::{error::Error, io};
-use termion::{event::Key, input::MouseTerminal, raw::IntoRawMode, screen::AlternateScreen, event};
-use tui::{backend::TermionBackend, Terminal, Frame};
-use std::time::Duration;
-use crate::minecraft_launcher::rendering::events::{Events, Event};
+use std::{error::Error, io, thread};
+use crossterm::{
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
+use tui::{backend::CrosstermBackend, Terminal, Frame};
+use std::time::{Duration, Instant};
 use crate::minecraft_launcher::manifest::main::MinVersion;
 use tui::layout::{Layout, Constraint, Rect, Direction};
 use tui::widgets::{Tabs, Borders, Block, Row, Table, Cell, List, ListItem};
 use tui::text::{Spans, Span};
 use tui::style::{Style, Color, Modifier};
 use tui::backend::Backend;
-use chrono::Local;
-use crate::minecraft_launcher::rendering::utils::StatefulList;
+
+use crate::minecraft_launcher::rendering::utils::{StatefulList, StatefulTable};
+use std::sync::mpsc;
+
+enum Event<I> {
+    Input(I),
+    Tick,
+}
+
+/// Crossterm demo
+#[derive(Debug)]
+struct Cli {
+    /// time in ms between two ticks.
+    tick_rate: u64,
+    /// whether unicode symbols are used to improve the overall look of the app
+    enhanced_graphics: bool,
+}
 
 pub fn main(versions: &Vec<(MinVersion, bool)>) -> Result<(), Box<dyn Error>> {
 
-    let events = Events::new();
+    // let events = Events::new();
+    let cli = Cli {
+        tick_rate: 250,
+        enhanced_graphics: true
+    };
 
-    let items: Vec<Span> = versions
-        .iter()
-        .map(|v| {
-            // let cells = vec![
-            //     Cell::from(Span::raw(format!("{}", v.0.id))),
-            //     Cell::from(Span::raw(format!("{}", v.0._type.to_string()))),
-            //     Cell::from(Span::raw(format!("{}", match v.1 {
-            //         true => {"Yes"}
-            //         false => {"No"}
-            //     }))),
-            //     Cell::from(Span::raw(format!("{:?}", v.0.release_time))),
-            // ];
-            // Row::new(cells);
-            Span::raw(format!("{} {} {} {:?}", v.0.id, v.0._type.to_string(), match v.1 {
-                true => {"Yes"}
-                false => {"No"}
-            }, v.0.release_time))
-        })
-        .collect();
+    let mut items: Vec<(MinVersion, bool)> = Vec::new();
 
-    let mut list = StatefulList::with_items(items);
+    for version in versions.clone() {
+        items.push((version.clone().0, version.1));
+    }
 
-    let stdout = io::stdout().into_raw_mode()?;
-    let stdout = MouseTerminal::from(stdout);
-    let stdout = AlternateScreen::from(stdout);
-    let backend = TermionBackend::new(stdout);
+    let mut list = StatefulTable::with_items(items);
+
+    enable_raw_mode()?;
+
+    let mut stdout = io::stdout();
+    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+
+    let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    terminal.hide_cursor()?;
+    let (tx, rx) = mpsc::channel();
+
+    let tick_rate = Duration::from_millis(cli.tick_rate);
+    thread::spawn(move || {
+        let mut last_tick = Instant::now();
+        loop {
+            // poll for tick rate duration, if no events, sent tick event.
+            let timeout = tick_rate
+                .checked_sub(last_tick.elapsed())
+                .unwrap_or_else(|| Duration::from_secs(0));
+            if event::poll(timeout).unwrap() {
+                if let CEvent::Key(key) = event::read().unwrap() {
+                    tx.send(Event::Input(key)).unwrap();
+                }
+            }
+            if last_tick.elapsed() >= tick_rate {
+                tx.send(Event::Tick).unwrap();
+                last_tick = Instant::now();
+            }
+        }
+    });
+
+
+    terminal.clear()?;
 
     loop {
         terminal.draw(|mut f| {
@@ -63,33 +96,29 @@ pub fn main(versions: &Vec<(MinVersion, bool)>) -> Result<(), Box<dyn Error>> {
             draw_tab(f, chunks[1], &mut list)
         })?;
 
-        match events.next()? {
-            Event::Input(key) => match key {
+        match rx.recv()? {
+            Event::Input(key) => match key.code {
                 // Key::Backspace => {}
-                Key::Left => {}
-                Key::Right => {}
-                Key::Up => {
+                KeyCode::Left => {}
+                KeyCode::Right => {}
+                KeyCode::Up => {
                     list.previous();
                 }
-                Key::Down => {
+                KeyCode::Down => {
                     list.next();
                 }
-                // Key::Home => {}
-                // Key::End => {}
-                // Key::PageUp => {}
-                // Key::PageDown => {}
-                // Key::BackTab => {}
-                // Key::Delete => {}
-                // Key::Insert => {}
-                // Key::F(_) => {}
-                Key::Char(c) => {}
-                // Key::Alt(_) => {}
-                // Key::Ctrl(_) => {}
-                // Key::Null => {}
-                Key::Esc => {
+                KeyCode::Char(_c) => {}
+                KeyCode::Esc => {
+                    disable_raw_mode()?;
+                    execute!(
+                        terminal.backend_mut(),
+                        LeaveAlternateScreen,
+                        DisableMouseCapture
+                    )?;
+                    terminal.show_cursor()?;
                     break
                 }
-                // Key::__IsNotComplete => {}
+                KeyCode::Enter => {}
                 _ => {}
             },
             Event::Tick => {}
@@ -99,37 +128,43 @@ pub fn main(versions: &Vec<(MinVersion, bool)>) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn draw_tab<B: Backend>(f: &mut Frame<B>, area: Rect, versions: &mut StatefulList<Span>) {
+fn draw_tab<B: Backend>(f: &mut Frame<B>, area: Rect, versions: &mut StatefulTable<(MinVersion, bool)>) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Ratio(1, 1)])
         .split(area);
 
-    let version_list: Vec<ListItem> = versions
+    let version_list: Vec<Row> = versions
         .items
         .iter()
-        .map(|i| ListItem::new(vec![Spans::from(i.clone())]))
+        .map(|v| {
+            let cells = vec![
+                Cell::from(Span::raw(format!("{}", v.0.id))),
+                Cell::from(Span::raw(format!("{}", v.0._type.to_string()))),
+                Cell::from(Span::raw(format!("{}", match v.1 {
+                    true => { "Yes" }
+                    false => { "No" }
+                }))),
+                Cell::from(Span::raw(format!("{:?}", v.0.release_time))),
+            ];
+            Row::new(cells)
+        })
         .collect();
 
-    let table = List::new(version_list)
+    let table = Table::new(version_list)
         .block(Block::default().borders(Borders::ALL).title("Version List"))
+        .header(Row::new(vec!["Name", "Type", "Installed", "Release Date"]))
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-        .highlight_symbol("> ");
+        .highlight_symbol("> ")
+        .widths(&[
+            Constraint::Ratio(5, 12),
+            Constraint::Ratio(3, 24),
+            Constraint::Ratio(5, 36),
+            Constraint::Ratio(4, 12)
+    ]);
 
-    // let table = Table::new(items)
-    //     .block(Block::default().title("Versions").borders(Borders::ALL))
-    //     .header(Row::new(vec![
-    //         Cell::from(Span::raw("Name")),
-    //         Cell::from(Span::raw("Type")),
-    //         Cell::from(Span::raw("Installed")),
-    //         Cell::from(Span::raw("Release Date"))
-    //     ]))
-    //     .widths(&[
-    //         Constraint::Ratio(5, 12),
-    //         Constraint::Ratio(2, 12),
-    //         Constraint::Ratio(2, 12),
-    //         Constraint::Ratio(3, 12),
-    //     ])
+    // let table = List::new(version_list)
+    //     .block(Block::default().borders(Borders::ALL).title("Version List"))
     //     .highlight_style(Style::default().add_modifier(Modifier::BOLD))
     //     .highlight_symbol("> ");
 
