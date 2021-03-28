@@ -1,17 +1,17 @@
-use std::{error::Error, io, thread};
+use crate::minecraft_launcher::manifest::main::MinVersion;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use tui::{backend::CrosstermBackend, Terminal, Frame};
 use std::time::{Duration, Instant};
-use crate::minecraft_launcher::manifest::main::MinVersion;
-use tui::layout::{Layout, Constraint, Rect, Direction};
-use tui::widgets::{Tabs, Borders, Block, Row, Table, Cell, List, ListItem};
-use tui::text::{Spans, Span};
-use tui::style::{Style, Color, Modifier};
+use std::{error::Error, io, thread};
 use tui::backend::Backend;
+use tui::layout::{Constraint, Direction, Layout, Rect};
+use tui::style::{Color, Modifier, Style};
+use tui::text::{Span, Spans};
+use tui::widgets::{Block, Borders, Cell, List, ListItem, Row, Table, Tabs};
+use tui::{backend::CrosstermBackend, Frame, Terminal};
 
 use crate::minecraft_launcher::rendering::utils::{StatefulList, StatefulTable};
 use std::sync::mpsc;
@@ -31,11 +31,10 @@ struct Cli {
 }
 
 pub fn main(versions: &Vec<(MinVersion, bool)>) -> Result<(), Box<dyn Error>> {
-
     // let events = Events::new();
     let cli = Cli {
         tick_rate: 250,
-        enhanced_graphics: true
+        enhanced_graphics: true,
     };
 
     let mut items: Vec<(MinVersion, bool)> = Vec::new();
@@ -76,7 +75,6 @@ pub fn main(versions: &Vec<(MinVersion, bool)>) -> Result<(), Box<dyn Error>> {
         }
     });
 
-
     terminal.clear()?;
 
     loop {
@@ -116,7 +114,7 @@ pub fn main(versions: &Vec<(MinVersion, bool)>) -> Result<(), Box<dyn Error>> {
                         DisableMouseCapture
                     )?;
                     terminal.show_cursor()?;
-                    break
+                    break;
                 }
                 KeyCode::Enter => {}
                 _ => {}
@@ -128,7 +126,11 @@ pub fn main(versions: &Vec<(MinVersion, bool)>) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn draw_tab<B: Backend>(f: &mut Frame<B>, area: Rect, versions: &mut StatefulTable<(MinVersion, bool)>) {
+fn draw_tab<B: Backend>(
+    f: &mut Frame<B>,
+    area: Rect,
+    versions: &mut StatefulTable<(MinVersion, bool)>,
+) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Ratio(1, 1)])
@@ -141,10 +143,17 @@ fn draw_tab<B: Backend>(f: &mut Frame<B>, area: Rect, versions: &mut StatefulTab
             let cells = vec![
                 Cell::from(Span::raw(format!("{}", v.0.id))),
                 Cell::from(Span::raw(format!("{}", v.0._type.to_string()))),
-                Cell::from(Span::raw(format!("{}", match v.1 {
-                    true => { "Yes" }
-                    false => { "No" }
-                }))),
+                Cell::from(Span::raw(format!(
+                    "{}",
+                    match v.1 {
+                        true => {
+                            "Yes"
+                        }
+                        false => {
+                            "No"
+                        }
+                    }
+                ))),
                 Cell::from(Span::raw(format!("{:?}", v.0.release_time))),
             ];
             Row::new(cells)
@@ -160,8 +169,8 @@ fn draw_tab<B: Backend>(f: &mut Frame<B>, area: Rect, versions: &mut StatefulTab
             Constraint::Ratio(5, 12),
             Constraint::Ratio(3, 24),
             Constraint::Ratio(5, 36),
-            Constraint::Ratio(4, 12)
-    ]);
+            Constraint::Ratio(4, 12),
+        ]);
 
     // let table = List::new(version_list)
     //     .block(Block::default().borders(Borders::ALL).title("Version List"))

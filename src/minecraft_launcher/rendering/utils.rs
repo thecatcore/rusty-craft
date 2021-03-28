@@ -71,10 +71,7 @@ impl<T> StatefulTable<T> {
     pub fn with_items(items: Vec<T>) -> StatefulTable<T> {
         let mut state = TableState::default();
         state.select(Some(0));
-        StatefulTable {
-            state,
-            items,
-        }
+        StatefulTable { state, items }
     }
 
     pub fn next(&mut self) {

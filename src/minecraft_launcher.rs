@@ -8,14 +8,14 @@ use std::{
     path::PathBuf,
 };
 
-mod manifest;
-mod utils;
-mod options;
-mod arguments;
-mod rendering;
 mod app;
+mod arguments;
+mod manifest;
+mod options;
+mod rendering;
+mod utils;
 
-use manifest::{version};
+use manifest::version;
 
 pub fn main() {
     let base_dir = BaseDirs::new().expect("Can't get base directories!");
@@ -99,7 +99,6 @@ fn minecraft_folder(base_dir: &BaseDirs) {
         }
     }
 
-
     all_versions.sort_by(|a, b| a.0.release_time.cmp(&b.0.release_time));
     all_versions.reverse();
 
@@ -137,8 +136,10 @@ fn upgrade_manifest(version_folder: &PathBuf) -> manifest::main::Main {
     };
 
     match manifest::main::parse_manifest(&manifest_body) {
-        Ok(mani) => {mani}
-        Err(err) => {panic!("Manifest wrongly formatted! {}", err)}
+        Ok(mani) => mani,
+        Err(err) => {
+            panic!("Manifest wrongly formatted! {}", err)
+        }
     }
 }
 
@@ -209,7 +210,11 @@ fn get_local_versions(version_folder: &PathBuf) -> Vec<version::Main> {
                         installed.push(main);
                     }
                     Err(err) => {
-                        println!("Error while parsing version manifest ({}): {}", m_entries_name.get(i).expect("Concern"), err.to_string());
+                        println!(
+                            "Error while parsing version manifest ({}): {}",
+                            m_entries_name.get(i).expect("Concern"),
+                            err.to_string()
+                        );
                     }
                 };
             }

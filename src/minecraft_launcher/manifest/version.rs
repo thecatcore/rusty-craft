@@ -1,10 +1,10 @@
+use crate::minecraft_launcher::manifest::main;
+use crate::minecraft_launcher::manifest::main::MinVersion;
 use chrono::{DateTime, Utc};
 use serde;
 use serde_derive::Deserialize;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
-use crate::minecraft_launcher::manifest::main::MinVersion;
-use crate::minecraft_launcher::manifest::main;
 
 #[derive(Deserialize, Clone)]
 pub struct Main {
@@ -76,7 +76,10 @@ impl Main {
             self.downloads = from.downloads
         } else {
             if from.downloads.is_some() {
-                self.downloads = Some(Downloads::inherit(self.downloads.expect("Concern"), from.downloads.expect("Concern")));
+                self.downloads = Some(Downloads::inherit(
+                    self.downloads.expect("Concern"),
+                    from.downloads.expect("Concern"),
+                ));
             }
         }
 
@@ -275,43 +278,43 @@ pub struct ClientLoggingFile {
 
 #[derive(Deserialize, Clone)]
 pub enum VersionType {
-    #[serde(alias="release")]
+    #[serde(alias = "release")]
     Release,
-    #[serde(alias="snapshot")]
+    #[serde(alias = "snapshot")]
     Snapshot,
-    #[serde(alias="old_beta")]
+    #[serde(alias = "old_beta")]
     OldBeta,
-    #[serde(alias="old_alpha")]
-    OldAlpha
+    #[serde(alias = "old_alpha")]
+    OldAlpha,
 }
 
 impl Display for VersionType {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            VersionType::Release => {f.write_str("release")}
-            VersionType::Snapshot => {f.write_str("snapshot")}
-            VersionType::OldBeta => {f.write_str("old_beta")}
-            VersionType::OldAlpha => {f.write_str("old_alpha")}
+            VersionType::Release => f.write_str("release"),
+            VersionType::Snapshot => f.write_str("snapshot"),
+            VersionType::OldBeta => f.write_str("old_beta"),
+            VersionType::OldAlpha => f.write_str("old_alpha"),
         }
     }
 }
 
 #[derive(Deserialize, Clone)]
 pub enum RuleAction {
-    #[serde(alias="allow")]
+    #[serde(alias = "allow")]
     Allow,
-    #[serde(alias="disallow")]
-    Disallow
+    #[serde(alias = "disallow")]
+    Disallow,
 }
 
 #[derive(Deserialize, Clone)]
 pub enum Os {
-    #[serde(alias="windows")]
+    #[serde(alias = "windows")]
     Windows,
-    #[serde(alias="osx")]
+    #[serde(alias = "osx")]
     MacOS,
-    #[serde(alias="linux")]
-    Linux
+    #[serde(alias = "linux")]
+    Linux,
 }
 
 impl Os {
@@ -320,15 +323,15 @@ impl Os {
             "windows" => Some(Os::Windows),
             "osx" => Some(Os::MacOS),
             "linux" => Some(Os::Linux),
-            &_ => {None}
+            &_ => None,
         }
     }
 
     pub fn to_str(&self) -> String {
         String::from(match self {
-            Os::Windows => {"windows"}
-            Os::MacOS => {"osx"}
-            Os::Linux => {"linux"}
+            Os::Windows => "windows",
+            Os::MacOS => "osx",
+            Os::Linux => "linux",
         })
     }
 }
@@ -338,7 +341,7 @@ impl Main {
         MinVersion {
             id: self.id.clone(),
             _type: main::VersionType::from_str(self._type.clone().to_string()),
-            release_time: self.release_time
+            release_time: self.release_time,
         }
     }
 }

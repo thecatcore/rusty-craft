@@ -34,28 +34,28 @@ pub struct Version {
 pub struct MinVersion {
     pub id: String,
     pub _type: VersionType,
-    pub release_time: DateTime<Utc>
+    pub release_time: DateTime<Utc>,
 }
 
 #[derive(Deserialize, Clone)]
 pub enum VersionType {
-    #[serde(alias="release")]
+    #[serde(alias = "release")]
     Release,
-    #[serde(alias="snapshot")]
+    #[serde(alias = "snapshot")]
     Snapshot,
-    #[serde(alias="old_beta")]
+    #[serde(alias = "old_beta")]
     OldBeta,
-    #[serde(alias="old_alpha")]
-    OldAlpha
+    #[serde(alias = "old_alpha")]
+    OldAlpha,
 }
 
 impl Display for VersionType {
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         match self {
-            VersionType::Release => {f.write_str("release")}
-            VersionType::Snapshot => {f.write_str("snapshot")}
-            VersionType::OldBeta => {f.write_str("old_beta")}
-            VersionType::OldAlpha => {f.write_str("old_alpha")}
+            VersionType::Release => f.write_str("release"),
+            VersionType::Snapshot => f.write_str("snapshot"),
+            VersionType::OldBeta => f.write_str("old_beta"),
+            VersionType::OldAlpha => f.write_str("old_alpha"),
         }
     }
 }
@@ -67,7 +67,9 @@ impl VersionType {
             "snapshot" => VersionType::Snapshot,
             "old_beta" => VersionType::OldBeta,
             "old_alpha" => VersionType::OldAlpha,
-            _ => {panic!("Unknown version type: {}", string)}
+            _ => {
+                panic!("Unknown version type: {}", string)
+            }
         }
     }
 }
@@ -77,7 +79,7 @@ impl Version {
         MinVersion {
             id: self.id.clone(),
             _type: self._type.clone(),
-            release_time: self.release_time
+            release_time: self.release_time,
         }
     }
 }
