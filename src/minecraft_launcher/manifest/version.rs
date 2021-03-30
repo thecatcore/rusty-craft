@@ -169,9 +169,9 @@ pub struct ArgumentRule {
 pub struct AssetIndex {
     pub id: String,
     pub sha1: String,
-    pub size: u32,
+    pub size: u64,
     #[serde(alias = "totalSize")]
-    pub total_size: u32,
+    pub total_size: u64,
     pub url: String,
 }
 
@@ -204,7 +204,7 @@ impl Downloads {
 #[derive(Deserialize, Clone)]
 pub struct DownloadEntry {
     pub sha1: String,
-    pub size: u32,
+    pub size: u64,
     pub url: String,
 }
 
@@ -240,7 +240,7 @@ pub struct LibraryExtract {
 pub struct LibraryDownloadArtifact {
     pub path: String,
     pub sha1: String,
-    pub size: u32,
+    pub size: u64,
     pub url: String,
 }
 
@@ -272,7 +272,7 @@ pub struct ClientLogging {
 pub struct ClientLoggingFile {
     pub id: String,
     pub sha1: String,
-    pub size: u16,
+    pub size: u64,
     pub url: String,
 }
 

@@ -1,6 +1,4 @@
-use directories::BaseDirs;
 use std::{
-    env::consts,
     fs,
     fs::File,
     io,
@@ -14,28 +12,27 @@ mod manifest;
 mod options;
 mod rendering;
 mod utils;
+mod install;
+mod path;
 
 use manifest::version;
 
 pub fn main() {
-    let base_dir = BaseDirs::new().expect("Can't get base directories!");
-    minecraft_folder(&base_dir);
+    minecraft_folder();
 }
 
-fn minecraft_folder(base_dir: &BaseDirs) {
-    let minecraft_folder: &PathBuf = &get_minecraft_directory(base_dir);
+fn minecraft_folder() {
+    let minecraft_folder: PathBuf = path::get_minecraft_directory();
 
-    let m_dir = match fs::read_dir(minecraft_folder) {
-        Ok(read_dir) => {
+    match &minecraft_folder.exists() {
+        true => {
             println!(".minecraft folder exist.");
-            read_dir
         }
-        Err(_) => {
+        false => {
             println!(".minecraft folder doesn't exist, creating it...");
-            match fs::create_dir(minecraft_folder) {
+            match fs::create_dir(&minecraft_folder) {
                 Ok(_) => {
                     println!(".minecraft folder was created successfully!");
-                    fs::read_dir(minecraft_folder).expect("How")
                 }
                 Err(_) => {
                     panic!("Failed to create .minecraft folder!");
@@ -44,40 +41,10 @@ fn minecraft_folder(base_dir: &BaseDirs) {
         }
     };
 
-    let m_entries_buff = match m_dir
-        .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>, io::Error>>()
-    {
-        Ok(vec) => vec,
-        Err(_) => {
-            panic!("Unable to read entries inside of .minecraft folder")
-        }
+    let version_folder = match path::get_or_create_dir(&minecraft_folder, "versions".parse().unwrap()) {
+        Some(p) => p,
+        None => panic!("Unable to access or create versions folder")
     };
-
-    let mut m_entries_name: Vec<&str> = Vec::new();
-
-    for i in &m_entries_buff {
-        m_entries_name.push(
-            i.file_name()
-                .expect("No name?")
-                .to_str()
-                .expect("Can't turn path into &str?"),
-        );
-    }
-
-    if !m_entries_name.contains(&"versions") {
-        match fs::create_dir(minecraft_folder.join("versions")) {
-            Ok(_) => {
-                println!("Successfully created versions folder.")
-            }
-            Err(_) => {
-                panic!("Failed to create versions folder!")
-            }
-        };
-        m_entries_name.push("versions");
-    }
-
-    let version_folder = minecraft_folder.join("versions");
 
     let manifest = upgrade_manifest(&version_folder);
     let installed = get_local_versions(&version_folder);
@@ -143,25 +110,6 @@ fn upgrade_manifest(version_folder: &PathBuf) -> manifest::main::Main {
     }
 }
 
-fn get_minecraft_directory_name() -> &'static str {
-    match consts::OS {
-        "macos" => "minecraft",
-        &_ => ".minecraft",
-    }
-}
-
-fn get_minecraft_directory(base_dir: &BaseDirs) -> PathBuf {
-    let dir = match consts::OS {
-        "windows" => base_dir.data_dir(),
-        "macos" => base_dir.data_dir(),
-        &_ => base_dir.home_dir(),
-    };
-
-    let min_dir = dir.join(get_minecraft_directory_name());
-
-    min_dir
-}
-
 fn get_local_versions(version_folder: &PathBuf) -> Vec<version::Main> {
     let version_read = match fs::read_dir(version_folder) {
         Ok(read_dir) => read_dir,
@@ -181,7 +129,6 @@ fn get_local_versions(version_folder: &PathBuf) -> Vec<version::Main> {
     };
 
     let mut m_entries_name: Vec<&str> = Vec::new();
-    let mut m_entries_path_buff: Vec<&PathBuf> = Vec::new();
 
     for i in &m_entries_buff {
         let nm = i
@@ -192,7 +139,6 @@ fn get_local_versions(version_folder: &PathBuf) -> Vec<version::Main> {
 
         if i.is_dir() {
             m_entries_name.push(nm);
-            m_entries_path_buff.push(i);
         }
     }
 
@@ -201,7 +147,10 @@ fn get_local_versions(version_folder: &PathBuf) -> Vec<version::Main> {
     for i in 0..m_entries_name.len() {
         match get_manifest_from_installed(
             m_entries_name.get(i).expect("Concern"),
-            m_entries_path_buff.get(i).expect("Concern"),
+            match &path::get_or_create_dir(version_folder, m_entries_name.get(i).expect("Concern").parse().unwrap()) {
+                None => {panic!("Unable to access or create version folder")}
+                Some(p) => {p}
+            },
         ) {
             None => {}
             Some(body) => {
