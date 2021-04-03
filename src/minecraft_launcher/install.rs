@@ -1,24 +1,19 @@
 use crate::minecraft_launcher::{
+    arguments,
     manifest::assets,
     manifest::assets::Main,
     manifest::version,
     manifest::version::{
-        Downloads,
-        AssetIndex,
-        Rule,
-        RuleAction,
-        LibraryDownloadArtifact,
-        LibraryExtract
+        AssetIndex, Downloads, LibraryDownloadArtifact, LibraryExtract, Rule, RuleAction,
     },
     path,
-    arguments
 };
 
-use std::path::PathBuf;
-use std::fs::{Metadata, File};
-use std::io::{Error, Read};
-use std::collections::HashMap;
 use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
+use std::fs::{File, Metadata};
+use std::io::{Error, Read};
+use std::path::PathBuf;
 
 pub fn install_client_jar(version_manifest: &version::Main) -> Option<()> {
     let version_manifest = version_manifest.clone();
@@ -91,10 +86,8 @@ pub fn install_libraries(version_manifest: &version::Main) -> Option<()> {
         let version = *lib_name.get(1).expect("Library doesn't have a version???");
 
         let allowed = match library.rules {
-            None => {RuleAction::Allow}
-            Some(rules) => {
-                arguments::match_rules(rules, None)
-            }
+            None => RuleAction::Allow,
+            Some(rules) => arguments::match_rules(rules, None),
         };
 
         if allowed.to_string() == RuleAction::Allow.to_string() {
@@ -105,43 +98,44 @@ pub fn install_libraries(version_manifest: &version::Main) -> Option<()> {
                 Some(downloads) => {
                     match downloads.artifact {
                         None => {}
-                        Some(artifact) => {
-                            match path::get_library_path(&artifact.path) {
-                                None => {
-                                    result = None;
-                                    break
-                                }
-                                Some(lib_path) => {
-                                    if lib_path.exists() && lib_path.is_file() {
-                                        match lib_path.metadata() {
-                                            Ok(meta) => {
-                                                if meta.len() != artifact.size {
-                                                    match path::download_file_to(&artifact.url, &lib_path) {
-                                                        Ok(yay) => {}
-                                                        Err(ohno) => {
-                                                            result = None;
-                                                            break
-                                                        }
+                        Some(artifact) => match path::get_library_path(&artifact.path) {
+                            None => {
+                                result = None;
+                                break;
+                            }
+                            Some(lib_path) => {
+                                if lib_path.exists() && lib_path.is_file() {
+                                    match lib_path.metadata() {
+                                        Ok(meta) => {
+                                            if meta.len() != artifact.size {
+                                                match path::download_file_to(
+                                                    &artifact.url,
+                                                    &lib_path,
+                                                ) {
+                                                    Ok(yay) => {}
+                                                    Err(ohno) => {
+                                                        result = None;
+                                                        break;
                                                     }
                                                 }
                                             }
-                                            Err(meta_err) => {
-                                                result = None;
-                                                break
-                                            }
                                         }
-                                    } else {
-                                        match path::download_file_to(&artifact.url, &lib_path) {
-                                            Ok(yay) => {}
-                                            Err(ohno) => {
-                                                result = None;
-                                                break
-                                            }
+                                        Err(meta_err) => {
+                                            result = None;
+                                            break;
+                                        }
+                                    }
+                                } else {
+                                    match path::download_file_to(&artifact.url, &lib_path) {
+                                        Ok(yay) => {}
+                                        Err(ohno) => {
+                                            result = None;
+                                            break;
                                         }
                                     }
                                 }
                             }
-                        }
+                        },
                     }
 
                     match downloads.classifiers {
@@ -157,56 +151,51 @@ pub fn install_libraries(version_manifest: &version::Main) -> Option<()> {
 
             match library.natives {
                 None => {}
-                Some(nat) => {
-                    match nat.get(arguments::get_os().to_str().as_str()) {
-                        None => {}
-                        Some(nat_name) => {
-                            match classifiers.get(nat_name) {
-                                None => {
-                                    result = None;
-                                    break
-                                }
-                                Some(class) => {
-                                    match path::get_library_path(&class.path) {
-                                        None => {
-                                            result = None;
-                                            break
-                                        }
-                                        Some(lib_path) => {
-                                            if lib_path.exists() && lib_path.is_file() {
-                                                match lib_path.metadata() {
-                                                    Ok(meta) => {
-                                                        if meta.len() != class.size {
-                                                            match path::download_file_to(&class.url, &lib_path) {
-                                                                Ok(yay) => {}
-                                                                Err(ohno) => {
-                                                                    result = None;
-                                                                    break
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                    Err(meta_err) => {
-                                                        result = None;
-                                                        break
-                                                    }
-                                                }
-                                            } else {
-                                                match path::download_file_to(&class.url, &lib_path) {
+                Some(nat) => match nat.get(arguments::get_os().to_str().as_str()) {
+                    None => {}
+                    Some(nat_name) => match classifiers.get(nat_name) {
+                        None => {
+                            result = None;
+                            break;
+                        }
+                        Some(class) => match path::get_library_path(&class.path) {
+                            None => {
+                                result = None;
+                                break;
+                            }
+                            Some(lib_path) => {
+                                if lib_path.exists() && lib_path.is_file() {
+                                    match lib_path.metadata() {
+                                        Ok(meta) => {
+                                            if meta.len() != class.size {
+                                                match path::download_file_to(&class.url, &lib_path)
+                                                {
                                                     Ok(yay) => {}
                                                     Err(ohno) => {
                                                         result = None;
-                                                        break
+                                                        break;
                                                     }
                                                 }
                                             }
                                         }
+                                        Err(meta_err) => {
+                                            result = None;
+                                            break;
+                                        }
+                                    }
+                                } else {
+                                    match path::download_file_to(&class.url, &lib_path) {
+                                        Ok(yay) => {}
+                                        Err(ohno) => {
+                                            result = None;
+                                            break;
+                                        }
                                     }
                                 }
                             }
-                        }
-                    }
-                }
+                        },
+                    },
+                },
             }
 
             match library.extract {
@@ -219,10 +208,19 @@ pub fn install_libraries(version_manifest: &version::Main) -> Option<()> {
             match library.url {
                 None => {}
                 Some(url) => {
-                    match path::get_library_path(&(group.replace(".", "/") + "/" + name + "/" + name + "-" + version + ".jar")) {
+                    match path::get_library_path(
+                        &(group.replace(".", "/")
+                            + "/"
+                            + name
+                            + "/"
+                            + name
+                            + "-"
+                            + version
+                            + ".jar"),
+                    ) {
                         None => {
                             result = None;
-                            break
+                            break;
                         }
                         Some(lib_path) => {
                             if !lib_path.exists() {
@@ -230,7 +228,7 @@ pub fn install_libraries(version_manifest: &version::Main) -> Option<()> {
                                     Ok(yay) => {}
                                     Err(ohno) => {
                                         result = None;
-                                        break
+                                        break;
                                     }
                                 }
                             }
@@ -239,7 +237,7 @@ pub fn install_libraries(version_manifest: &version::Main) -> Option<()> {
                 }
             }
         }
-    };
+    }
 
     result
 }
@@ -248,46 +246,40 @@ pub fn install_assets_index(version_manifest: &version::Main) -> Option<()> {
     let version_manifest = version_manifest.clone();
 
     match version_manifest.asset_index {
-        None => {None}
-        Some(a_index) => {
-            match path::get_assets_folder(&String::from("indexes")) {
-                None => {None}
-                Some(index_folder) => {
-                    let index_file = index_folder.join(format!("{}.json", &a_index.id));
+        None => None,
+        Some(a_index) => match path::get_assets_folder(&String::from("indexes")) {
+            None => None,
+            Some(index_folder) => {
+                let index_file = index_folder.join(format!("{}.json", &a_index.id));
 
-                    if index_file.exists() {
-                        match index_file.metadata() {
-                            Ok(meta) => {
-                                if meta.len() != a_index.size {
-                                    match path::download_file_to(&a_index.url, &index_file) {
-                                        Ok(msg) => {
-                                            update_assets(a_index.id)
-                                        }
-                                        Err(err_msg) => {None}
-                                    }
-                                } else {
-                                    Some(())
+                if index_file.exists() {
+                    match index_file.metadata() {
+                        Ok(meta) => {
+                            if meta.len() != a_index.size {
+                                match path::download_file_to(&a_index.url, &index_file) {
+                                    Ok(msg) => update_assets(a_index.id),
+                                    Err(err_msg) => None,
                                 }
+                            } else {
+                                Some(())
                             }
-                            Err(err) => {None}
                         }
-                    } else {
-                        match path::download_file_to(&a_index.url, &index_file) {
-                            Ok(msg) => {
-                                update_assets(a_index.id)
-                            }
-                            Err(err_msg) => {None}
-                        }
+                        Err(err) => None,
+                    }
+                } else {
+                    match path::download_file_to(&a_index.url, &index_file) {
+                        Ok(msg) => update_assets(a_index.id),
+                        Err(err_msg) => None,
                     }
                 }
             }
-        }
+        },
     }
 }
 
 fn update_assets(index: String) -> Option<()> {
     match path::get_assets_folder(&String::from("indexes")) {
-        None => {None}
+        None => None,
         Some(index_folder) => {
             let index_file = index_folder.join(format!("{}.json", index));
 
@@ -297,58 +289,58 @@ fn update_assets(index: String) -> Option<()> {
                         let mut body = String::new();
                         match index_file.read_to_string(&mut body) {
                             Ok(_) => {}
-                            Err(_) => {return None}
+                            Err(_) => return None,
                         };
 
                         match assets::parse(&body) {
-                            Ok(main) => {
-                                match path::get_assets_folder(&String::from("objects")) {
-                                    None => {None}
-                                    Some(object_path) => {
-                                        let mut ret = Some(());
-                                        for entry in main.objects {
-                                            let asset_path = entry.1.get_download_path(&object_path);
+                            Ok(main) => match path::get_assets_folder(&String::from("objects")) {
+                                None => None,
+                                Some(object_path) => {
+                                    let mut ret = Some(());
+                                    for entry in main.objects {
+                                        let asset_path = entry.1.get_download_path(&object_path);
 
-                                            if asset_path.exists() {
-                                                match asset_path.metadata() {
-                                                    Ok(meta) => {
-                                                        if meta.len() != entry.1.size {
-                                                            match path::download_file_to(&entry.1.get_download_url(), &asset_path) {
-                                                                Ok(msg) => {}
-                                                                Err(err) => {
-                                                                    ret = None;
-                                                                    break
-                                                                }
+                                        if asset_path.exists() {
+                                            match asset_path.metadata() {
+                                                Ok(meta) => {
+                                                    if meta.len() != entry.1.size {
+                                                        match path::download_file_to(
+                                                            &entry.1.get_download_url(),
+                                                            &asset_path,
+                                                        ) {
+                                                            Ok(msg) => {}
+                                                            Err(err) => {
+                                                                ret = None;
+                                                                break;
                                                             }
                                                         }
                                                     }
-                                                    Err(err) => {
-                                                        ret = None;
-                                                        break
-                                                    }
                                                 }
-                                            } else {
-                                                match path::download_file_to(&entry.1.get_download_url(), &asset_path) {
-                                                    Ok(msg) => {}
-                                                    Err(err) => {
-                                                        ret = None;
-                                                        break
-                                                    }
+                                                Err(err) => {
+                                                    ret = None;
+                                                    break;
+                                                }
+                                            }
+                                        } else {
+                                            match path::download_file_to(
+                                                &entry.1.get_download_url(),
+                                                &asset_path,
+                                            ) {
+                                                Ok(msg) => {}
+                                                Err(err) => {
+                                                    ret = None;
+                                                    break;
                                                 }
                                             }
                                         }
-                                        ret
                                     }
+                                    ret
                                 }
-                            }
-                            Err(err) => {
-                                None
-                            }
+                            },
+                            Err(err) => None,
                         }
                     }
-                    Err(err) => {
-                        None
-                    }
+                    Err(err) => None,
                 }
             } else {
                 None

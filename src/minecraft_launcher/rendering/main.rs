@@ -127,11 +127,7 @@ pub fn main(versions: &Vec<MinVersion>) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn draw_tab<B: Backend>(
-    f: &mut Frame<B>,
-    area: Rect,
-    versions: &mut StatefulTable<MinVersion>,
-) {
+fn draw_tab<B: Backend>(f: &mut Frame<B>, area: Rect, versions: &mut StatefulTable<MinVersion>) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Ratio(1, 1)])

@@ -299,8 +299,8 @@ pub enum RuleAction {
 impl RuleAction {
     pub fn to_string(&self) -> String {
         match self {
-            RuleAction::Allow => {String::from("allow")}
-            RuleAction::Disallow => {String::from("disallow")}
+            RuleAction::Allow => String::from("allow"),
+            RuleAction::Disallow => String::from("disallow"),
         }
     }
 }
@@ -340,7 +340,7 @@ impl Main {
             id: self.id.clone(),
             _type: main::VersionType::from_str(self._type.clone().to_string()),
             release_time: self.release_time,
-            installed: true
+            installed: true,
         }
     }
 }

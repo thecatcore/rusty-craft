@@ -1,10 +1,10 @@
-use std::path::PathBuf;
-use std::fs;
-use std::env::consts;
 use directories::BaseDirs;
 use reqwest::blocking::{get as get_url, Response};
-use std::io::{Read, Write, Error};
+use std::env::consts;
+use std::fs;
 use std::fs::File;
+use std::io::{Error, Read, Write};
+use std::path::PathBuf;
 
 pub fn get_or_create_dir(current_folder: &PathBuf, sub: String) -> Option<PathBuf> {
     match current_folder.exists() {
@@ -12,53 +12,62 @@ pub fn get_or_create_dir(current_folder: &PathBuf, sub: String) -> Option<PathBu
             let sub_path = current_folder.join(sub);
 
             match sub_path.exists() {
-                true => {Some(sub_path)}
-                false => {
-                    match fs::create_dir(&sub_path) {
-                        Ok(_) => {Some(sub_path)}
+                true => Some(sub_path),
+                false => match fs::create_dir(&sub_path) {
+                    Ok(_) => Some(sub_path),
+                    Err(e) => {
+                        print!(
+                            "Unable to create directory {} in folder {}: {}",
+                            sub_path.file_name().expect("Ohno").to_str().expect("REE"),
+                            current_folder
+                                .file_name()
+                                .expect("Ohno")
+                                .to_str()
+                                .expect("REE"),
+                            e.to_string()
+                        );
+                        None
+                    }
+                },
+            }
+        }
+        false => match fs::create_dir(current_folder) {
+            Ok(_) => {
+                let sub_path = current_folder.join(sub);
+
+                match sub_path.exists() {
+                    true => Some(sub_path),
+                    false => match fs::create_dir(&sub_path) {
+                        Ok(_) => Some(sub_path),
                         Err(e) => {
-                            print!("Unable to create directory {} in folder {}: {}",
-                                   sub_path.file_name().expect("Ohno").to_str().expect("REE"),
-                                   current_folder.file_name().expect("Ohno").to_str().expect("REE"),
-                                   e.to_string()
+                            print!(
+                                "Unable to create directory {} in folder {}: {}",
+                                sub_path.file_name().expect("Ohno").to_str().expect("REE"),
+                                current_folder
+                                    .file_name()
+                                    .expect("Ohno")
+                                    .to_str()
+                                    .expect("REE"),
+                                e.to_string()
                             );
                             None
                         }
-                    }
+                    },
                 }
             }
-        }
-        false => {
-            match fs::create_dir(current_folder) {
-                Ok(_) => {
-                    let sub_path = current_folder.join(sub);
-
-                    match sub_path.exists() {
-                        true => {Some(sub_path)}
-                        false => {
-                            match fs::create_dir(&sub_path) {
-                                Ok(_) => {Some(sub_path)}
-                                Err(e) => {
-                                    print!("Unable to create directory {} in folder {}: {}",
-                                           sub_path.file_name().expect("Ohno").to_str().expect("REE"),
-                                           current_folder.file_name().expect("Ohno").to_str().expect("REE"),
-                                           e.to_string()
-                                    );
-                                    None
-                                }
-                            }
-                        }
-                    }
-                }
-                Err(e) => {
-                    print!("Unable to create folder {}: {}",
-                           current_folder.file_name().expect("Ohno").to_str().expect("REE"),
-                           e.to_string()
-                    );
-                    None
-                }
+            Err(e) => {
+                print!(
+                    "Unable to create folder {}: {}",
+                    current_folder
+                        .file_name()
+                        .expect("Ohno")
+                        .to_str()
+                        .expect("REE"),
+                    e.to_string()
+                );
+                None
             }
-        }
+        },
     }
 }
 
@@ -73,28 +82,29 @@ pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> 
                 }
             };
 
-            let mut file = if path.exists() {match File::open(path) {
-                Ok(file) => {file}
-                Err(err) => {
-                    return Err(format!("Failed to download {}: {}", url, err));
+            let mut file = if path.exists() {
+                match File::open(path) {
+                    Ok(file) => file,
+                    Err(err) => {
+                        return Err(format!("Failed to download {}: {}", url, err));
+                    }
                 }
-            }} else {match File::create(path) {
-                Ok(file) => {file}
-                Err(err) => {
-                    return Err(format!("Failed to download {}: {}", url, err));
+            } else {
+                match File::create(path) {
+                    Ok(file) => file,
+                    Err(err) => {
+                        return Err(format!("Failed to download {}: {}", url, err));
+                    }
                 }
-            }};
+            };
 
             return match file.write(&body) {
-                Ok(_) => {
-                    Ok(format!("Successfully wrote {} to {}",
-                               url,
-                               path.file_name().expect("Ohno").to_str().expect("OhnoV2")
-                    ))
-                }
-                Err(err) => {
-                    Err(format!("Failed to download {}: {}", url, err))
-                }
+                Ok(_) => Ok(format!(
+                    "Successfully wrote {} to {}",
+                    url,
+                    path.file_name().expect("Ohno").to_str().expect("OhnoV2")
+                )),
+                Err(err) => Err(format!("Failed to download {}: {}", url, err)),
             };
         }
         Err(err) => {
@@ -107,25 +117,21 @@ pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> 
 
 pub fn get_version_folder(version: &String) -> Option<PathBuf> {
     match get_minecraft_sub_folder(&String::from("versions")) {
-        None => {None}
-        Some(vs) => {
-            get_or_create_dir(&vs, version.clone())
-        }
+        None => None,
+        Some(vs) => get_or_create_dir(&vs, version.clone()),
     }
 }
 
 pub fn get_assets_folder(sub: &String) -> Option<PathBuf> {
     match get_minecraft_sub_folder(&String::from("assets")) {
-        None => {None}
-        Some(vs) => {
-            get_or_create_dir(&vs, sub.clone())
-        }
+        None => None,
+        Some(vs) => get_or_create_dir(&vs, sub.clone()),
     }
 }
 
 pub fn get_library_path(sub: &String) -> Option<PathBuf> {
     match get_minecraft_sub_folder(&String::from("assets")) {
-        None => {None}
+        None => None,
         Some(vs) => {
             if sub.contains("/") {
                 let mut subs: Vec<&str> = sub.split("/").collect();
@@ -137,7 +143,7 @@ pub fn get_library_path(sub: &String) -> Option<PathBuf> {
                 for sub in subs {
                     let sub_path = get_or_create_dir(&path, String::from(sub));
                     match sub_path {
-                        None => {return None}
+                        None => return None,
                         Some(s_path) => {
                             path = s_path;
                         }

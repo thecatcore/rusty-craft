@@ -8,12 +8,12 @@ use std::{
 
 mod app;
 mod arguments;
+mod install;
 mod manifest;
 mod options;
+mod path;
 mod rendering;
 mod utils;
-mod install;
-mod path;
 
 use manifest::version;
 
@@ -41,10 +41,11 @@ fn minecraft_folder() {
         }
     };
 
-    let version_folder = match path::get_or_create_dir(&minecraft_folder, "versions".parse().unwrap()) {
-        Some(p) => p,
-        None => panic!("Unable to access or create versions folder")
-    };
+    let version_folder =
+        match path::get_or_create_dir(&minecraft_folder, "versions".parse().unwrap()) {
+            Some(p) => p,
+            None => panic!("Unable to access or create versions folder"),
+        };
 
     let manifest = upgrade_manifest(&version_folder);
     let installed = get_local_versions(&version_folder);
@@ -147,9 +148,14 @@ fn get_local_versions(version_folder: &PathBuf) -> Vec<version::Main> {
     for i in 0..m_entries_name.len() {
         match get_manifest_from_installed(
             m_entries_name.get(i).expect("Concern"),
-            match &path::get_or_create_dir(version_folder, m_entries_name.get(i).expect("Concern").parse().unwrap()) {
-                None => {panic!("Unable to access or create version folder")}
-                Some(p) => {p}
+            match &path::get_or_create_dir(
+                version_folder,
+                m_entries_name.get(i).expect("Concern").parse().unwrap(),
+            ) {
+                None => {
+                    panic!("Unable to access or create version folder")
+                }
+                Some(p) => p,
             },
         ) {
             None => {}

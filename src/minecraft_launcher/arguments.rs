@@ -53,21 +53,24 @@ pub fn get_args_from_manifest(version: &version::Main, options: &LaunchOptions) 
                         Either::Left(string) => {
                             command = command.add(String::from(" ").add(string.as_str()).as_str());
                         }
-                        Either::Right(custom_arg) => match match_rules(custom_arg.rules, Some(options)) {
-                            RuleAction::Allow => match custom_arg.value {
-                                Either::Left(strin) => {
-                                    command =
-                                        command.add(String::from(" ").add(strin.as_str()).as_str());
-                                }
-                                Either::Right(strins) => {
-                                    for i_str in strins {
+                        Either::Right(custom_arg) => {
+                            match match_rules(custom_arg.rules, Some(options)) {
+                                RuleAction::Allow => match custom_arg.value {
+                                    Either::Left(strin) => {
                                         command = command
-                                            .add(String::from(" ").add(i_str.as_str()).as_str());
+                                            .add(String::from(" ").add(strin.as_str()).as_str());
                                     }
-                                }
-                            },
-                            RuleAction::Disallow => {}
-                        },
+                                    Either::Right(strins) => {
+                                        for i_str in strins {
+                                            command = command.add(
+                                                String::from(" ").add(i_str.as_str()).as_str(),
+                                            );
+                                        }
+                                    }
+                                },
+                                RuleAction::Disallow => {}
+                            }
+                        }
                     };
                 }
 
@@ -90,12 +93,12 @@ pub fn match_rules(rules: Vec<version::Rule>, options: Option<&LaunchOptions>) -
             for i in rule.features.expect("Wut") {
                 mat = match i.0.as_str() {
                     "is_demo_user" => match options {
-                        None => {false}
-                        Some(opt) => {opt.demo == true}
+                        None => false,
+                        Some(opt) => opt.demo == true,
                     },
                     "has_custom_resolution" => match options {
-                        None => {false}
-                        Some(opt) => {opt.custom_resolution == true}
+                        None => false,
+                        Some(opt) => opt.custom_resolution == true,
                     },
                     _ => false,
                 };

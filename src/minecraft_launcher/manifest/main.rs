@@ -35,7 +35,7 @@ pub struct MinVersion {
     pub id: String,
     pub _type: VersionType,
     pub release_time: DateTime<Utc>,
-    pub installed: bool
+    pub installed: bool,
 }
 
 #[derive(Deserialize, Clone)]
@@ -95,7 +95,7 @@ impl Version {
             id: self.id.clone(),
             _type: self._type.clone(),
             release_time: self.release_time,
-            installed: false
+            installed: false,
         }
     }
 }
