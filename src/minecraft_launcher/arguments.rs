@@ -23,7 +23,7 @@ pub fn get_args_from_manifest(version: &version::Main, options: &LaunchOptions) 
                                         .add(String::from(" ").add(string.as_str()).as_str());
                                 }
                                 Either::Right(custom_arg) => {
-                                    match match_rules(custom_arg.rules, options) {
+                                    match match_rules(custom_arg.rules, Some(options)) {
                                         RuleAction::Allow => match custom_arg.value {
                                             Either::Left(strin) => {
                                                 command = command.add(
@@ -53,7 +53,7 @@ pub fn get_args_from_manifest(version: &version::Main, options: &LaunchOptions) 
                         Either::Left(string) => {
                             command = command.add(String::from(" ").add(string.as_str()).as_str());
                         }
-                        Either::Right(custom_arg) => match match_rules(custom_arg.rules, options) {
+                        Either::Right(custom_arg) => match match_rules(custom_arg.rules, Some(options)) {
                             RuleAction::Allow => match custom_arg.value {
                                 Either::Left(strin) => {
                                     command =
@@ -81,7 +81,7 @@ pub fn get_args_from_manifest(version: &version::Main, options: &LaunchOptions) 
     }
 }
 
-fn match_rules(rules: Vec<version::ArgumentRule>, options: &LaunchOptions) -> RuleAction {
+pub fn match_rules(rules: Vec<version::Rule>, options: Option<&LaunchOptions>) -> RuleAction {
     let mut val: RuleAction = RuleAction::Allow;
 
     for rule in rules {
@@ -89,8 +89,14 @@ fn match_rules(rules: Vec<version::ArgumentRule>, options: &LaunchOptions) -> Ru
             let mut mat = true;
             for i in rule.features.expect("Wut") {
                 mat = match i.0.as_str() {
-                    "is_demo_user" => options.demo == true,
-                    "has_custom_resolution" => options.custom_resolution == true,
+                    "is_demo_user" => match options {
+                        None => {false}
+                        Some(opt) => {opt.demo == true}
+                    },
+                    "has_custom_resolution" => match options {
+                        None => {false}
+                        Some(opt) => {opt.custom_resolution == true}
+                    },
                     _ => false,
                 };
                 if !mat {
@@ -133,7 +139,7 @@ fn match_rules(rules: Vec<version::ArgumentRule>, options: &LaunchOptions) -> Ru
     val
 }
 
-fn get_os() -> Os {
+pub fn get_os() -> Os {
     match consts::OS {
         "windows" => Os::Windows,
         "macos" => Os::MacOS,

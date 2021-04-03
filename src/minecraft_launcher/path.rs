@@ -123,6 +123,35 @@ pub fn get_assets_folder(sub: &String) -> Option<PathBuf> {
     }
 }
 
+pub fn get_library_path(sub: &String) -> Option<PathBuf> {
+    match get_minecraft_sub_folder(&String::from("assets")) {
+        None => {None}
+        Some(vs) => {
+            if sub.contains("/") {
+                let mut subs: Vec<&str> = sub.split("/").collect();
+
+                let file_name = subs.remove(subs.len() - 1);
+
+                let mut path = vs;
+
+                for sub in subs {
+                    let sub_path = get_or_create_dir(&path, String::from(sub));
+                    match sub_path {
+                        None => {return None}
+                        Some(s_path) => {
+                            path = s_path;
+                        }
+                    }
+                }
+
+                Some(path.join(file_name))
+            } else {
+                get_or_create_dir(&vs, sub.clone())
+            }
+        }
+    }
+}
+
 pub fn get_minecraft_sub_folder(sub: &String) -> Option<PathBuf> {
     get_or_create_dir(&get_minecraft_directory(), sub.to_string())
 }

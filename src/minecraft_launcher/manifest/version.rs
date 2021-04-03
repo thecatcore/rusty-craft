@@ -154,12 +154,12 @@ pub enum Either<A, B> {
 
 #[derive(Deserialize, Clone)]
 pub struct CustomArguments {
-    pub rules: Vec<ArgumentRule>,
+    pub rules: Vec<Rule>,
     pub value: Either<String, Vec<String>>,
 }
 
 #[derive(Deserialize, Clone)]
-pub struct ArgumentRule {
+pub struct Rule {
     pub action: RuleAction,
     pub features: Option<HashMap<String, bool>>,
     pub os: Option<HashMap<String, String>>,
@@ -221,7 +221,7 @@ pub struct Library {
     pub name: String,
     pub extract: Option<LibraryExtract>,
     pub natives: Option<HashMap<String, String>>,
-    pub rules: Option<Vec<LibraryRule>>,
+    pub rules: Option<Vec<Rule>>,
     pub url: Option<String>,
 }
 
@@ -242,17 +242,6 @@ pub struct LibraryDownloadArtifact {
     pub sha1: String,
     pub size: u64,
     pub url: String,
-}
-
-#[derive(Deserialize, Clone)]
-pub struct LibraryRule {
-    pub action: RuleAction,
-    pub os: Option<LibraryRuleOs>,
-}
-
-#[derive(Deserialize, Clone)]
-pub struct LibraryRuleOs {
-    pub name: Os,
 }
 
 #[derive(Deserialize, Clone)]
@@ -305,6 +294,15 @@ pub enum RuleAction {
     Allow,
     #[serde(alias = "disallow")]
     Disallow,
+}
+
+impl RuleAction {
+    pub fn to_string(&self) -> String {
+        match self {
+            RuleAction::Allow => {String::from("allow")}
+            RuleAction::Disallow => {String::from("disallow")}
+        }
+    }
 }
 
 #[derive(Deserialize, Clone)]
