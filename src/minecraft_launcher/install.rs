@@ -15,7 +15,27 @@ use std::fs::{File, Metadata};
 use std::io::{Error, Read};
 use std::path::PathBuf;
 
-pub fn install_client_jar(version_manifest: &version::Main) -> Option<()> {
+pub fn install_version(version_manifest: &version::Main) -> Option<()> {
+
+    match install_client_jar(version_manifest) {
+        None => {return None;}
+        Some(_) => {}
+    }
+
+    match install_libraries(version_manifest) {
+        None => {return None;}
+        Some(_) => {}
+    }
+
+    match install_assets_index(version_manifest) {
+        None => {return None;}
+        Some(_) => {}
+    }
+
+    Some(())
+}
+
+fn install_client_jar(version_manifest: &version::Main) -> Option<()> {
     let version_manifest = version_manifest.clone();
 
     match version_manifest.downloads {
@@ -74,7 +94,7 @@ pub fn install_client_jar(version_manifest: &version::Main) -> Option<()> {
     }
 }
 
-pub fn install_libraries(version_manifest: &version::Main) -> Option<()> {
+fn install_libraries(version_manifest: &version::Main) -> Option<()> {
     let version_manifest = version_manifest.clone();
 
     let mut result = Some(());
@@ -242,7 +262,7 @@ pub fn install_libraries(version_manifest: &version::Main) -> Option<()> {
     result
 }
 
-pub fn install_assets_index(version_manifest: &version::Main) -> Option<()> {
+fn install_assets_index(version_manifest: &version::Main) -> Option<()> {
     let version_manifest = version_manifest.clone();
 
     match version_manifest.asset_index {
