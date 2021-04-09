@@ -6,6 +6,8 @@ use crate::minecraft_launcher::{
     manifest::version::{
         AssetIndex, Downloads, LibraryDownloadArtifact, LibraryExtract, Rule, RuleAction,
     },
+    manifest::java_versions,
+    manifest::java,
     path,
 };
 
@@ -365,6 +367,35 @@ fn update_assets(index: String) -> Option<()> {
             } else {
                 None
             }
+        }
+    }
+}
+
+// fn check_java_version(version_manifest: &version::Main) -> Option<()> {
+//     match get_java_version_manifest() {
+//         None => {
+//
+//         }
+//         Some(manifest) => {
+//
+//         }
+//     }
+// }
+
+fn get_java_version_manifest() -> Option<java_versions::Main> {
+    match path::read_file_from_url_to_string(&"https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json".to_string()) {
+        Ok(body) => {
+            match java_versions::parse_java_versions_manifest(&body) {
+                Ok(manifest) => Some(manifest),
+                Err(err) => {
+                    print!("Error: {}", err.to_string());
+                    None
+                }
+            }
+        }
+        Err(err) => {
+            print!("Error: {}", err);
+            None
         }
     }
 }

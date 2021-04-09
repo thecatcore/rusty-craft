@@ -3,6 +3,13 @@ use crate::minecraft_launcher::rendering::utils::StatefulTable;
 
 pub struct App {
     pub version_tab: VersionTab,
+    pub current_tab: Tab
+}
+
+pub enum Tab {
+    Version,
+    Mod,
+    ModVersion
 }
 
 pub struct VersionTab {
@@ -10,6 +17,7 @@ pub struct VersionTab {
     pub snapshot: bool,
     pub old: bool,
     pub all_versions: Vec<MinVersion>,
+    pub current_table: StatefulTable<MinVersion>
 }
 
 impl VersionTab {
@@ -25,6 +33,10 @@ impl VersionTab {
         }
 
         StatefulTable::with_items(items);
+    }
+
+    pub fn render() {
+
     }
 
     pub fn select(&mut self, list: StatefulTable<MinVersion>) {
