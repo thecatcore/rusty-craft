@@ -71,6 +71,17 @@ pub fn get_or_create_dir(current_folder: &PathBuf, sub: String) -> Option<PathBu
     }
 }
 
+pub fn get_or_create_dirs(current_folder: &PathBuf, sub: Vec<String>) -> Option<PathBuf> {
+    let mut cur = current_folder.clone();
+    for su in sub {
+        match get_or_create_dir(&cur, su) {
+            None => return None,
+            Some(s) => cur = s.clone()
+        };
+    }
+    Some(cur)
+}
+
 pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> {
     match read_file_from_url_to_type(url, AskedType::U8Vec) {
         Ok(u8Vec) => {
@@ -208,6 +219,34 @@ pub fn get_library_path(sub: &String) -> Option<PathBuf> {
             } else {
                 get_or_create_dir(&vs, sub.clone())
             }
+        }
+    }
+}
+
+pub fn get_java_folder_path(type_: &String) -> Option<PathBuf> {
+    match get_minecraft_sub_folder(&String::from("runtime")) {
+        None => None,
+        Some(runtime) => match get_or_create_dir(&runtime, type_.clone()) {
+            None => None,
+            Some(type1) => match get_or_create_dir(&type1, String::from(get_os_java_name())) {
+                None => None,
+                Some(os) => Some(os.join(type_))
+            }
+        }
+    }
+}
+
+fn get_os_java_name() -> &'static str {
+    match consts::OS {
+        "windows" => match consts::ARCH {
+            "x86" => "windows-x86",
+            "x86_64" => "windows-x64",
+            &_ => ""
+        },
+        "macos" => "mac-os",
+        &_ => match consts::ARCH {
+            "x86" => "linux-i386",
+            &_ => "linux"
         }
     }
 }

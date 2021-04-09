@@ -16,6 +16,7 @@ use std::collections::HashMap;
 use std::fs::{File, Metadata};
 use std::io::{Error, Read};
 use std::path::PathBuf;
+use crate::minecraft_launcher::manifest::version::JavaVersion;
 
 pub fn install_version(version_manifest: &version::Main) -> Option<()> {
 
@@ -371,16 +372,45 @@ fn update_assets(index: String) -> Option<()> {
     }
 }
 
-// fn check_java_version(version_manifest: &version::Main) -> Option<()> {
-//     match get_java_version_manifest() {
-//         None => {
-//
-//         }
-//         Some(manifest) => {
-//
-//         }
-//     }
-// }
+fn check_java_version(version_manifest: &version::Main) -> Option<()> {
+    let version_manifest = version_manifest.clone();
+    match get_java_version_manifest() {
+        None => {
+            match path::get_java_folder_path(match version_manifest.java_version {
+                None => &String::from("jre-legacy"),
+                Some(java_v) => &java_v.component
+            }) {
+                None => None,
+                Some(java_folder) => if &java_folder.exists() {
+                    match path::get_or_create_dirs(&java_folder, get_java_folder_for_os()) {
+                        None => None,
+                        Some(bin) => if bin.join(get_java_ex_for_os()).exists() {
+                            Some(())
+                        } else { None }
+                    }
+                } else { None }
+            }
+        }
+
+        Some(manifest) => {
+
+        }
+    }
+}
+
+fn get_java_folder_for_os() -> Vec<String> {
+    match std::env::consts::OS {
+        "macos" => vec![String::from("jre.bundle"), String::from("Contents"), String::from("Home"), String::from("bin")],
+        &_ => vec![String::from("bin")]
+    }
+}
+
+fn get_java_ex_for_os() -> &'static str {
+    match std::env::consts::OS {
+        "windows" => "java.exe",
+        &_ => "java"
+    }
+}
 
 fn get_java_version_manifest() -> Option<java_versions::Main> {
     match path::read_file_from_url_to_string(&"https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json".to_string()) {
