@@ -231,15 +231,16 @@ fn install_libraries(version_manifest: &version::Main) -> Option<()> {
             match library.url {
                 None => {}
                 Some(url) => {
+                    let url_path = group.replace(".", "/")
+                        + "/"
+                        + name
+                        + "/"
+                        + name
+                        + "-"
+                        + version
+                        + ".jar";
                     match path::get_library_path(
-                        &(group.replace(".", "/")
-                            + "/"
-                            + name
-                            + "/"
-                            + name
-                            + "-"
-                            + version
-                            + ".jar"),
+                        &url_path,
                     ) {
                         None => {
                             result = None;
