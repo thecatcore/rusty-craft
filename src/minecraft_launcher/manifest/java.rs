@@ -12,12 +12,13 @@ pub struct Element {
     #[serde(alias = "type")]
     pub element_type: String,
     pub executable: Option<bool>,
-    pub downloads: Option<Downloads>
+    pub downloads: Option<Downloads>,
+    pub target: Option<String>
 }
 
 #[derive(Deserialize, Clone)]
 pub struct Downloads {
-    pub lzma: FileInfo,
+    pub lzma: Option<FileInfo>,
     pub raw: FileInfo
 }
 

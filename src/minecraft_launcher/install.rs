@@ -18,26 +18,75 @@ use std::io::{Error, Read, Write};
 use std::path::PathBuf;
 use crate::minecraft_launcher::manifest::version::JavaVersion;
 use crate::minecraft_launcher::manifest::java_versions::{OsVersions, Version};
+use crate::minecraft_launcher::manifest;
 
 use std::os::unix::fs::PermissionsExt;
 
-pub fn install_version(version_manifest: &version::Main) -> Option<()> {
+pub fn install_version(id: String, versions: Vec<manifest::main::Version>) -> Option<()> {
+    match path::get_version_folder(&id) {
+        None => None,
+        Some(version_folder) => {
+            let manifest_file_path = version_folder.join(id.clone() + ".json");
+            if manifest_file_path.exists() {
+                read_version_manifest(manifest_file_path)
+            } else {
+                for version in versions {
+                    if version.id == id {
+                        return install_manifest(version, manifest_file_path);
+                    }
+                }
+                None
+            }
+        }
+    }
+}
 
+fn install_manifest(version: manifest::main::Version, file_path: PathBuf) -> Option<()> {
+    match path::download_file_to(&version.url, &file_path) {
+        Ok(_) => read_version_manifest(file_path),
+        Err(_) => None
+    }
+}
+
+fn read_version_manifest(manifest_path: PathBuf) -> Option<()> {
+    match File::open(manifest_path) {
+        Ok(mut file) => {
+            let mut body = String::new();
+            match file.read_to_string(&mut body) {
+                Ok(_) => {
+                    match manifest::version::parse_version_manifest(&body) {
+                        Ok(version) => install_version_from_manifest(&version),
+                        Err(_) => None
+                    }
+                }
+                Err(_) => None
+            }
+        }
+        Err(_) => None
+    }
+}
+
+fn install_version_from_manifest(version_manifest: &version::Main) -> Option<()> {
+
+    println!("Checking java");
     match check_java_version(version_manifest) {
         None => {return None;}
         Some(_) => {}
     }
 
+    println!("Checking client jar");
     match install_client_jar(version_manifest) {
         None => {return None;}
         Some(_) => {}
     }
 
+    println!("Checking libraries");
     match install_libraries(version_manifest) {
         None => {return None;}
         Some(_) => {}
     }
 
+    println!("Checking assets");
     match install_assets_index(version_manifest) {
         None => {return None;}
         Some(_) => {}
@@ -231,7 +280,7 @@ fn install_libraries(version_manifest: &version::Main) -> Option<()> {
 
             match library.extract {
                 None => {}
-                Some(_) => {
+                Some(extract) => {
                     println!("Library extraction is not handled yet, sorry :/")
                 }
             }
@@ -385,68 +434,128 @@ fn check_java_version(version_manifest: &version::Main) -> Option<()> {
     let version_manifest = version_manifest.clone();
     match get_java_version_manifest() {
         None => {
+            println!("Can't get java versions manifest");
             match path::get_java_folder_path_sub(&(match version_manifest.java_version {
-                None => String::from("jre-legacy"),
-                Some(java_v) => java_v.component
+                None => {
+                    println!("Using default java version");
+                    String::from("jre-legacy")
+                },
+                Some(java_v) => {
+                    println!("Found java version {}", java_v.component);
+                    java_v.component
+                }
             })) {
-                None => None,
-                Some(java_folder) => if (&java_folder).exists() {
+                None => {
+                    println!("Can't get java_folder_path_sub");
+                    None
+                },
+                Some(java_folder) => {
                     match path::get_or_create_dirs(&java_folder, get_java_folder_for_os()) {
                         None => None,
-                        Some(bin) => if bin.join(get_java_ex_for_os()).exists() {
-                            Some(())
-                        } else { None }
+                        Some(bin) => if (&java_folder).exists() {
+                            if bin.join(get_java_ex_for_os()).exists() {
+                                Some(())
+                            } else { None }
+                        } else {
+                            None
+                        }
                     }
-                } else { None }
+                }
             }
         }
 
-        Some(manifest) => match manifest.get_os_version() {
-            None => None,
-            Some(os_version) => {
-                let java_v_type = match version_manifest.java_version {
-                    None => String::from(""),
-                    Some(ver) => ver.component
-                };
-                match os_version.get_java_version(&java_v_type) {
-                    None => None,
-                    Some(versions) => match versions.get(0) {
-                        None => None,
-                        Some(version) => {
-                            let online_version = version.clone().version.name;
-
-                            match path::get_java_folder_path_sub(&java_v_type) {
-                                None => {None}
-                                Some(j_folder) => match path::get_java_folder_path(&java_v_type) {
-                                    None => None,
-                                    Some(os_fol) => if (&j_folder).exists() {
-                                        match File::open(os_fol.join(".version")) {
-                                            Ok(mut v_file) => {
-                                                let mut v_content = String::new();
-                                                match v_file.read_to_string(&mut v_content) {
-                                                    Ok(_) => {
-                                                        if online_version != v_content {
-                                                            match install_java_version(&java_v_type, os_fol, version.clone().manifest, online_version) {
-                                                                None => None,
-                                                                Some(_) => Some(())
+        Some(manifest) => {
+            println!("Got java versions manifest");
+            match manifest.get_os_version() {
+                None => {
+                    println!("Unable to get os_version");
+                    None
+                },
+                Some(os_version) => {
+                    println!("Got os_version");
+                    let java_v_type = match version_manifest.java_version {
+                        None => {
+                            println!("Using default java version");
+                            String::from("jre-legacy")
+                        },
+                        Some(ver) => {
+                            println!("Found java version {}", ver.component);
+                            ver.component
+                        }
+                    };
+                    match os_version.get_java_version(&java_v_type) {
+                        None => {
+                            println!("Unable to get java_version");
+                            None
+                        },
+                        Some(versions) => {
+                            println!("Got java_version");
+                            match versions.get(0) {
+                                None => {
+                                    println!("Unable to get first version");
+                                    None
+                                },
+                                Some(version) => {
+                                    println!("Got first version");
+                                    let online_version = version.clone().version.name;
+                                    println!("Found online version of java {}", online_version);
+                                    match path::get_java_folder_path_sub(&java_v_type) {
+                                        None => {
+                                            println!("Unable to get java_folder_path_sub");
+                                            None
+                                        }
+                                        Some(j_folder) => {
+                                            println!("Got java_folder_path_sub");
+                                            match path::get_java_folder_path(&java_v_type) {
+                                                None => {
+                                                    println!("Unable to get java_folder_path");
+                                                    None
+                                                },
+                                                Some(os_fol) => {
+                                                    println!("Got java_folder_path");
+                                                    if (&j_folder).exists() {
+                                                        println!("java_folder_path_sub exists");
+                                                        match File::open(os_fol.join(".version")) {
+                                                            Ok(mut v_file) => {
+                                                                println!("Opened .version file");
+                                                                let mut v_content = String::new();
+                                                                match v_file.read_to_string(&mut v_content) {
+                                                                    Ok(_) => {
+                                                                        println!("Read .version file");
+                                                                        if online_version != v_content {
+                                                                            println!("Online and local version aren't the same");
+                                                                            match install_java_version(&java_v_type, os_fol, version.clone().manifest, online_version) {
+                                                                                None => None,
+                                                                                Some(_) => Some(())
+                                                                            }
+                                                                        } else { Some(()) }
+                                                                    }
+                                                                    Err(_) => {
+                                                                        println!("Failed to read .version file");
+                                                                        match install_java_version(&java_v_type, os_fol, version.clone().manifest, online_version) {
+                                                                            None => None,
+                                                                            Some(_) => Some(())
+                                                                        }
+                                                                    }
+                                                                }
                                                             }
-                                                        } else { None }
-                                                    }
-                                                    Err(_) => match install_java_version(&java_v_type, os_fol, version.clone().manifest, online_version) {
-                                                        None => None,
-                                                        Some(_) => Some(())
+                                                            Err(_) => {
+                                                                println!("Failed to opened .version file");
+                                                                match install_java_version(&java_v_type, os_fol, version.clone().manifest, online_version) {
+                                                                    None => None,
+                                                                    Some(_) => Some(())
+                                                                }
+                                                            }
+                                                        }
+                                                    } else {
+                                                        println!("java_folder_path_sub doesn't exists");
+                                                        match install_java_version(&java_v_type, os_fol, version.clone().manifest, online_version) {
+                                                            None => None,
+                                                            Some(_) => Some(())
+                                                        }
                                                     }
                                                 }
                                             }
-                                            Err(_) => match install_java_version(&java_v_type, os_fol, version.clone().manifest, online_version) {
-                                                None => None,
-                                                Some(_) => Some(())
-                                            }
-                                        }
-                                    } else {
-                                        match install_java_version(&java_v_type, os_fol, version.clone().manifest, online_version) {
-                                            None => None,
-                                            Some(_) => Some(())
                                         }
                                     }
                                 }
@@ -461,127 +570,194 @@ fn check_java_version(version_manifest: &version::Main) -> Option<()> {
 
 fn install_java_version(type_: &String, os_folder: PathBuf, manifest: java_versions::Manifest, online_version: String) -> Option<()> {
     let v_folder = match path::get_or_create_dir(&os_folder, type_.clone()) {
-        None => os_folder.clone(),
-        Some(v) => v
+        None => {
+            println!("Failed to get v_folder");
+            os_folder.clone()
+        },
+        Some(v) => {
+            println!("Got v_folder");
+            v
+        }
     };
     match path::read_file_from_url_to_string(&manifest.url) {
-        Ok(stri) => match java::parse_java_version_manifest(&stri) {
-            Ok(manifest) => {
-                let mut status: Option<()> = Some(());
-                for file in manifest.files {
-                    if status.is_none() { break }
-                    let file_path = file.0;
-                    let element_info = file.1;
-                    let el_type = element_info.element_type;
-                    let executable = match element_info.executable {
-                        None => false,
-                        Some(bool) => bool
-                    };
-                    if el_type == "directory" {
-                        if file_path.contains("/") {
-                            let parts: Vec<&str> = file_path.split("/").collect();
-                            let mut parts2: Vec<String> = Vec::new();
-                            for part in parts {
-                                parts2.push(part.to_string());
+        Ok(stri) => {
+            println!("Read java_version_manifest");
+            match java::parse_java_version_manifest(&stri) {
+                Ok(manifest) => {
+                    println!("Parsed java_version_manifest");
+                    let mut status: Option<()> = Some(());
+                    for file in manifest.files {
+                        if status.is_none() { break }
+                        let file_path = file.0;
+                        let element_info = file.1;
+                        let el_type = element_info.element_type;
+                        let executable = match element_info.executable {
+                            None => false,
+                            Some(bool) => bool
+                        };
+                        if el_type == "directory" {
+                            if file_path.contains("/") {
+                                let parts: Vec<&str> = file_path.split("/").collect();
+                                let mut parts2: Vec<String> = Vec::new();
+                                for part in parts {
+                                    parts2.push(part.to_string());
+                                }
+                                let parts = parts2;
+                                status = match path::get_or_create_dirs(&v_folder, parts) {
+                                    None => None,
+                                    Some(_) => Some(())
+                                }
+                            } else {
+                                status = match path::get_or_create_dir(&v_folder, file_path) {
+                                    None => None,
+                                    Some(_) => Some(())
+                                }
                             }
-                            let parts = parts2;
-                            status = match path::get_or_create_dirs(&v_folder, parts) {
-                                None => None,
-                                Some(_) => Some(())
-                            }
-                        } else {
-                            status = match path::get_or_create_dir(&v_folder, file_path) {
-                                None => None,
-                                Some(_) => Some(())
-                            }
-                        }
-                    } else {
-                        status = match element_info.downloads {
-                            None => None,
-                            Some(downloads) => {
-                                let url = downloads.raw.url;
-                                if file_path.contains("/") {
-                                    let parts: Vec<&str> = file_path.split("/").collect();
-                                    let mut parts2: Vec<String> = Vec::new();
-                                    for part in parts {
-                                        parts2.push(part.to_string());
-                                    }
-                                    match parts2.split_last() {
-                                        None => None,
-                                        Some(tuple) => {
-                                            let parts = Vec::from(tuple.1);
-                                            match path::get_or_create_dirs(&v_folder, parts) {
-                                                None => None,
-                                                Some(sub_pathh) => {
-                                                    let file_buf = sub_pathh.join(tuple.0);
-                                                    match path::download_file_to(&url, &file_buf) {
-                                                        Ok(_) => if executable {
-                                                            match std::env::consts::OS {
-                                                                "linux" => {
-                                                                    match file_buf.metadata() {
-                                                                        Ok(meta) => {
-                                                                            let mut perm = meta.permissions();
-                                                                            perm.set_mode(0o111);
-                                                                            match std::fs::set_permissions(file_buf, perm) {
-                                                                                Ok(_) => Some(()),
+                        } else if el_type == "file" {
+                            status = match element_info.downloads {
+                                None => {
+                                    println!("Failed to get download for file {}", file_path);
+                                    None
+                                },
+                                Some(downloads) => {
+                                    println!("Got download for file {}", file_path);
+                                    let url = downloads.raw.url;
+                                    if file_path.contains("/") {
+                                        println!("File path contains '/'");
+                                        let parts: Vec<&str> = file_path.split("/").collect();
+                                        let mut parts2: Vec<String> = Vec::new();
+                                        for part in parts {
+                                            parts2.push(part.to_string());
+                                        }
+                                        match parts2.split_last() {
+                                            None => {
+                                                println!("Unable to split_last {}", file_path);
+                                                None
+                                            },
+                                            Some(tuple) => {
+                                                println!("Split_lasted {}", file_path);
+                                                let parts = Vec::from(tuple.1);
+                                                match path::get_or_create_dirs(&v_folder, parts) {
+                                                    None => {
+                                                        println!("Unable to create folders");
+                                                        None
+                                                    },
+                                                    Some(sub_pathh) => {
+                                                        println!("Created folders");
+                                                        let file_buf = sub_pathh.join(tuple.0);
+                                                        match path::download_file_to(&url, &file_buf) {
+                                                            Ok(_) => {
+                                                                println!("Successfully downloaded file!");
+                                                                if executable {
+                                                                    match std::env::consts::OS {
+                                                                        "linux" => {
+                                                                            match file_buf.metadata() {
+                                                                                Ok(meta) => {
+                                                                                    let mut perm = meta.permissions();
+                                                                                    perm.set_mode(0o755);
+                                                                                    match std::fs::set_permissions(file_buf, perm) {
+                                                                                        Ok(_) => Some(()),
+                                                                                        Err(_) => None
+                                                                                    }
+                                                                                }
                                                                                 Err(_) => None
                                                                             }
-                                                                        }
-                                                                        Err(_) => None
+                                                                        },
+                                                                        &_ => None
                                                                     }
-                                                                },
-                                                                &_ => None
+                                                                } else { Some(()) }
                                                             }
-                                                        } else { Some(()) }
-                                                        Err(_) => None
+                                                            Err(err) => {
+                                                                println!("Failed to download file: {}", err);
+                                                                None
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
-                                    }
-                                } else {
-                                    let file_buf = v_folder.join(file_path);
-                                    match path::download_file_to(&url, &file_buf) {
-                                        Ok(_) => if executable {
-                                            match std::env::consts::OS {
-                                                "linux" => {
-                                                    match file_buf.metadata() {
-                                                        Ok(meta) => {
-                                                            let mut perm = meta.permissions();
-                                                            perm.set_mode(0o111);
-                                                            match std::fs::set_permissions(file_buf, perm) {
-                                                                Ok(_) => Some(()),
+                                    } else {
+                                        println!("File path doesn't contain '/'");
+                                        let file_buf = v_folder.join(file_path);
+                                        match path::download_file_to(&url, &file_buf) {
+                                            Ok(_) => {
+                                                println!("Successfully downloaded file");
+                                                if executable {
+                                                    match std::env::consts::OS {
+                                                        "linux" => {
+                                                            match file_buf.metadata() {
+                                                                Ok(meta) => {
+                                                                    let mut perm = meta.permissions();
+                                                                    perm.set_mode(0o755);
+                                                                    match std::fs::set_permissions(file_buf, perm) {
+                                                                        Ok(_) => Some(()),
+                                                                        Err(_) => None
+                                                                    }
+                                                                }
                                                                 Err(_) => None
                                                             }
-                                                        }
-                                                        Err(_) => None
+                                                        },
+                                                        &_ => None
                                                     }
-                                                },
-                                                &_ => None
+                                                } else { Some(()) }
                                             }
-                                        } else { Some(()) }
-                                        Err(_) => None
+                                            Err(err) => {
+                                                println!("Failed to download file: {}", err);
+                                                None
+                                            }
+                                        }
+                                    }
+                                }
+                            };
+                        } else if el_type == "link" {
+
+                        } else {
+                            println!("Unknown el_type {}", el_type);
+                        }
+                    };
+                    if status.is_some() {
+                        let v_path = os_folder.join(".version");
+                        match File::open(&v_path) {
+                            Ok(mut v_path) => match v_path.write(online_version.as_bytes()) {
+                                Ok(_) => {
+                                    println!("Wrote to .version file")
+                                }
+                                Err(_) => {
+                                    println!("Failed to write to .version file");
+                                    status = None
+                                }
+                            }
+                            Err(_) => {
+                                match File::create(v_path) {
+                                    Ok(mut v_path) => match v_path.write(online_version.as_bytes()) {
+                                        Ok(_) => {
+                                            println!("Wrote to .version file")
+                                        }
+                                        Err(_) => {
+                                            println!("Failed to write to .version file");
+                                            status = None
+                                        }
+                                    }
+                                    Err(err) => {
+                                        println!("Failed to create .version file: {}", err);
+                                        status = None;
                                     }
                                 }
                             }
-                        };
-                    }
-                };
-                if status.is_some() {
-                    let v_path = os_folder.join(".version");
-                    match File::open(v_path) {
-                        Ok(mut v_path) => match v_path.write(online_version.as_bytes()) {
-                            Ok(_) => {}
-                            Err(_) => status = None
                         }
-                        Err(_) => status = None
                     }
+                    status
                 }
-                status
+                Err(err) => {
+                    println!("Failed to parse java_version_manifest {}", err);
+                    None
+                }
             }
-            Err(_) => None
         }
-        Err(_) => None
+        Err(err) => {
+            println!("Failed to read java_version_manifest {}", err);
+            None
+        }
     }
 }
 

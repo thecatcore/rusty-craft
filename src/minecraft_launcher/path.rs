@@ -195,7 +195,7 @@ pub fn get_assets_folder(sub: &String) -> Option<PathBuf> {
 }
 
 pub fn get_library_path(sub: &String) -> Option<PathBuf> {
-    match get_minecraft_sub_folder(&String::from("assets")) {
+    match get_minecraft_sub_folder(&String::from("libraries")) {
         None => None,
         Some(vs) => {
             if sub.contains("/") {

@@ -17,6 +17,7 @@ use tui::{
 
 use crate::minecraft_launcher::rendering::utils::{StatefulList, StatefulTable};
 use std::sync::mpsc;
+use crate::minecraft_launcher::app::App;
 
 enum Event<I> {
     Input(I),
@@ -32,20 +33,12 @@ struct Cli {
     enhanced_graphics: bool,
 }
 
-pub fn main(versions: &Vec<MinVersion>) -> Result<(), Box<dyn Error>> {
+pub fn main(mut app: App) -> Result<(), Box<dyn Error>> {
     // let events = Events::new();
     let cli = Cli {
         tick_rate: 250,
         enhanced_graphics: true,
     };
-
-    let mut items: Vec<MinVersion> = Vec::new();
-
-    for version in versions.clone() {
-        items.push(version.clone());
-    }
-
-    let mut list = StatefulTable::with_items(items);
 
     enable_raw_mode()?;
 
@@ -93,86 +86,28 @@ pub fn main(versions: &Vec<MinVersion>) -> Result<(), Box<dyn Error>> {
                 .highlight_style(Style::default().fg(Color::Yellow))
                 .select(0);
             f.render_widget(tabs, chunks[0]);
-            draw_tab(f, chunks[1], &mut list)
+            app.render(f, chunks[1])
         })?;
 
         match rx.recv()? {
-            Event::Input(key) => match key.code {
-                KeyCode::Left => {}
-                KeyCode::Right => {}
-                KeyCode::Up => {
-                    list.previous();
+            Event::Input(key) => {
+                match app.on_key_press(key.code) {
+                    KeyCode::Esc => {
+                        disable_raw_mode()?;
+                        execute!(
+                            terminal.backend_mut(),
+                            LeaveAlternateScreen,
+                            DisableMouseCapture
+                        )?;
+                        terminal.show_cursor()?;
+                        break;
+                    }
+                    _ => {}
                 }
-                KeyCode::Down => {
-                    list.next();
-                }
-                KeyCode::Char(_c) => {}
-                KeyCode::Esc => {
-                    disable_raw_mode()?;
-                    execute!(
-                        terminal.backend_mut(),
-                        LeaveAlternateScreen,
-                        DisableMouseCapture
-                    )?;
-                    terminal.show_cursor()?;
-                    break;
-                }
-                KeyCode::Enter => {}
-                _ => {}
             },
             Event::Tick => {}
         }
     }
 
     Ok(())
-}
-
-fn draw_tab<B: Backend>(f: &mut Frame<B>, area: Rect, versions: &mut StatefulTable<MinVersion>) {
-    let chunks = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([Constraint::Ratio(1, 1)])
-        .split(area);
-
-    let version_list: Vec<Row> = versions
-        .items
-        .iter()
-        .map(|v| {
-            let cells = vec![
-                Cell::from(Span::raw(format!("{}", v.id))),
-                Cell::from(Span::raw(format!("{}", v._type.to_string()))),
-                Cell::from(Span::raw(format!(
-                    "{}",
-                    match v.installed {
-                        true => {
-                            "Yes"
-                        }
-                        false => {
-                            "No"
-                        }
-                    }
-                ))),
-                Cell::from(Span::raw(format!("{:?}", v.release_time))),
-            ];
-            Row::new(cells)
-        })
-        .collect();
-
-    let table = Table::new(version_list)
-        .block(Block::default().borders(Borders::ALL).title("Version List"))
-        .header(Row::new(vec!["Name", "Type", "Installed", "Release Date"]))
-        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-        .highlight_symbol("> ")
-        .widths(&[
-            Constraint::Ratio(5, 12),
-            Constraint::Ratio(3, 24),
-            Constraint::Ratio(5, 36),
-            Constraint::Ratio(4, 12),
-        ]);
-
-    // let table = List::new(version_list)
-    //     .block(Block::default().borders(Borders::ALL).title("Version List"))
-    //     .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-    //     .highlight_symbol("> ");
-
-    f.render_stateful_widget(table, chunks[0], &mut versions.state);
 }

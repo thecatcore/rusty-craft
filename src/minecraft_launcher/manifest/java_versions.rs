@@ -7,8 +7,8 @@ use std::env::consts;
 #[derive(Deserialize, Clone)]
 pub struct Main {
     pub linux: OsVersions,
-    #[serde(alias = "linux-i396")]
-    pub linux_i396: OsVersions,
+    #[serde(alias = "linux-i386")]
+    pub linux_i386: OsVersions,
     #[serde(alias = "mac-os")]
     pub mac_os: OsVersions,
     #[serde(alias = "windows-x64")]
@@ -27,7 +27,7 @@ impl Main {
             },
             "macos" => Some(self.mac_os), //"mac-os",
             &_ => match consts::ARCH {
-                "x86" => Some(self.linux_i396), //"linux-i386",
+                "x86" => Some(self.linux_i386), //"linux-i386",
                 &_ => Some(self.linux) //"linux"
             }
         }
@@ -40,7 +40,7 @@ pub struct OsVersions {
     pub java_runtime_alpha: Vec<Version>,
     #[serde(alias = "jre-legacy")]
     pub jre_legacy: Vec<Version>,
-    #[serde(alias = "java-exe")]
+    #[serde(alias = "minecraft-java-exe")]
     pub java_exe: Vec<Version>
 }
 
@@ -49,7 +49,7 @@ impl OsVersions {
         match version.as_str() {
             "java-runtime-alpha" => Some(self.java_runtime_alpha),
             "jre-legacy" => Some(self.jre_legacy),
-            "java-exe" => Some(self.java_exe),
+            "minecraft-java-exe" => Some(self.java_exe),
             &_ => None
         }
     }

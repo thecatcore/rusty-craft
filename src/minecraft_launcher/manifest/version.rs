@@ -343,6 +343,10 @@ impl Main {
             installed: true,
         }
     }
+
+    pub fn is_modded(&self) -> bool {
+        self.id.contains("fabric") || self.id.contains("forge")
+    }
 }
 
 pub fn parse_version_manifest(version_str: &String) -> serde_json::Result<Main> {

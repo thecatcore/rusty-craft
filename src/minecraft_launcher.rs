@@ -47,7 +47,9 @@ fn minecraft_folder() {
             None => panic!("Unable to access or create versions folder"),
         };
 
-    let manifest = upgrade_manifest(&version_folder);
+    let mut manifest = upgrade_manifest(&version_folder);
+    manifest.versions.sort_by(|a, b| a.release_time.cmp(&b.release_time));
+    manifest.versions.reverse();
     let installed = get_local_versions(&version_folder);
     let mut installed_id: Vec<String> = Vec::new();
     println!("Installed versions:");
@@ -58,7 +60,9 @@ fn minecraft_folder() {
     let mut all_versions: Vec<manifest::main::MinVersion> = Vec::new();
 
     for version in &installed {
-        all_versions.push(version.to_min_version());
+        if !version.is_modded() {
+            all_versions.push(version.to_min_version());
+        }
     }
 
     for version in &manifest.versions {
@@ -70,7 +74,9 @@ fn minecraft_folder() {
     all_versions.sort_by(|a, b| a.release_time.cmp(&b.release_time));
     all_versions.reverse();
 
-    match rendering::main::main(&all_versions) {
+    let app = app::App::new(all_versions, manifest.clone().versions);
+
+    match rendering::main::main(app) {
         Ok(_) => {
             println!("It went ok!");
         }

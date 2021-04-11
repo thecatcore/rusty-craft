@@ -4,19 +4,19 @@ use serde_derive::Deserialize;
 use chrono::{DateTime, Utc};
 use std::fmt::{Display, Formatter};
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Main {
     pub latest: Latest,
     pub versions: Vec<Version>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Latest {
     pub release: String,
     pub snapshot: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Version {
     pub id: String,
     #[serde(alias = "type")]
