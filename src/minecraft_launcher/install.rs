@@ -14,7 +14,7 @@ use crate::minecraft_launcher::{
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::fs::{File, Metadata};
-use std::io::{Error, Read};
+use std::io::{Error, Read, Write};
 use std::path::PathBuf;
 use crate::minecraft_launcher::manifest::version::JavaVersion;
 use crate::minecraft_launcher::manifest::java_versions::{OsVersions, Version};
@@ -22,6 +22,11 @@ use crate::minecraft_launcher::manifest::java_versions::{OsVersions, Version};
 use std::os::unix::fs::PermissionsExt;
 
 pub fn install_version(version_manifest: &version::Main) -> Option<()> {
+
+    match check_java_version(version_manifest) {
+        None => {return None;}
+        Some(_) => {}
+    }
 
     match install_client_jar(version_manifest) {
         None => {return None;}
@@ -412,12 +417,34 @@ fn check_java_version(version_manifest: &version::Main) -> Option<()> {
 
                             match path::get_java_folder_path_sub(&java_v_type) {
                                 None => {None}
-                                Some(j_folder) => if (&j_folder).exists() {
-
-                                } else {
-                                    match path::get_java_folder_path(&java_v_type) {
-                                        None => None,
-                                        Some(os_fol) => match install_java_version(&java_v_type, os_fol, version.clone().manifest) {
+                                Some(j_folder) => match path::get_java_folder_path(&java_v_type) {
+                                    None => None,
+                                    Some(os_fol) => if (&j_folder).exists() {
+                                        match File::open(os_fol.join(".version")) {
+                                            Ok(mut v_file) => {
+                                                let mut v_content = String::new();
+                                                match v_file.read_to_string(&mut v_content) {
+                                                    Ok(_) => {
+                                                        if online_version != v_content {
+                                                            match install_java_version(&java_v_type, os_fol, version.clone().manifest, online_version) {
+                                                                None => None,
+                                                                Some(_) => Some(())
+                                                            }
+                                                        } else { None }
+                                                    }
+                                                    Err(_) => match install_java_version(&java_v_type, os_fol, version.clone().manifest, online_version) {
+                                                        None => None,
+                                                        Some(_) => Some(())
+                                                    }
+                                                }
+                                            }
+                                            Err(_) => match install_java_version(&java_v_type, os_fol, version.clone().manifest, online_version) {
+                                                None => None,
+                                                Some(_) => Some(())
+                                            }
+                                        }
+                                    } else {
+                                        match install_java_version(&java_v_type, os_fol, version.clone().manifest, online_version) {
                                             None => None,
                                             Some(_) => Some(())
                                         }
@@ -432,9 +459,9 @@ fn check_java_version(version_manifest: &version::Main) -> Option<()> {
     }
 }
 
-fn install_java_version(type_: &String, os_folder: PathBuf, manifest: java_versions::Manifest) -> Option<()> {
+fn install_java_version(type_: &String, os_folder: PathBuf, manifest: java_versions::Manifest, online_version: String) -> Option<()> {
     let v_folder = match path::get_or_create_dir(&os_folder, type_.clone()) {
-        None => os_folder,
+        None => os_folder.clone(),
         Some(v) => v
     };
     match path::read_file_from_url_to_string(&manifest.url) {
@@ -474,11 +501,48 @@ fn install_java_version(type_: &String, os_folder: PathBuf, manifest: java_versi
                             Some(downloads) => {
                                 let url = downloads.raw.url;
                                 if file_path.contains("/") {
-
+                                    let parts: Vec<&str> = file_path.split("/").collect();
+                                    let mut parts2: Vec<String> = Vec::new();
+                                    for part in parts {
+                                        parts2.push(part.to_string());
+                                    }
+                                    match parts2.split_last() {
+                                        None => None,
+                                        Some(tuple) => {
+                                            let parts = Vec::from(tuple.1);
+                                            match path::get_or_create_dirs(&v_folder, parts) {
+                                                None => None,
+                                                Some(sub_pathh) => {
+                                                    let file_buf = sub_pathh.join(tuple.0);
+                                                    match path::download_file_to(&url, &file_buf) {
+                                                        Ok(_) => if executable {
+                                                            match std::env::consts::OS {
+                                                                "linux" => {
+                                                                    match file_buf.metadata() {
+                                                                        Ok(meta) => {
+                                                                            let mut perm = meta.permissions();
+                                                                            perm.set_mode(0o111);
+                                                                            match std::fs::set_permissions(file_buf, perm) {
+                                                                                Ok(_) => Some(()),
+                                                                                Err(_) => None
+                                                                            }
+                                                                        }
+                                                                        Err(_) => None
+                                                                    }
+                                                                },
+                                                                &_ => None
+                                                            }
+                                                        } else { Some(()) }
+                                                        Err(_) => None
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
                                 } else {
                                     let file_buf = v_folder.join(file_path);
                                     match path::download_file_to(&url, &file_buf) {
-                                        Ok(_) => {
+                                        Ok(_) => if executable {
                                             match std::env::consts::OS {
                                                 "linux" => {
                                                     match file_buf.metadata() {
@@ -495,7 +559,7 @@ fn install_java_version(type_: &String, os_folder: PathBuf, manifest: java_versi
                                                 },
                                                 &_ => None
                                             }
-                                        }
+                                        } else { Some(()) }
                                         Err(_) => None
                                     }
                                 }
@@ -503,6 +567,16 @@ fn install_java_version(type_: &String, os_folder: PathBuf, manifest: java_versi
                         };
                     }
                 };
+                if status.is_some() {
+                    let v_path = os_folder.join(".version");
+                    match File::open(v_path) {
+                        Ok(mut v_path) => match v_path.write(online_version.as_bytes()) {
+                            Ok(_) => {}
+                            Err(_) => status = None
+                        }
+                        Err(_) => status = None
+                    }
+                }
                 status
             }
             Err(_) => None
