@@ -14,22 +14,22 @@ pub struct Main {
     #[serde(alias = "windows-x64")]
     pub windows_x64: OsVersions,
     #[serde(alias = "windows-x86")]
-    pub windows_x86: OsVersions
+    pub windows_x86: OsVersions,
 }
 
 impl Main {
     pub fn get_os_version(self) -> Option<OsVersions> {
         match consts::OS {
             "windows" => match consts::ARCH {
-                "x86" => Some(self.windows_x86), //"windows-x86",
+                "x86" => Some(self.windows_x86),    //"windows-x86",
                 "x86_64" => Some(self.windows_x64), //"windows-x64",
-                &_ => None
+                &_ => None,
             },
             "macos" => Some(self.mac_os), //"mac-os",
             &_ => match consts::ARCH {
                 "x86" => Some(self.linux_i386), //"linux-i386",
-                &_ => Some(self.linux) //"linux"
-            }
+                &_ => Some(self.linux),         //"linux"
+            },
         }
     }
 }
@@ -41,7 +41,7 @@ pub struct OsVersions {
     #[serde(alias = "jre-legacy")]
     pub jre_legacy: Vec<Version>,
     #[serde(alias = "minecraft-java-exe")]
-    pub java_exe: Vec<Version>
+    pub java_exe: Vec<Version>,
 }
 
 impl OsVersions {
@@ -50,7 +50,7 @@ impl OsVersions {
             "java-runtime-alpha" => Some(self.java_runtime_alpha),
             "jre-legacy" => Some(self.jre_legacy),
             "minecraft-java-exe" => Some(self.java_exe),
-            &_ => None
+            &_ => None,
         }
     }
 }
@@ -59,26 +59,26 @@ impl OsVersions {
 pub struct Version {
     pub availability: Availability,
     pub manifest: Manifest,
-    pub version: VersionInfo
+    pub version: VersionInfo,
 }
 
 #[derive(Deserialize, Clone)]
 pub struct Availability {
     pub group: u64,
-    pub progress: u64
+    pub progress: u64,
 }
 
 #[derive(Deserialize, Clone)]
 pub struct Manifest {
     pub sha1: String,
     pub size: u64,
-    pub url: String
+    pub url: String,
 }
 
 #[derive(Deserialize, Clone)]
 pub struct VersionInfo {
     pub name: String,
-    pub released: DateTime<Utc>
+    pub released: DateTime<Utc>,
 }
 
 pub fn parse_java_versions_manifest(version_str: &String) -> serde_json::Result<Main> {

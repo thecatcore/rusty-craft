@@ -15,9 +15,9 @@ use tui::{
     Frame, Terminal,
 };
 
+use crate::minecraft_launcher::app::App;
 use crate::minecraft_launcher::rendering::utils::{StatefulList, StatefulTable};
 use std::sync::mpsc;
-use crate::minecraft_launcher::app::App;
 
 enum Event<I> {
     Input(I),
@@ -90,20 +90,18 @@ pub fn main(mut app: App) -> Result<(), Box<dyn Error>> {
         })?;
 
         match rx.recv()? {
-            Event::Input(key) => {
-                match app.on_key_press(key.code) {
-                    KeyCode::Esc => {
-                        disable_raw_mode()?;
-                        execute!(
-                            terminal.backend_mut(),
-                            LeaveAlternateScreen,
-                            DisableMouseCapture
-                        )?;
-                        terminal.show_cursor()?;
-                        break;
-                    }
-                    _ => {}
+            Event::Input(key) => match app.on_key_press(key.code) {
+                KeyCode::Esc => {
+                    disable_raw_mode()?;
+                    execute!(
+                        terminal.backend_mut(),
+                        LeaveAlternateScreen,
+                        DisableMouseCapture
+                    )?;
+                    terminal.show_cursor()?;
+                    break;
                 }
+                _ => {}
             },
             Event::Tick => {}
         }

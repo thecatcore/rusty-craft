@@ -48,7 +48,9 @@ fn minecraft_folder() {
         };
 
     let mut manifest = upgrade_manifest(&version_folder);
-    manifest.versions.sort_by(|a, b| a.release_time.cmp(&b.release_time));
+    manifest
+        .versions
+        .sort_by(|a, b| a.release_time.cmp(&b.release_time));
     manifest.versions.reverse();
     let installed = get_local_versions(&version_folder);
     let mut installed_id: Vec<String> = Vec::new();

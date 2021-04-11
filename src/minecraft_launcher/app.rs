@@ -1,18 +1,18 @@
+use crate::minecraft_launcher::install;
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crate::minecraft_launcher::rendering::utils::StatefulTable;
 use crossterm::event::KeyCode;
-use crate::minecraft_launcher::install;
-use tui::Frame;
-use tui::layout::{Rect, Layout, Direction, Constraint};
-use tui::widgets::{Row, Table, Block, Borders, Cell};
-use tui::text::Span;
-use tui::style::{Style, Modifier};
-use tui::backend::CrosstermBackend;
 use std::io::Stdout;
+use tui::backend::CrosstermBackend;
+use tui::layout::{Constraint, Direction, Layout, Rect};
+use tui::style::{Modifier, Style};
+use tui::text::Span;
+use tui::widgets::{Block, Borders, Cell, Row, Table};
+use tui::Frame;
 
 pub struct App {
     pub version_tab: VersionTab,
-    pub current_tab: Tab
+    pub current_tab: Tab,
 }
 
 impl App {
@@ -24,9 +24,9 @@ impl App {
                 old: false,
                 all_versions: min_versions.clone(),
                 current_table: StatefulTable::with_items(min_versions),
-                versions
+                versions,
             },
-            current_tab: Tab::Version
+            current_tab: Tab::Version,
         };
         app.version_tab.build_table_state();
         app
@@ -58,7 +58,7 @@ impl App {
 pub enum Tab {
     Version,
     Mod,
-    ModVersion
+    ModVersion,
 }
 
 #[derive(Clone)]
@@ -68,7 +68,7 @@ pub struct VersionTab {
     pub old: bool,
     pub all_versions: Vec<MinVersion>,
     pub current_table: StatefulTable<MinVersion>,
-    pub versions: Vec<Version>
+    pub versions: Vec<Version>,
 }
 
 impl VersionTab {
@@ -79,7 +79,6 @@ impl VersionTab {
             if (self.snapshot == version._type.is_snapshot())
                 && (self.old == version._type.is_old())
             {
-
                 items.push(version.clone());
             }
         }
@@ -94,7 +93,8 @@ impl VersionTab {
             .constraints([Constraint::Ratio(1, 1)])
             .split(area);
 
-        let version_list: Vec<Row> = self.current_table
+        let version_list: Vec<Row> = self
+            .current_table
             .items
             .iter()
             .map(|v| {
@@ -162,7 +162,11 @@ impl VersionTab {
     }
 
     pub fn select(&mut self) {
-        match self.current_table.items.get(self.current_table.state.selected().expect(":flushed:")) {
+        match self
+            .current_table
+            .items
+            .get(self.current_table.state.selected().expect(":flushed:"))
+        {
             None => self.selected = None,
             Some(version) => self.selected = Some(version.clone()),
         }

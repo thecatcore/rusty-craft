@@ -76,7 +76,7 @@ pub fn get_or_create_dirs(current_folder: &PathBuf, sub: Vec<String>) -> Option<
     for su in sub {
         match get_or_create_dir(&cur, su) {
             None => return None,
-            Some(s) => cur = s.clone()
+            Some(s) => cur = s.clone(),
         };
     }
     Some(cur)
@@ -84,100 +84,110 @@ pub fn get_or_create_dirs(current_folder: &PathBuf, sub: Vec<String>) -> Option<
 
 pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> {
     match read_file_from_url_to_type(url, AskedType::U8Vec) {
-        Ok(u8Vec) => {
-            match u8Vec {
-                ReturnType::U8Vec(body) => {
-                    let mut file = if path.exists() {
-                        match File::open(path) {
-                            Ok(file) => file,
-                            Err(err) => {
-                                return Err(format!("Failed to download {}: {}", url, err));
-                            }
+        Ok(u8Vec) => match u8Vec {
+            ReturnType::U8Vec(body) => {
+                let mut file = if path.exists() {
+                    match File::open(path) {
+                        Ok(file) => file,
+                        Err(err) => {
+                            return Err(format!("Failed to download {}: {}", url, err));
                         }
-                    } else {
-                        match File::create(path) {
-                            Ok(file) => file,
-                            Err(err) => {
-                                return Err(format!("Failed to download {}: {}", url, err));
-                            }
-                        }
-                    };
-
-                    match file.write(&body) {
-                        Ok(_) => Ok(format!(
-                            "Successfully wrote {} to {}",
-                            url,
-                            path.file_name().expect("Ohno").to_str().expect("OhnoV2")
-                        )),
-                        Err(err) => Err(format!("Failed to download {}: {}", url, err)),
                     }
-                }
-                ReturnType::String(_) => {
-                    Err(format!("Wrong Return type, expected Vec<u8> found String!"))
+                } else {
+                    match File::create(path) {
+                        Ok(file) => file,
+                        Err(err) => {
+                            return Err(format!("Failed to download {}: {}", url, err));
+                        }
+                    }
+                };
+
+                match file.write(&body) {
+                    Ok(_) => Ok(format!(
+                        "Successfully wrote {} to {}",
+                        url,
+                        path.file_name().expect("Ohno").to_str().expect("OhnoV2")
+                    )),
+                    Err(err) => Err(format!("Failed to download {}: {}", url, err)),
                 }
             }
-        }
-        Err(err) => {
-            Err(format!("Failed to download {}: {}", url, match err {
-                ErrorType::STD(e) => { e.to_string() }
-                ErrorType::Reqwest(e) => { e.to_string() }
-            }))
-        }
+            ReturnType::String(_) => {
+                Err(format!("Wrong Return type, expected Vec<u8> found String!"))
+            }
+        },
+        Err(err) => Err(format!(
+            "Failed to download {}: {}",
+            url,
+            match err {
+                ErrorType::STD(e) => {
+                    e.to_string()
+                }
+                ErrorType::Reqwest(e) => {
+                    e.to_string()
+                }
+            }
+        )),
     }
 }
 
 pub fn read_file_from_url_to_string(url: &String) -> Result<String, String> {
     match read_file_from_url_to_type(url, AskedType::String) {
         Ok(string) => match string {
-            ReturnType::U8Vec(_) => Err(format!("Wrong Return type, expected String found Vec<u8>!")),
-            ReturnType::String(string) => Ok(string)
-        }
-        Err(err) => Err(format!("Failed to download {}: {}", url, match err {
-            ErrorType::STD(e) => {e.to_string()}
-            ErrorType::Reqwest(e) => {e.to_string()}
-        }))
+            ReturnType::U8Vec(_) => {
+                Err(format!("Wrong Return type, expected String found Vec<u8>!"))
+            }
+            ReturnType::String(string) => Ok(string),
+        },
+        Err(err) => Err(format!(
+            "Failed to download {}: {}",
+            url,
+            match err {
+                ErrorType::STD(e) => {
+                    e.to_string()
+                }
+                ErrorType::Reqwest(e) => {
+                    e.to_string()
+                }
+            }
+        )),
     }
 }
 
 pub fn read_file_from_url_to_type(url: &String, type_: AskedType) -> Result<ReturnType, ErrorType> {
     match get_url(url) {
-        Ok(mut data) => {
-            match type_ {
-                AskedType::U8Vec => {
-                    let mut body: Vec<u8> = Vec::new();
-                    match data.read_to_end(&mut body) {
-                        Ok(_) => Ok(ReturnType::U8Vec(body)),
-                        Err(err) => Err(ErrorType::STD(err))
-                    }
-                }
-                AskedType::String => {
-                    let mut body = String::new();
-                    match data.read_to_string(&mut body) {
-                        Ok(_) => Ok(ReturnType::String(body)),
-                        Err(err) => Err(ErrorType::STD(err))
-                    }
+        Ok(mut data) => match type_ {
+            AskedType::U8Vec => {
+                let mut body: Vec<u8> = Vec::new();
+                match data.read_to_end(&mut body) {
+                    Ok(_) => Ok(ReturnType::U8Vec(body)),
+                    Err(err) => Err(ErrorType::STD(err)),
                 }
             }
-        }
-        Err(err) => {
-            Err(ErrorType::Reqwest(err))
-        }
+            AskedType::String => {
+                let mut body = String::new();
+                match data.read_to_string(&mut body) {
+                    Ok(_) => Ok(ReturnType::String(body)),
+                    Err(err) => Err(ErrorType::STD(err)),
+                }
+            }
+        },
+        Err(err) => Err(ErrorType::Reqwest(err)),
     }
 }
 
 pub enum ReturnType {
     U8Vec(Vec<u8>),
-    String(String)
+    String(String),
 }
 
 pub enum ErrorType {
     STD(Error),
-    Reqwest(reqwest::Error)
+    Reqwest(reqwest::Error),
 }
 
 pub enum AskedType {
     U8Vec,
-    String
+    String,
 }
 
 pub fn get_version_folder(version: &String) -> Option<PathBuf> {
@@ -230,16 +240,16 @@ pub fn get_java_folder_path(type_: &String) -> Option<PathBuf> {
             None => None,
             Some(type1) => match get_or_create_dir(&type1, String::from(get_os_java_name())) {
                 None => None,
-                Some(os) => Some(os)
-            }
-        }
+                Some(os) => Some(os),
+            },
+        },
     }
 }
 
 pub fn get_java_folder_path_sub(type_: &String) -> Option<PathBuf> {
     match get_java_folder_path(type_) {
         None => None,
-        Some(os) => Some(os.join(type_))
+        Some(os) => Some(os.join(type_)),
     }
 }
 
@@ -248,13 +258,13 @@ fn get_os_java_name() -> &'static str {
         "windows" => match consts::ARCH {
             "x86" => "windows-x86",
             "x86_64" => "windows-x64",
-            &_ => ""
+            &_ => "",
         },
         "macos" => "mac-os",
         &_ => match consts::ARCH {
             "x86" => "linux-i386",
-            &_ => "linux"
-        }
+            &_ => "linux",
+        },
     }
 }
 
