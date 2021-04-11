@@ -17,6 +17,9 @@ use std::fs::{File, Metadata};
 use std::io::{Error, Read};
 use std::path::PathBuf;
 use crate::minecraft_launcher::manifest::version::JavaVersion;
+use crate::minecraft_launcher::manifest::java_versions::{OsVersions, Version};
+
+use std::os::unix::fs::PermissionsExt;
 
 pub fn install_version(version_manifest: &version::Main) -> Option<()> {
 
@@ -248,7 +251,7 @@ fn install_libraries(version_manifest: &version::Main) -> Option<()> {
                         }
                         Some(lib_path) => {
                             if !lib_path.exists() {
-                                match path::download_file_to(&url, &lib_path) {
+                                match path::download_file_to(&(url + "/" + &*url_path), &lib_path) {
                                     Ok(yay) => {}
                                     Err(ohno) => {
                                         result = None;
@@ -377,12 +380,12 @@ fn check_java_version(version_manifest: &version::Main) -> Option<()> {
     let version_manifest = version_manifest.clone();
     match get_java_version_manifest() {
         None => {
-            match path::get_java_folder_path(match version_manifest.java_version {
-                None => &String::from("jre-legacy"),
-                Some(java_v) => &java_v.component
-            }) {
+            match path::get_java_folder_path_sub(&(match version_manifest.java_version {
+                None => String::from("jre-legacy"),
+                Some(java_v) => java_v.component
+            })) {
                 None => None,
-                Some(java_folder) => if &java_folder.exists() {
+                Some(java_folder) => if (&java_folder).exists() {
                     match path::get_or_create_dirs(&java_folder, get_java_folder_for_os()) {
                         None => None,
                         Some(bin) => if bin.join(get_java_ex_for_os()).exists() {
@@ -393,9 +396,118 @@ fn check_java_version(version_manifest: &version::Main) -> Option<()> {
             }
         }
 
-        Some(manifest) => {
+        Some(manifest) => match manifest.get_os_version() {
+            None => None,
+            Some(os_version) => {
+                let java_v_type = match version_manifest.java_version {
+                    None => String::from(""),
+                    Some(ver) => ver.component
+                };
+                match os_version.get_java_version(&java_v_type) {
+                    None => None,
+                    Some(versions) => match versions.get(0) {
+                        None => None,
+                        Some(version) => {
+                            let online_version = version.clone().version.name;
 
+                            match path::get_java_folder_path_sub(&java_v_type) {
+                                None => {None}
+                                Some(j_folder) => if (&j_folder).exists() {
+
+                                } else {
+                                    match path::get_java_folder_path(&java_v_type) {
+                                        None => None,
+                                        Some(os_fol) => match install_java_version(&java_v_type, os_fol, version.clone().manifest) {
+                                            None => None,
+                                            Some(_) => Some(())
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
+    }
+}
+
+fn install_java_version(type_: &String, os_folder: PathBuf, manifest: java_versions::Manifest) -> Option<()> {
+    let v_folder = match path::get_or_create_dir(&os_folder, type_.clone()) {
+        None => os_folder,
+        Some(v) => v
+    };
+    match path::read_file_from_url_to_string(&manifest.url) {
+        Ok(stri) => match java::parse_java_version_manifest(&stri) {
+            Ok(manifest) => {
+                let mut status: Option<()> = Some(());
+                for file in manifest.files {
+                    if status.is_none() { break }
+                    let file_path = file.0;
+                    let element_info = file.1;
+                    let el_type = element_info.element_type;
+                    let executable = match element_info.executable {
+                        None => false,
+                        Some(bool) => bool
+                    };
+                    if el_type == "directory" {
+                        if file_path.contains("/") {
+                            let parts: Vec<&str> = file_path.split("/").collect();
+                            let mut parts2: Vec<String> = Vec::new();
+                            for part in parts {
+                                parts2.push(part.to_string());
+                            }
+                            let parts = parts2;
+                            status = match path::get_or_create_dirs(&v_folder, parts) {
+                                None => None,
+                                Some(_) => Some(())
+                            }
+                        } else {
+                            status = match path::get_or_create_dir(&v_folder, file_path) {
+                                None => None,
+                                Some(_) => Some(())
+                            }
+                        }
+                    } else {
+                        status = match element_info.downloads {
+                            None => None,
+                            Some(downloads) => {
+                                let url = downloads.raw.url;
+                                if file_path.contains("/") {
+
+                                } else {
+                                    let file_buf = v_folder.join(file_path);
+                                    match path::download_file_to(&url, &file_buf) {
+                                        Ok(_) => {
+                                            match std::env::consts::OS {
+                                                "linux" => {
+                                                    match file_buf.metadata() {
+                                                        Ok(meta) => {
+                                                            let mut perm = meta.permissions();
+                                                            perm.set_mode(0o111);
+                                                            match std::fs::set_permissions(file_buf, perm) {
+                                                                Ok(_) => Some(()),
+                                                                Err(_) => None
+                                                            }
+                                                        }
+                                                        Err(_) => None
+                                                    }
+                                                },
+                                                &_ => None
+                                            }
+                                        }
+                                        Err(_) => None
+                                    }
+                                }
+                            }
+                        };
+                    }
+                };
+                status
+            }
+            Err(_) => None
+        }
+        Err(_) => None
     }
 }
 

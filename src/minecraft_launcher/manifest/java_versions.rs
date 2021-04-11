@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use serde;
 use serde_derive::Deserialize;
 use std::collections::HashMap;
+use std::env::consts;
 
 #[derive(Deserialize, Clone)]
 pub struct Main {
@@ -16,6 +17,23 @@ pub struct Main {
     pub windows_x86: OsVersions
 }
 
+impl Main {
+    pub fn get_os_version(self) -> Option<OsVersions> {
+        match consts::OS {
+            "windows" => match consts::ARCH {
+                "x86" => Some(self.windows_x86), //"windows-x86",
+                "x86_64" => Some(self.windows_x64), //"windows-x64",
+                &_ => None
+            },
+            "macos" => Some(self.mac_os), //"mac-os",
+            &_ => match consts::ARCH {
+                "x86" => Some(self.linux_i396), //"linux-i386",
+                &_ => Some(self.linux) //"linux"
+            }
+        }
+    }
+}
+
 #[derive(Deserialize, Clone)]
 pub struct OsVersions {
     #[serde(alias = "java-runtime-alpha")]
@@ -24,6 +42,17 @@ pub struct OsVersions {
     pub jre_legacy: Vec<Version>,
     #[serde(alias = "java-exe")]
     pub java_exe: Vec<Version>
+}
+
+impl OsVersions {
+    pub fn get_java_version(self, version: &String) -> Option<Vec<Version>> {
+        match version.as_str() {
+            "java-runtime-alpha" => Some(self.java_runtime_alpha),
+            "jre-legacy" => Some(self.jre_legacy),
+            "java-exe" => Some(self.java_exe),
+            &_ => None
+        }
+    }
 }
 
 #[derive(Deserialize, Clone)]

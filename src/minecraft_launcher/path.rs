@@ -230,9 +230,16 @@ pub fn get_java_folder_path(type_: &String) -> Option<PathBuf> {
             None => None,
             Some(type1) => match get_or_create_dir(&type1, String::from(get_os_java_name())) {
                 None => None,
-                Some(os) => Some(os.join(type_))
+                Some(os) => Some(os)
             }
         }
+    }
+}
+
+pub fn get_java_folder_path_sub(type_: &String) -> Option<PathBuf> {
+    match get_java_folder_path(type_) {
+        None => None,
+        Some(os) => Some(os.join(type_))
     }
 }
 
