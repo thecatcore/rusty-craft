@@ -13,12 +13,12 @@ use crate::minecraft_launcher::{
 
 use crate::minecraft_launcher::manifest;
 use crate::minecraft_launcher::manifest::java_versions::{OsVersions, Version};
-use crate::minecraft_launcher::manifest::version::{JavaVersion, Logging, ClientLogging};
+use crate::minecraft_launcher::manifest::version::{ClientLogging, JavaVersion, Logging};
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::fs::{File, Metadata};
 use std::io::{Error, Read, Write};
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 
 pub fn install_version(id: String, versions: Vec<manifest::main::Version>) -> Option<()> {
     match path::get_version_folder(&id) {
@@ -333,14 +333,14 @@ fn install_assets_index(version_manifest: &version::Main) -> Option<()> {
         None => {
             println!("Version manifest doesn't contain any asset index!");
             None
-        },
+        }
         Some(a_index) => {
             println!("Got asset index");
             match path::get_assets_folder(&String::from("indexes")) {
                 None => {
                     println!("Unable to get indexes folder");
                     None
-                },
+                }
                 Some(index_folder) => {
                     println!("Got indexes folder");
                     let index_file = index_folder.join(format!("{}.json", &a_index.id));
@@ -356,11 +356,14 @@ fn install_assets_index(version_manifest: &version::Main) -> Option<()> {
                                         Ok(msg) => {
                                             println!("Successfully downloaded new index");
                                             update_assets(a_index.id)
-                                        },
+                                        }
                                         Err(err_msg) => {
-                                            println!("Unable to download asset index file: {}", err_msg);
+                                            println!(
+                                                "Unable to download asset index file: {}",
+                                                err_msg
+                                            );
                                             None
-                                        },
+                                        }
                                     }
                                 } else {
                                     println!("Size is the same, checking assets one by one");
@@ -373,13 +376,16 @@ fn install_assets_index(version_manifest: &version::Main) -> Option<()> {
                                     Ok(msg) => {
                                         println!("Successfully downloaded index file");
                                         update_assets(a_index.id)
-                                    },
+                                    }
                                     Err(err_msg) => {
-                                        println!("Unable to download asset index file: {}", err_msg);
+                                        println!(
+                                            "Unable to download asset index file: {}",
+                                            err_msg
+                                        );
                                         None
-                                    },
+                                    }
                                 }
-                            },
+                            }
                         }
                     } else {
                         println!("Asset index file {}.json doesn't exist", &a_index.id);
@@ -387,16 +393,16 @@ fn install_assets_index(version_manifest: &version::Main) -> Option<()> {
                             Ok(msg) => {
                                 println!("Successfully downloaded index file");
                                 update_assets(a_index.id)
-                            },
+                            }
                             Err(err_msg) => {
                                 println!("Unable to download asset index file: {}", err_msg);
                                 None
-                            },
+                            }
                         }
                     }
                 }
             }
-        },
+        }
     }
 }
 
@@ -405,7 +411,7 @@ fn update_assets(index: String) -> Option<()> {
         None => {
             println!("Unable to get indexes folder");
             None
-        },
+        }
         Some(index_folder) => {
             println!("Got indexes folder");
             let index_file = index_folder.join(format!("{}.json", index));
@@ -426,12 +432,13 @@ fn update_assets(index: String) -> Option<()> {
                                             None => {
                                                 println!("Unable to get objects folder");
                                                 None
-                                            },
+                                            }
                                             Some(object_path) => {
                                                 println!("Got objects folder");
                                                 let mut ret = Some(());
                                                 for entry in main.objects {
-                                                    let asset_path = entry.1.get_download_path(&object_path);
+                                                    let asset_path =
+                                                        entry.1.get_download_path(&object_path);
 
                                                     if asset_path.1.exists() {
                                                         match asset_path.1.metadata() {
@@ -451,7 +458,10 @@ fn update_assets(index: String) -> Option<()> {
                                                                 }
                                                             }
                                                             Err(err) => {
-                                                                match path::get_or_create_dir(&object_path, asset_path.0) {
+                                                                match path::get_or_create_dir(
+                                                                    &object_path,
+                                                                    asset_path.0,
+                                                                ) {
                                                                     None => {
                                                                         println!("Unable to create folder for asset");
                                                                         ret = None;
@@ -459,7 +469,9 @@ fn update_assets(index: String) -> Option<()> {
                                                                     }
                                                                     Some(_) => {
                                                                         match path::download_file_to(
-                                                                            &entry.1.get_download_url(),
+                                                                            &entry
+                                                                                .1
+                                                                                .get_download_url(),
                                                                             &asset_path.1,
                                                                         ) {
                                                                             Ok(msg) => {}
@@ -474,7 +486,10 @@ fn update_assets(index: String) -> Option<()> {
                                                             }
                                                         }
                                                     } else {
-                                                        match path::get_or_create_dir(&object_path, asset_path.0) {
+                                                        match path::get_or_create_dir(
+                                                            &object_path,
+                                                            asset_path.0,
+                                                        ) {
                                                             None => {
                                                                 println!("Unable to create folder for asset");
                                                                 ret = None;
@@ -499,23 +514,23 @@ fn update_assets(index: String) -> Option<()> {
                                                 ret
                                             }
                                         }
-                                    },
+                                    }
                                     Err(err) => {
                                         println!("Unable to parsed index file: {}", err);
                                         None
-                                    },
+                                    }
                                 }
                             }
                             Err(err) => {
                                 println!("Unable to read index file: {}", err);
                                 None
-                            },
+                            }
                         }
                     }
                     Err(err) => {
                         println!("Unable to opened index file: {}", err);
                         None
-                    },
+                    }
                 }
             } else {
                 println!("Asset index file doesn't exist");
@@ -882,14 +897,10 @@ use std::os::unix::fs::PermissionsExt;
 
 #[cfg(unix)]
 fn set_executable(file_buf: PathBuf) -> Option<()> {
-    match &file_buf
-        .metadata()
-    {
+    match &file_buf.metadata() {
         Ok(meta) => {
             let mut perm = meta.permissions();
-            perm.set_mode(
-                0o755,
-            );
+            perm.set_mode(0o755);
             match std::fs::set_permissions(file_buf, perm) {
                 Ok(_) => Some(()),
                 Err(err) => {
@@ -901,20 +912,19 @@ fn set_executable(file_buf: PathBuf) -> Option<()> {
         Err(err) => {
             println!("Unable to get meta: {}", err);
             None
-        },
+        }
     }
 }
 
 #[cfg(windows)]
-fn set_executable(file_buf: PathBuf) -> Option<()> {
-}
+fn set_executable(file_buf: PathBuf) -> Option<()> {}
 
 #[cfg(unix)]
 use std::os::unix::fs::symlink;
 #[cfg(unix)]
 fn create_symlink(v_folder: &PathBuf, path_name: String, target: Option<String>) -> Option<()> {
     match target {
-        None => {None}
+        None => None,
         Some(target) => {
             let path_parts: Vec<&str> = path_name.split("/").collect();
             let target_parts: Vec<&str> = target.split("/").collect();
@@ -928,11 +938,11 @@ fn create_symlink(v_folder: &PathBuf, path_name: String, target: Option<String>)
             for path_part in target_parts {
                 if path_part == ".." {
                     target_buf = match target_buf.parent() {
-                        None => {target_buf}
-                        Some(p) => {match p.to_path_buf().parent() {
-                            None => {p.to_path_buf()}
-                            Some(p2) => {p2.to_path_buf()}
-                        }}
+                        None => target_buf,
+                        Some(p) => match p.to_path_buf().parent() {
+                            None => p.to_path_buf(),
+                            Some(p2) => p2.to_path_buf(),
+                        },
                     };
                 } else {
                     target_buf = target_buf.join(path_part);
@@ -941,14 +951,14 @@ fn create_symlink(v_folder: &PathBuf, path_name: String, target: Option<String>)
 
             match symlink(target_buf, path_buf) {
                 Ok(_) => Some(()),
-                Err(_) => None
+                Err(_) => None,
             }
         }
     }
 }
 
 #[cfg(windows)]
-use std::os::windows::fs::{symlink_file,symlink_dir};
+use std::os::windows::fs::{symlink_dir, symlink_file};
 #[cfg(windows)]
 fn create_symlink(v_folder: &PathBuf, path_name: String, target: Option<String>) -> Option<()> {
     println!("Symlink aren't handled on windows!");
@@ -999,65 +1009,55 @@ fn check_log_file(version_manifest: &version::Main) -> Option<()> {
             println!("No logging, that's fine");
             Some(())
         }
-        Some(logging) => {
-            match logging.client {
-                None => {
-                    println!("No logging (2), that's fine");
-                    Some(())
-                }
-                Some(client_log) => {
-                    let file_info = client_log.file;
-                    match path::get_assets_folder(&String::from("log_configs")) {
-                        None => {
-                            println!("Unable to get log_configs folder");
-                            None
-                        }
-                        Some(log_folder) => {
-                            let log_path = log_folder.join(file_info.id);
-                            if log_path.exists() {
-                                match log_path.metadata() {
-                                    Ok(meta) => {
-                                        if meta.len() != file_info.size {
-                                            match path::download_file_to(&file_info.url, &log_path) {
-                                                Ok(_) => {
-                                                    Some(())
-                                                }
-                                                Err(err) => {
-                                                    println!("Unable to download logger file: {}", err);
-                                                    None
-                                                }
-                                            }
-                                        } else {
-                                            Some(())
-                                        }
-                                    }
-                                    Err(_) => {
+        Some(logging) => match logging.client {
+            None => {
+                println!("No logging (2), that's fine");
+                Some(())
+            }
+            Some(client_log) => {
+                let file_info = client_log.file;
+                match path::get_assets_folder(&String::from("log_configs")) {
+                    None => {
+                        println!("Unable to get log_configs folder");
+                        None
+                    }
+                    Some(log_folder) => {
+                        let log_path = log_folder.join(file_info.id);
+                        if log_path.exists() {
+                            match log_path.metadata() {
+                                Ok(meta) => {
+                                    if meta.len() != file_info.size {
                                         match path::download_file_to(&file_info.url, &log_path) {
-                                            Ok(_) => {
-                                                Some(())
-                                            }
+                                            Ok(_) => Some(()),
                                             Err(err) => {
                                                 println!("Unable to download logger file: {}", err);
                                                 None
                                             }
                                         }
-                                    }
-                                }
-                            } else {
-                                match path::download_file_to(&file_info.url, &log_path) {
-                                    Ok(_) => {
+                                    } else {
                                         Some(())
                                     }
+                                }
+                                Err(_) => match path::download_file_to(&file_info.url, &log_path) {
+                                    Ok(_) => Some(()),
                                     Err(err) => {
                                         println!("Unable to download logger file: {}", err);
                                         None
                                     }
+                                },
+                            }
+                        } else {
+                            match path::download_file_to(&file_info.url, &log_path) {
+                                Ok(_) => Some(()),
+                                Err(err) => {
+                                    println!("Unable to download logger file: {}", err);
+                                    None
                                 }
                             }
                         }
                     }
                 }
             }
-        }
+        },
     }
 }
