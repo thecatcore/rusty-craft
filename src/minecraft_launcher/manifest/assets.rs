@@ -22,7 +22,7 @@ impl AssetIndex {
         let mut small = String::new();
 
         for hach_chr in hach.chars() {
-            if int > 2 {
+            if int > 1 {
                 break;
             }
             small = small.add(hach_chr.to_string().as_str());
@@ -35,20 +35,20 @@ impl AssetIndex {
         )
     }
 
-    pub fn get_download_path(&self, object_path: &PathBuf) -> PathBuf {
+    pub fn get_download_path(&self, object_path: &PathBuf) -> (String, PathBuf) {
         let hach = &self.hash;
         let mut int: u8 = 0;
         let mut small = String::new();
 
         for hach_chr in hach.chars() {
-            if int > 2 {
+            if int > 1 {
                 break;
             }
             small = small.add(hach_chr.to_string().as_str());
             int += 1;
         }
 
-        object_path.join(small).join(hach)
+        (small.clone(), object_path.join(small).join(hach))
     }
 }
 

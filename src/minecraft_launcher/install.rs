@@ -324,30 +324,69 @@ fn install_assets_index(version_manifest: &version::Main) -> Option<()> {
     let version_manifest = version_manifest.clone();
 
     match version_manifest.asset_index {
-        None => None,
-        Some(a_index) => match path::get_assets_folder(&String::from("indexes")) {
-            None => None,
-            Some(index_folder) => {
-                let index_file = index_folder.join(format!("{}.json", &a_index.id));
+        None => {
+            println!("Version manifest doesn't contain any asset index!");
+            None
+        },
+        Some(a_index) => {
+            println!("Got asset index");
+            match path::get_assets_folder(&String::from("indexes")) {
+                None => {
+                    println!("Unable to get indexes folder");
+                    None
+                },
+                Some(index_folder) => {
+                    println!("Got indexes folder");
+                    let index_file = index_folder.join(format!("{}.json", &a_index.id));
 
-                if index_file.exists() {
-                    match index_file.metadata() {
-                        Ok(meta) => {
-                            if meta.len() != a_index.size {
-                                match path::download_file_to(&a_index.url, &index_file) {
-                                    Ok(msg) => update_assets(a_index.id),
-                                    Err(err_msg) => None,
+                    if index_file.exists() {
+                        println!("Asset index file {}.json exists", &a_index.id);
+                        match index_file.metadata() {
+                            Ok(meta) => {
+                                println!("Read asset index meta");
+                                if meta.len() != a_index.size {
+                                    println!("Different size detected!");
+                                    match path::download_file_to(&a_index.url, &index_file) {
+                                        Ok(msg) => {
+                                            println!("Successfully downloaded new index");
+                                            update_assets(a_index.id)
+                                        },
+                                        Err(err_msg) => {
+                                            println!("Unable to download asset index file: {}", err_msg);
+                                            None
+                                        },
+                                    }
+                                } else {
+                                    println!("Size is the same, checking assets one by one");
+                                    update_assets(a_index.id)
                                 }
-                            } else {
-                                Some(())
                             }
+                            Err(err) => {
+                                println!("Can't access meta attempting to redownload the file");
+                                match path::download_file_to(&a_index.url, &index_file) {
+                                    Ok(msg) => {
+                                        println!("Successfully downloaded index file");
+                                        update_assets(a_index.id)
+                                    },
+                                    Err(err_msg) => {
+                                        println!("Unable to download asset index file: {}", err_msg);
+                                        None
+                                    },
+                                }
+                            },
                         }
-                        Err(err) => None,
-                    }
-                } else {
-                    match path::download_file_to(&a_index.url, &index_file) {
-                        Ok(msg) => update_assets(a_index.id),
-                        Err(err_msg) => None,
+                    } else {
+                        println!("Asset index file {}.json doesn't exist", &a_index.id);
+                        match path::download_file_to(&a_index.url, &index_file) {
+                            Ok(msg) => {
+                                println!("Successfully downloaded index file");
+                                update_assets(a_index.id)
+                            },
+                            Err(err_msg) => {
+                                println!("Unable to download asset index file: {}", err_msg);
+                                None
+                            },
+                        }
                     }
                 }
             }
@@ -357,70 +396,123 @@ fn install_assets_index(version_manifest: &version::Main) -> Option<()> {
 
 fn update_assets(index: String) -> Option<()> {
     match path::get_assets_folder(&String::from("indexes")) {
-        None => None,
+        None => {
+            println!("Unable to get indexes folder");
+            None
+        },
         Some(index_folder) => {
+            println!("Got indexes folder");
             let index_file = index_folder.join(format!("{}.json", index));
 
             if index_file.exists() {
+                println!("Asset index file exists");
                 match File::open(index_file) {
                     Ok(mut index_file) => {
+                        println!("Opened index file");
                         let mut body = String::new();
                         match index_file.read_to_string(&mut body) {
-                            Ok(_) => {}
-                            Err(_) => return None,
-                        };
+                            Ok(_) => {
+                                println!("Read index file");
+                                match assets::parse(&body) {
+                                    Ok(main) => {
+                                        println!("Parsed index file");
+                                        match path::get_assets_folder(&String::from("objects")) {
+                                            None => {
+                                                println!("Unable to get objects folder");
+                                                None
+                                            },
+                                            Some(object_path) => {
+                                                println!("Got objects folder");
+                                                let mut ret = Some(());
+                                                for entry in main.objects {
+                                                    let asset_path = entry.1.get_download_path(&object_path);
 
-                        match assets::parse(&body) {
-                            Ok(main) => match path::get_assets_folder(&String::from("objects")) {
-                                None => None,
-                                Some(object_path) => {
-                                    let mut ret = Some(());
-                                    for entry in main.objects {
-                                        let asset_path = entry.1.get_download_path(&object_path);
-
-                                        if asset_path.exists() {
-                                            match asset_path.metadata() {
-                                                Ok(meta) => {
-                                                    if meta.len() != entry.1.size {
-                                                        match path::download_file_to(
-                                                            &entry.1.get_download_url(),
-                                                            &asset_path,
-                                                        ) {
-                                                            Ok(msg) => {}
+                                                    if asset_path.1.exists() {
+                                                        match asset_path.1.metadata() {
+                                                            Ok(meta) => {
+                                                                if meta.len() != entry.1.size {
+                                                                    match path::download_file_to(
+                                                                        &entry.1.get_download_url(),
+                                                                        &asset_path.1,
+                                                                    ) {
+                                                                        Ok(msg) => {}
+                                                                        Err(err) => {
+                                                                            println!("Unable to download file {}: {}", entry.0, err);
+                                                                            ret = None;
+                                                                            break;
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
                                                             Err(err) => {
+                                                                match path::get_or_create_dir(&object_path, asset_path.0) {
+                                                                    None => {
+                                                                        println!("Unable to create folder for asset");
+                                                                        ret = None;
+                                                                        break;
+                                                                    }
+                                                                    Some(_) => {
+                                                                        match path::download_file_to(
+                                                                            &entry.1.get_download_url(),
+                                                                            &asset_path.1,
+                                                                        ) {
+                                                                            Ok(msg) => {}
+                                                                            Err(err) => {
+                                                                                println!("Unable to download file {}: {}", &entry.0, err);
+                                                                                ret = None;
+                                                                                break;
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    } else {
+                                                        match path::get_or_create_dir(&object_path, asset_path.0) {
+                                                            None => {
+                                                                println!("Unable to create folder for asset");
                                                                 ret = None;
                                                                 break;
+                                                            }
+                                                            Some(_) => {
+                                                                match path::download_file_to(
+                                                                    &entry.1.get_download_url(),
+                                                                    &asset_path.1,
+                                                                ) {
+                                                                    Ok(msg) => {}
+                                                                    Err(err) => {
+                                                                        println!("Unable to download file {}: {}", &entry.0, err);
+                                                                        ret = None;
+                                                                        break;
+                                                                    }
+                                                                }
                                                             }
                                                         }
                                                     }
                                                 }
-                                                Err(err) => {
-                                                    ret = None;
-                                                    break;
-                                                }
-                                            }
-                                        } else {
-                                            match path::download_file_to(
-                                                &entry.1.get_download_url(),
-                                                &asset_path,
-                                            ) {
-                                                Ok(msg) => {}
-                                                Err(err) => {
-                                                    ret = None;
-                                                    break;
-                                                }
+                                                ret
                                             }
                                         }
-                                    }
-                                    ret
+                                    },
+                                    Err(err) => {
+                                        println!("Unable to parsed index file: {}", err);
+                                        None
+                                    },
                                 }
+                            }
+                            Err(err) => {
+                                println!("Unable to read index file: {}", err);
+                                None
                             },
-                            Err(err) => None,
                         }
                     }
-                    Err(err) => None,
+                    Err(err) => {
+                        println!("Unable to opened index file: {}", err);
+                        None
+                    },
                 }
             } else {
+                println!("Asset index file doesn't exist");
                 None
             }
         }
@@ -762,6 +854,7 @@ fn install_java_version(
                                 }
                             };
                         } else if el_type == "link" {
+
                         } else {
                             println!("Unknown el_type {}", el_type);
                         }
