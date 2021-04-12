@@ -1,7 +1,5 @@
 use chrono::{DateTime, Utc};
-use serde;
 use serde_derive::Deserialize;
-use std::collections::HashMap;
 use std::env::consts;
 
 #[derive(Deserialize, Clone)]

@@ -1,5 +1,5 @@
 use directories::BaseDirs;
-use reqwest::blocking::{get as get_url, Response};
+use reqwest::blocking::{get as get_url};
 use std::env::consts;
 use std::fs;
 use std::fs::File;
@@ -84,7 +84,7 @@ pub fn get_or_create_dirs(current_folder: &PathBuf, sub: Vec<String>) -> Option<
 
 pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> {
     match read_file_from_url_to_type(url, AskedType::U8Vec) {
-        Ok(u8Vec) => match u8Vec {
+        Ok(u8_vec) => match u8_vec {
             ReturnType::U8Vec(body) => {
                 let mut file = if path.exists() {
                     match File::open(path) {

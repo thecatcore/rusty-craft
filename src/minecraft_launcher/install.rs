@@ -1,24 +1,22 @@
 use crate::minecraft_launcher::{
     arguments,
     manifest::assets,
-    manifest::assets::Main,
     manifest::java,
     manifest::java_versions,
     manifest::version,
     manifest::version::{
-        AssetIndex, Downloads, LibraryDownloadArtifact, LibraryExtract, Rule, RuleAction,
+        LibraryDownloadArtifact, RuleAction,
     },
     path,
 };
 
 use crate::minecraft_launcher::manifest;
-use crate::minecraft_launcher::manifest::java_versions::{OsVersions, Version};
-use crate::minecraft_launcher::manifest::version::{ClientLogging, JavaVersion, Logging};
-use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
-use std::fs::{File, Metadata};
-use std::io::{Error, Read, Write};
-use std::path::{Path, PathBuf};
+use std::fs::{File};
+use std::io::{Read, Write};
+use std::path::{PathBuf};
+
+mod main;
 
 pub fn install_version(id: String, versions: Vec<manifest::main::Version>) -> Option<()> {
     match path::get_version_folder(&id) {
@@ -203,8 +201,9 @@ fn install_libraries(version_manifest: &version::Main) -> Option<()> {
                                                     &artifact.url,
                                                     &lib_path,
                                                 ) {
-                                                    Ok(yay) => {}
-                                                    Err(ohno) => {
+                                                    Ok(_) => {}
+                                                    Err(err) => {
+                                                        println!("{}", err);
                                                         result = None;
                                                         break;
                                                     }
@@ -212,14 +211,16 @@ fn install_libraries(version_manifest: &version::Main) -> Option<()> {
                                             }
                                         }
                                         Err(meta_err) => {
+                                            println!("{}", meta_err);
                                             result = None;
                                             break;
                                         }
                                     }
                                 } else {
                                     match path::download_file_to(&artifact.url, &lib_path) {
-                                        Ok(yay) => {}
+                                        Ok(_) => {}
                                         Err(ohno) => {
+                                            println!("{}", ohno);
                                             result = None;
                                             break;
                                         }
@@ -261,8 +262,9 @@ fn install_libraries(version_manifest: &version::Main) -> Option<()> {
                                             if meta.len() != class.size {
                                                 match path::download_file_to(&class.url, &lib_path)
                                                 {
-                                                    Ok(yay) => {}
+                                                    Ok(_) => {}
                                                     Err(ohno) => {
+                                                        println!("{}", ohno);
                                                         result = None;
                                                         break;
                                                     }
@@ -270,14 +272,16 @@ fn install_libraries(version_manifest: &version::Main) -> Option<()> {
                                             }
                                         }
                                         Err(meta_err) => {
+                                            println!("{}", meta_err);
                                             result = None;
                                             break;
                                         }
                                     }
                                 } else {
                                     match path::download_file_to(&class.url, &lib_path) {
-                                        Ok(yay) => {}
+                                        Ok(_) => {}
                                         Err(ohno) => {
+                                            println!("{}", ohno);
                                             result = None;
                                             break;
                                         }
@@ -291,7 +295,7 @@ fn install_libraries(version_manifest: &version::Main) -> Option<()> {
 
             match library.extract {
                 None => {}
-                Some(extract) => {
+                Some(_) => {
                     println!("Library extraction is not handled yet, sorry :/")
                 }
             }
@@ -309,8 +313,9 @@ fn install_libraries(version_manifest: &version::Main) -> Option<()> {
                         Some(lib_path) => {
                             if !lib_path.exists() {
                                 match path::download_file_to(&(url + "/" + &*url_path), &lib_path) {
-                                    Ok(yay) => {}
+                                    Ok(_) => {}
                                     Err(ohno) => {
+                                        println!("{}", ohno);
                                         result = None;
                                         break;
                                     }
@@ -353,7 +358,7 @@ fn install_assets_index(version_manifest: &version::Main) -> Option<()> {
                                 if meta.len() != a_index.size {
                                     println!("Different size detected!");
                                     match path::download_file_to(&a_index.url, &index_file) {
-                                        Ok(msg) => {
+                                        Ok(_) => {
                                             println!("Successfully downloaded new index");
                                             update_assets(a_index.id)
                                         }
@@ -370,10 +375,10 @@ fn install_assets_index(version_manifest: &version::Main) -> Option<()> {
                                     update_assets(a_index.id)
                                 }
                             }
-                            Err(err) => {
+                            Err(_) => {
                                 println!("Can't access meta attempting to redownload the file");
                                 match path::download_file_to(&a_index.url, &index_file) {
-                                    Ok(msg) => {
+                                    Ok(_) => {
                                         println!("Successfully downloaded index file");
                                         update_assets(a_index.id)
                                     }
@@ -390,7 +395,7 @@ fn install_assets_index(version_manifest: &version::Main) -> Option<()> {
                     } else {
                         println!("Asset index file {}.json doesn't exist", &a_index.id);
                         match path::download_file_to(&a_index.url, &index_file) {
-                            Ok(msg) => {
+                            Ok(_) => {
                                 println!("Successfully downloaded index file");
                                 update_assets(a_index.id)
                             }
@@ -448,7 +453,7 @@ fn update_assets(index: String) -> Option<()> {
                                                                         &entry.1.get_download_url(),
                                                                         &asset_path.1,
                                                                     ) {
-                                                                        Ok(msg) => {}
+                                                                        Ok(_) => {}
                                                                         Err(err) => {
                                                                             println!("Unable to download file {}: {}", entry.0, err);
                                                                             ret = None;
@@ -457,7 +462,7 @@ fn update_assets(index: String) -> Option<()> {
                                                                     }
                                                                 }
                                                             }
-                                                            Err(err) => {
+                                                            Err(_) => {
                                                                 match path::get_or_create_dir(
                                                                     &object_path,
                                                                     asset_path.0,
@@ -474,7 +479,7 @@ fn update_assets(index: String) -> Option<()> {
                                                                                 .get_download_url(),
                                                                             &asset_path.1,
                                                                         ) {
-                                                                            Ok(msg) => {}
+                                                                            Ok(_) => {}
                                                                             Err(err) => {
                                                                                 println!("Unable to download file {}: {}", &entry.0, err);
                                                                                 ret = None;
@@ -500,7 +505,7 @@ fn update_assets(index: String) -> Option<()> {
                                                                     &entry.1.get_download_url(),
                                                                     &asset_path.1,
                                                                 ) {
-                                                                    Ok(msg) => {}
+                                                                    Ok(_) => {}
                                                                     Err(err) => {
                                                                         println!("Unable to download file {}: {}", &entry.0, err);
                                                                         ret = None;

@@ -1,24 +1,30 @@
-use crate::minecraft_launcher::install;
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crate::minecraft_launcher::rendering::utils::StatefulTable;
-use crossterm::event::KeyCode;
 use std::io::Stdout;
 use tui::backend::CrosstermBackend;
-use tui::layout::{Constraint, Direction, Layout, Rect};
-use tui::style::{Modifier, Style};
-use tui::text::Span;
-use tui::widgets::{Block, Borders, Cell, Row, Table};
-use tui::Frame;
+use tui::layout::{Constraint, Layout, Rect};
+use tui::style::{Style, Color};
+use tui::text::{Spans};
+use tui::widgets::{Block, Borders, Tabs};
+use tui::{Frame, Terminal};
+use crossterm::{event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
+use crate::minecraft_launcher::rendering::main::{Event, Cli};
+use std::error::Error;
+use std::{io, thread};
+use std::sync::mpsc;
+use std::time::{Duration, Instant};
+
+mod version_tab;
 
 pub struct App {
-    pub version_tab: VersionTab,
+    pub version_tab: version_tab::VersionTab,
     pub current_tab: Tab,
 }
 
 impl App {
     pub fn new(min_versions: Vec<MinVersion>, versions: Vec<Version>) -> App {
         let mut app = App {
-            version_tab: VersionTab {
+            version_tab: version_tab::VersionTab {
                 selected: None,
                 snapshot: false,
                 old: false,
@@ -37,138 +43,131 @@ impl App {
             Tab::Version => {
                 self.version_tab.render(f, area);
             }
+            Tab::Download => {}
             Tab::Mod => {}
             Tab::ModVersion => {}
         }
     }
 
-    pub fn on_key_press(&mut self, key_code: KeyCode) -> KeyCode {
-        let key = key_code.clone();
+    pub fn run(mut self) -> Result<(), Box<dyn Error>> {
+        let cli = Cli {
+            tick_rate: 250,
+            enhanced_graphics: true,
+        };
+
+        enable_raw_mode()?;
+
+        let mut stdout = io::stdout();
+        execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+
+        let backend = CrosstermBackend::new(stdout);
+        let mut terminal = Terminal::new(backend)?;
+
+        let (tx, rx) = mpsc::channel();
+
+        let tick_rate = Duration::from_millis(cli.tick_rate);
+        thread::spawn(move || {
+            let mut last_tick = Instant::now();
+            loop {
+                // poll for tick rate duration, if no events, sent tick event.
+                let timeout = tick_rate
+                    .checked_sub(last_tick.elapsed())
+                    .unwrap_or_else(|| Duration::from_secs(0));
+                if event::poll(timeout).unwrap() {
+                    if let CEvent::Key(key) = event::read().unwrap() {
+                        tx.send(Event::Input(key)).unwrap();
+                    }
+                }
+                if last_tick.elapsed() >= tick_rate {
+                    tx.send(Event::Tick).unwrap();
+                    last_tick = Instant::now();
+                }
+            }
+        });
+
+        terminal.clear()?;
+
+        loop {
+            terminal.draw(|f| {
+                let chunks = Layout::default()
+                    .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
+                    .split(f.size());
+
+                let mut ve: Vec<Spans> = Vec::new();
+                ve.append(&mut vec![Spans::from("Test")]);
+
+                let tabs = Tabs::new(ve)
+                    .block(Block::default().borders(Borders::ALL))
+                    .highlight_style(Style::default().fg(Color::Yellow))
+                    .select(0);
+                f.render_widget(tabs, chunks[0]);
+                self.render(f, chunks[1])
+            })?;
+
+            match rx.recv()? {
+                Event::Input(key) => {
+                    match key.code.clone() {
+                        KeyCode::Esc => {
+                            match disable_raw_mode() {
+                                Ok(_) => {
+                                    match execute!(
+                                        terminal.backend_mut(),
+                                        LeaveAlternateScreen,
+                                        DisableMouseCapture
+                                    ) {
+                                        Ok(_) => {
+                                            match terminal.show_cursor() {
+                                                Ok(_) => {
+                                                    break
+                                                }
+                                                Err(_) => {}
+                                            }
+                                        }
+                                        Err(_) => {}
+                                    }
+                                }
+                                Err(_) => {}
+                            }
+                        }
+                        _ => {
+                            match self.on_key_press(key.code) {
+                                Action::None => {}
+                                Action::NextTab(tab) => {
+                                    self.current_tab = tab;
+                                }
+                            };
+                        }
+                    }
+                },
+                Event::Tick => {
+
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn on_key_press(&mut self, key_code: KeyCode) -> Action {
         match self.current_tab {
             Tab::Version => {
-                self.version_tab.on_key_press(key_code);
+                self.version_tab.on_key_press(key_code)
             }
-            Tab::Mod => {}
-            Tab::ModVersion => {}
+            Tab::Download => {Action::None}
+            Tab::Mod => {Action::None}
+            Tab::ModVersion => {Action::None}
         }
-        key
     }
+}
+
+pub enum Action {
+    None,
+    NextTab(Tab)
 }
 
 pub enum Tab {
     Version,
+    Download,
     Mod,
     ModVersion,
-}
-
-#[derive(Clone)]
-pub struct VersionTab {
-    pub selected: Option<MinVersion>,
-    pub snapshot: bool,
-    pub old: bool,
-    pub all_versions: Vec<MinVersion>,
-    pub current_table: StatefulTable<MinVersion>,
-    pub versions: Vec<Version>,
-}
-
-impl VersionTab {
-    pub fn build_table_state(&mut self) {
-        let mut items: Vec<MinVersion> = Vec::new();
-
-        for version in self.all_versions.clone() {
-            if (self.snapshot == version._type.is_snapshot())
-                && (self.old == version._type.is_old())
-            {
-                items.push(version.clone());
-            }
-        }
-
-        self.current_table = StatefulTable::with_items(items);
-    }
-
-    pub fn render(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect) {
-        // self.build_table_state();
-        let chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Ratio(1, 1)])
-            .split(area);
-
-        let version_list: Vec<Row> = self
-            .current_table
-            .items
-            .iter()
-            .map(|v| {
-                let cells = vec![
-                    Cell::from(Span::raw(format!("{}", v.id))),
-                    Cell::from(Span::raw(format!("{}", v._type.to_string()))),
-                    Cell::from(Span::raw(format!(
-                        "{}",
-                        match v.installed {
-                            true => {
-                                "Yes"
-                            }
-                            false => {
-                                "No"
-                            }
-                        }
-                    ))),
-                    Cell::from(Span::raw(format!("{:?}", v.release_time))),
-                ];
-                Row::new(cells)
-            })
-            .collect();
-
-        let table = Table::new(version_list)
-            .block(Block::default().borders(Borders::ALL).title("Version List"))
-            .header(Row::new(vec!["Name", "Type", "Installed", "Release Date"]))
-            .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-            .highlight_symbol("> ")
-            .widths(&[
-                Constraint::Ratio(5, 12),
-                Constraint::Ratio(3, 24),
-                Constraint::Ratio(5, 36),
-                Constraint::Ratio(4, 12),
-            ]);
-
-        f.render_stateful_widget(table, chunks[0], &mut self.current_table.state);
-    }
-
-    pub fn on_key_press(&mut self, key_code: KeyCode) {
-        match key_code {
-            KeyCode::Enter => {
-                self.select();
-                match &self.selected {
-                    None => {}
-                    Some(version) => {
-                        match install::install_version(version.clone().id, self.clone().versions) {
-                            None => {
-                                panic!("Failed to install version {}", version.id)
-                            }
-                            Some(_) => {
-                                panic!("Successfully installed version {}", version.id)
-                            }
-                        }
-                    }
-                }
-            }
-            KeyCode::Up => {
-                self.current_table.previous();
-            }
-            KeyCode::Down => {
-                self.current_table.next();
-            }
-            _ => {}
-        }
-    }
-
-    pub fn select(&mut self) {
-        match self
-            .current_table
-            .items
-            .get(self.current_table.state.selected().expect(":flushed:"))
-        {
-            None => self.selected = None,
-            Some(version) => self.selected = Some(version.clone()),
-        }
-    }
 }

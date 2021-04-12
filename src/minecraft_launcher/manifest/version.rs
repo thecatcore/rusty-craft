@@ -1,7 +1,6 @@
 use crate::minecraft_launcher::manifest::main;
 use crate::minecraft_launcher::manifest::main::MinVersion;
 use chrono::{DateTime, Utc};
-use serde;
 use serde_derive::Deserialize;
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
