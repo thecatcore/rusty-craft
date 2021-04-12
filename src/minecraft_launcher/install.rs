@@ -18,9 +18,7 @@ use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::fs::{File, Metadata};
 use std::io::{Error, Read, Write};
-use std::path::PathBuf;
-
-use std::os::unix::fs::PermissionsExt;
+use std::path::{PathBuf, Path};
 
 pub fn install_version(id: String, versions: Vec<manifest::main::Version>) -> Option<()> {
     match path::get_version_folder(&id) {
@@ -790,26 +788,8 @@ fn install_java_version(
                                                                     "Successfully downloaded file!"
                                                                 );
                                                                 if executable {
-                                                                    match std::env::consts::OS {
-                                                                        "linux" => {
-                                                                            match file_buf
-                                                                                .metadata()
-                                                                            {
-                                                                                Ok(meta) => {
-                                                                                    let mut perm = meta.permissions();
-                                                                                    perm.set_mode(
-                                                                                        0o755,
-                                                                                    );
-                                                                                    match std::fs::set_permissions(file_buf, perm) {
-                                                                                        Ok(_) => Some(()),
-                                                                                        Err(_) => None
-                                                                                    }
-                                                                                }
-                                                                                Err(_) => None,
-                                                                            }
-                                                                        }
-                                                                        &_ => None,
-                                                                    }
+                                                                    println!("Executable");
+                                                                    set_executable(file_buf)
                                                                 } else {
                                                                     Some(())
                                                                 }
@@ -833,22 +813,8 @@ fn install_java_version(
                                             Ok(_) => {
                                                 println!("Successfully downloaded file");
                                                 if executable {
-                                                    match std::env::consts::OS {
-                                                        "linux" => match file_buf.metadata() {
-                                                            Ok(meta) => {
-                                                                let mut perm = meta.permissions();
-                                                                perm.set_mode(0o755);
-                                                                match std::fs::set_permissions(
-                                                                    file_buf, perm,
-                                                                ) {
-                                                                    Ok(_) => Some(()),
-                                                                    Err(_) => None,
-                                                                }
-                                                            }
-                                                            Err(_) => None,
-                                                        },
-                                                        &_ => None,
-                                                    }
+                                                    println!("Executable");
+                                                    set_executable(file_buf)
                                                 } else {
                                                     Some(())
                                                 }
@@ -862,7 +828,7 @@ fn install_java_version(
                                 }
                             };
                         } else if el_type == "link" {
-
+                            status = create_symlink(&v_folder, file_path, element_info.target);
                         } else {
                             println!("Unknown el_type {}", el_type);
                         }
@@ -909,6 +875,84 @@ fn install_java_version(
             None
         }
     }
+}
+
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
+#[cfg(unix)]
+fn set_executable(file_buf: PathBuf) -> Option<()> {
+    match &file_buf
+        .metadata()
+    {
+        Ok(meta) => {
+            let mut perm = meta.permissions();
+            perm.set_mode(
+                0o755,
+            );
+            match std::fs::set_permissions(file_buf, perm) {
+                Ok(_) => Some(()),
+                Err(err) => {
+                    println!("Unable to set permission: {}", err);
+                    None
+                }
+            }
+        }
+        Err(err) => {
+            println!("Unable to get meta: {}", err);
+            None
+        },
+    }
+}
+
+#[cfg(windows)]
+fn set_executable(file_buf: PathBuf) -> Option<()> {
+}
+
+#[cfg(unix)]
+use std::os::unix::fs::symlink;
+#[cfg(unix)]
+fn create_symlink(v_folder: &PathBuf, path_name: String, target: Option<String>) -> Option<()> {
+    match target {
+        None => {None}
+        Some(target) => {
+            let path_parts: Vec<&str> = path_name.split("/").collect();
+            let target_parts: Vec<&str> = target.split("/").collect();
+
+            let mut path_buf = v_folder.clone();
+            for path_part in path_parts {
+                path_buf = path_buf.join(path_part);
+            }
+
+            let mut target_buf = path_buf.clone();
+            for path_part in target_parts {
+                if path_part == ".." {
+                    target_buf = match target_buf.parent() {
+                        None => {target_buf}
+                        Some(p) => {match p.to_path_buf().parent() {
+                            None => {p.to_path_buf()}
+                            Some(p2) => {p2.to_path_buf()}
+                        }}
+                    };
+                } else {
+                    target_buf = target_buf.join(path_part);
+                }
+            }
+
+            match symlink(target_buf, path_buf) {
+                Ok(_) => Some(()),
+                Err(_) => None
+            }
+        }
+    }
+}
+
+#[cfg(windows)]
+use std::os::windows::fs::{symlink_file,symlink_dir};
+#[cfg(windows)]
+fn create_symlink(v_folder: &PathBuf, path_name: String, target: Option<String>) -> Option<()> {
+    println!("Symlink aren't handled on windows!");
+    None
 }
 
 fn get_java_folder_for_os() -> Vec<String> {
