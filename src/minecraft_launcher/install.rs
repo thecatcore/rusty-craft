@@ -13,7 +13,7 @@ use crate::minecraft_launcher::{
 
 use crate::minecraft_launcher::manifest;
 use crate::minecraft_launcher::manifest::java_versions::{OsVersions, Version};
-use crate::minecraft_launcher::manifest::version::JavaVersion;
+use crate::minecraft_launcher::manifest::version::{JavaVersion, Logging, ClientLogging};
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
 use std::fs::{File, Metadata};
@@ -91,6 +91,14 @@ fn install_version_from_manifest(version_manifest: &version::Main) -> Option<()>
 
     println!("Checking assets");
     match install_assets_index(version_manifest) {
+        None => {
+            return None;
+        }
+        Some(_) => {}
+    }
+
+    println!("Checking log file");
+    match check_log_file(version_manifest) {
         None => {
             return None;
         }
@@ -936,6 +944,76 @@ fn get_java_version_manifest() -> Option<java_versions::Main> {
         Err(err) => {
             print!("Error: {}", err);
             None
+        }
+    }
+}
+
+fn check_log_file(version_manifest: &version::Main) -> Option<()> {
+    let version_manifest = version_manifest.clone();
+    match version_manifest.logging {
+        None => {
+            println!("No logging, that's fine");
+            Some(())
+        }
+        Some(logging) => {
+            match logging.client {
+                None => {
+                    println!("No logging (2), that's fine");
+                    Some(())
+                }
+                Some(client_log) => {
+                    let file_info = client_log.file;
+                    match path::get_assets_folder(&String::from("log_configs")) {
+                        None => {
+                            println!("Unable to get log_configs folder");
+                            None
+                        }
+                        Some(log_folder) => {
+                            let log_path = log_folder.join(file_info.id);
+                            if log_path.exists() {
+                                match log_path.metadata() {
+                                    Ok(meta) => {
+                                        if meta.len() != file_info.size {
+                                            match path::download_file_to(&file_info.url, &log_path) {
+                                                Ok(_) => {
+                                                    Some(())
+                                                }
+                                                Err(err) => {
+                                                    println!("Unable to download logger file: {}", err);
+                                                    None
+                                                }
+                                            }
+                                        } else {
+                                            Some(())
+                                        }
+                                    }
+                                    Err(_) => {
+                                        match path::download_file_to(&file_info.url, &log_path) {
+                                            Ok(_) => {
+                                                Some(())
+                                            }
+                                            Err(err) => {
+                                                println!("Unable to download logger file: {}", err);
+                                                None
+                                            }
+                                        }
+                                    }
+                                }
+                            } else {
+                                match path::download_file_to(&file_info.url, &log_path) {
+                                    Ok(_) => {
+                                        Some(())
+                                    }
+                                    Err(err) => {
+                                        println!("Unable to download logger file: {}", err);
+                                        None
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
