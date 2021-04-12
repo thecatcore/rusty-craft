@@ -1,18 +1,22 @@
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
+use crate::minecraft_launcher::rendering::main::{Cli, Event};
 use crate::minecraft_launcher::rendering::utils::StatefulTable;
-use std::io::Stdout;
-use tui::backend::CrosstermBackend;
-use tui::layout::{Constraint, Layout, Rect};
-use tui::style::{Style, Color};
-use tui::text::{Spans};
-use tui::widgets::{Block, Borders, Tabs};
-use tui::{Frame, Terminal};
-use crossterm::{event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode}, execute, terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen}};
-use crate::minecraft_launcher::rendering::main::{Event, Cli};
+use crossterm::{
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
 use std::error::Error;
-use std::{io, thread};
+use std::io::Stdout;
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
+use std::{io, thread};
+use tui::backend::CrosstermBackend;
+use tui::layout::{Constraint, Layout, Rect};
+use tui::style::{Color, Style};
+use tui::text::Spans;
+use tui::widgets::{Block, Borders, Tabs};
+use tui::{Frame, Terminal};
 
 mod version_tab;
 
@@ -105,43 +109,33 @@ impl App {
             })?;
 
             match rx.recv()? {
-                Event::Input(key) => {
-                    match key.code.clone() {
-                        KeyCode::Esc => {
-                            match disable_raw_mode() {
-                                Ok(_) => {
-                                    match execute!(
-                                        terminal.backend_mut(),
-                                        LeaveAlternateScreen,
-                                        DisableMouseCapture
-                                    ) {
-                                        Ok(_) => {
-                                            match terminal.show_cursor() {
-                                                Ok(_) => {
-                                                    break
-                                                }
-                                                Err(_) => {}
-                                            }
-                                        }
-                                        Err(_) => {}
-                                    }
-                                }
+                Event::Input(key) => match key.code.clone() {
+                    KeyCode::Esc => match disable_raw_mode() {
+                        Ok(_) => {
+                            match execute!(
+                                terminal.backend_mut(),
+                                LeaveAlternateScreen,
+                                DisableMouseCapture
+                            ) {
+                                Ok(_) => match terminal.show_cursor() {
+                                    Ok(_) => break,
+                                    Err(_) => {}
+                                },
                                 Err(_) => {}
                             }
                         }
-                        _ => {
-                            match self.on_key_press(key.code) {
-                                Action::None => {}
-                                Action::NextTab(tab) => {
-                                    self.current_tab = tab;
-                                }
-                            };
-                        }
+                        Err(_) => {}
+                    },
+                    _ => {
+                        match self.on_key_press(key.code) {
+                            Action::None => {}
+                            Action::NextTab(tab) => {
+                                self.current_tab = tab;
+                            }
+                        };
                     }
                 },
-                Event::Tick => {
-
-                }
+                Event::Tick => {}
             }
         }
 
@@ -150,19 +144,17 @@ impl App {
 
     pub fn on_key_press(&mut self, key_code: KeyCode) -> Action {
         match self.current_tab {
-            Tab::Version => {
-                self.version_tab.on_key_press(key_code)
-            }
-            Tab::Download => {Action::None}
-            Tab::Mod => {Action::None}
-            Tab::ModVersion => {Action::None}
+            Tab::Version => self.version_tab.on_key_press(key_code),
+            Tab::Download => Action::None,
+            Tab::Mod => Action::None,
+            Tab::ModVersion => Action::None,
         }
     }
 }
 
 pub enum Action {
     None,
-    NextTab(Tab)
+    NextTab(Tab),
 }
 
 pub enum Tab {

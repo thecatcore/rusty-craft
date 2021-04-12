@@ -1,15 +1,15 @@
+use crate::minecraft_launcher::app::Action;
+use crate::minecraft_launcher::install;
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crate::minecraft_launcher::rendering::utils::StatefulTable;
-use tui::Frame;
-use std::io::Stdout;
-use tui::layout::{Rect, Layout, Direction, Constraint};
-use tui::backend::CrosstermBackend;
-use tui::widgets::{Row, Cell, Table, Block, Borders};
-use tui::text::Span;
-use tui::style::{Style, Modifier};
 use crossterm::event::KeyCode;
-use crate::minecraft_launcher::install;
-use crate::minecraft_launcher::app::Action;
+use std::io::Stdout;
+use tui::backend::CrosstermBackend;
+use tui::layout::{Constraint, Direction, Layout, Rect};
+use tui::style::{Modifier, Style};
+use tui::text::Span;
+use tui::widgets::{Block, Borders, Cell, Row, Table};
+use tui::Frame;
 
 #[derive(Clone)]
 pub struct VersionTab {

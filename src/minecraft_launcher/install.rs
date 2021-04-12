@@ -4,17 +4,15 @@ use crate::minecraft_launcher::{
     manifest::java,
     manifest::java_versions,
     manifest::version,
-    manifest::version::{
-        LibraryDownloadArtifact, RuleAction,
-    },
+    manifest::version::{LibraryDownloadArtifact, RuleAction},
     path,
 };
 
 use crate::minecraft_launcher::manifest;
 use std::collections::HashMap;
-use std::fs::{File};
+use std::fs::File;
 use std::io::{Read, Write};
-use std::path::{PathBuf};
+use std::path::PathBuf;
 
 mod main;
 

@@ -1,5 +1,5 @@
 use directories::BaseDirs;
-use reqwest::blocking::{get as get_url};
+use reqwest::blocking::get as get_url;
 use std::env::consts;
 use std::fs;
 use std::fs::File;

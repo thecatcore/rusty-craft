@@ -1,4 +1,3 @@
-
 pub trait InstallStep {
     fn render();
 
