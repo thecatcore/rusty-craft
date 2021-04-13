@@ -18,8 +18,8 @@ use tui::text::Spans;
 use tui::widgets::{Block, Borders, Tabs};
 use tui::{Frame, Terminal};
 
-mod version_tab;
 pub mod download_tab;
+mod version_tab;
 
 pub struct App {
     pub version_tab: version_tab::VersionTab,
@@ -50,7 +50,7 @@ impl App {
             Tab::Version => {
                 self.version_tab.render(f, area);
             }
-            Tab::Download(_,_) => {
+            Tab::Download(_, _) => {
                 self.download_tab.render(f, area);
             }
             Tab::Mod => {}
@@ -98,10 +98,10 @@ impl App {
 
         loop {
             let selected_tab = match self.current_tab.clone() {
-                Tab::Version => {0}
-                Tab::Download(_, _) => {1}
-                Tab::Mod => {2}
-                Tab::ModVersion => {3}
+                Tab::Version => 0,
+                Tab::Download(_, _) => 1,
+                Tab::Mod => 2,
+                Tab::ModVersion => 3,
             };
             terminal.draw(|f| {
                 let chunks = Layout::default()
@@ -109,7 +109,10 @@ impl App {
                     .split(f.size());
 
                 let mut ve: Vec<Spans> = Vec::new();
-                ve.append(&mut vec![Spans::from("Version"), Spans::from("Installation")]);
+                ve.append(&mut vec![
+                    Spans::from("Version"),
+                    Spans::from("Installation"),
+                ]);
 
                 let tabs = Tabs::new(ve)
                     .block(Block::default().borders(Borders::ALL))
@@ -144,7 +147,7 @@ impl App {
                                 self.current_tab = tab.clone();
                                 match tab {
                                     Tab::Version => {}
-                                    Tab::Download(v,ref vs) => {
+                                    Tab::Download(v, ref vs) => {
                                         self.download_tab.start(v, vs.clone())
                                     }
                                     Tab::Mod => {}

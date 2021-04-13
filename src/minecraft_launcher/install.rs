@@ -8,17 +8,25 @@ use crate::minecraft_launcher::{
     path,
 };
 
+use crate::minecraft_launcher::app::download_tab::Message;
 use crate::minecraft_launcher::manifest;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::PathBuf;
-use crate::minecraft_launcher::app::download_tab::Message;
 
 mod main;
 
-pub fn install_version(id: String, versions: Vec<manifest::main::Version>, tx: Sender<Message>) -> Option<()> {
-    tx.send(Message::NewSubStep(String::from("Checking Version folder"), 1, 3));
+pub fn install_version(
+    id: String,
+    versions: Vec<manifest::main::Version>,
+    tx: Sender<Message>,
+) -> Option<()> {
+    tx.send(Message::NewSubStep(
+        String::from("Checking Version folder"),
+        1,
+        3,
+    ));
     match path::get_version_folder(&id) {
         None => None,
         Some(version_folder) => {
@@ -37,8 +45,16 @@ pub fn install_version(id: String, versions: Vec<manifest::main::Version>, tx: S
     }
 }
 
-fn install_manifest(version: manifest::main::Version, file_path: PathBuf, tx: Sender<Message>) -> Option<()> {
-    tx.send(Message::NewSubStep(String::from("Downloading Version manifest"), 2, 3));
+fn install_manifest(
+    version: manifest::main::Version,
+    file_path: PathBuf,
+    tx: Sender<Message>,
+) -> Option<()> {
+    tx.send(Message::NewSubStep(
+        String::from("Downloading Version manifest"),
+        2,
+        3,
+    ));
     match path::download_file_to(&version.url, &file_path) {
         Ok(_) => read_version_manifest(file_path, tx),
         Err(_) => None,
@@ -46,7 +62,11 @@ fn install_manifest(version: manifest::main::Version, file_path: PathBuf, tx: Se
 }
 
 fn read_version_manifest(manifest_path: PathBuf, tx: Sender<Message>) -> Option<()> {
-    tx.send(Message::NewSubStep(String::from("Reading Version manifest"), 3, 3));
+    tx.send(Message::NewSubStep(
+        String::from("Reading Version manifest"),
+        3,
+        3,
+    ));
     match File::open(manifest_path) {
         Ok(mut file) => {
             let mut body = String::new();
@@ -62,40 +82,30 @@ fn read_version_manifest(manifest_path: PathBuf, tx: Sender<Message>) -> Option<
     }
 }
 
-fn install_version_from_manifest(version_manifest: &version::Main, tx: Sender<Message>) -> Option<()> {
+fn install_version_from_manifest(
+    version_manifest: &version::Main,
+    tx: Sender<Message>,
+) -> Option<()> {
     // println!("Checking java");
     match check_java_version(version_manifest, tx) {
-        None => {
-            None
-        }
+        None => None,
         Some(tx) => {
             // println!("Checking client jar");
             match install_client_jar(version_manifest, tx) {
-                None => {
-                    None
-                }
+                None => None,
                 Some(tx) => {
                     // println!("Checking libraries");
                     match install_libraries(version_manifest, tx) {
-                        None => {
-                            None
-                        }
+                        None => None,
                         Some(tx) => {
                             // println!("Checking assets");
                             match install_assets_index(version_manifest, tx) {
-                                None => {
-                                    None
-                                }
+                                None => None,
                                 Some(tx) => {
                                     // println!("Checking log file");
                                     match check_log_file(version_manifest) {
-                                        None => {
-                                            None
-                                        }
-                                        Some(_) => {
-
-                                            Some(())
-                                        }
+                                        None => None,
+                                        Some(_) => Some(()),
                                     }
                                 }
                             }
@@ -107,7 +117,10 @@ fn install_version_from_manifest(version_manifest: &version::Main, tx: Sender<Me
     }
 }
 
-fn install_client_jar(version_manifest: &version::Main, tx: Sender<Message>) -> Option<Sender<Message>> {
+fn install_client_jar(
+    version_manifest: &version::Main,
+    tx: Sender<Message>,
+) -> Option<Sender<Message>> {
     let version_manifest = version_manifest.clone();
     tx.send(Message::NewStep(3));
     match version_manifest.downloads {
@@ -130,9 +143,7 @@ fn install_client_jar(version_manifest: &version::Main, tx: Sender<Message>) -> 
                             Ok(metadata) => {
                                 if metadata.len() != client_entry.size {
                                     match path::download_file_to(&client_entry.url, &jar_path) {
-                                        Ok(_) => {
-                                            Some(tx)
-                                        }
+                                        Ok(_) => Some(tx),
                                         Err(err) => {
                                             println!("{}", err);
                                             None
@@ -149,9 +160,7 @@ fn install_client_jar(version_manifest: &version::Main, tx: Sender<Message>) -> 
                         }
                     } else {
                         match path::download_file_to(&client_entry.url, &jar_path) {
-                            Ok(_) => {
-                                Some(tx)
-                            }
+                            Ok(_) => Some(tx),
                             Err(err) => {
                                 println!("{}", err);
                                 None
@@ -164,7 +173,10 @@ fn install_client_jar(version_manifest: &version::Main, tx: Sender<Message>) -> 
     }
 }
 
-fn install_libraries(version_manifest: &version::Main, tx: Sender<Message>) -> Option<Sender<Message>> {
+fn install_libraries(
+    version_manifest: &version::Main,
+    tx: Sender<Message>,
+) -> Option<Sender<Message>> {
     let version_manifest = version_manifest.clone();
 
     tx.send(Message::NewStep(4));
@@ -331,8 +343,8 @@ fn install_libraries(version_manifest: &version::Main, tx: Sender<Message>) -> O
     }
 
     match result {
-        None => {None}
-        Some(_) => {Some(tx)}
+        None => None,
+        Some(_) => Some(tx),
     }
 }
 
@@ -551,14 +563,25 @@ fn update_assets(index: String) -> Option<()> {
     }
 }
 
-fn check_java_version(version_manifest: &version::Main, tx: Sender<Message>) -> Option<Sender<Message>> {
+fn check_java_version(
+    version_manifest: &version::Main,
+    tx: Sender<Message>,
+) -> Option<Sender<Message>> {
     let version_manifest = version_manifest.clone();
     tx.send(Message::NewStep(2));
-    tx.send(Message::NewSubStep(String::from("Downloading java versions manifest"), 1, 5));
+    tx.send(Message::NewSubStep(
+        String::from("Downloading java versions manifest"),
+        1,
+        5,
+    ));
     match get_java_version_manifest() {
         None => {
             // println!("Can't get java versions manifest");
-            tx.send(Message::NewSubStep(String::from("Checking if required version is installed"), 3, 5));
+            tx.send(Message::NewSubStep(
+                String::from("Checking if required version is installed"),
+                3,
+                5,
+            ));
             match path::get_java_folder_path_sub(
                 &(match version_manifest.java_version {
                     None => {
@@ -604,7 +627,11 @@ fn check_java_version(version_manifest: &version::Main, tx: Sender<Message>) -> 
                 }
                 Some(os_version) => {
                     // println!("Got os_version");
-                    tx.send(Message::NewSubStep(String::from("Getting right java version"), 2, 5));
+                    tx.send(Message::NewSubStep(
+                        String::from("Getting right java version"),
+                        2,
+                        5,
+                    ));
                     let java_v_type = match version_manifest.java_version {
                         None => {
                             // println!("Using default java version");
@@ -631,7 +658,11 @@ fn check_java_version(version_manifest: &version::Main, tx: Sender<Message>) -> 
                                     // println!("Got first version");
                                     let online_version = version.clone().version.name;
                                     // println!("Found online version of java {}", online_version);
-                                    tx.send(Message::NewSubStep(String::from("Checking if required version is installed"), 3, 5));
+                                    tx.send(Message::NewSubStep(
+                                        String::from("Checking if required version is installed"),
+                                        3,
+                                        5,
+                                    ));
                                     match path::get_java_folder_path_sub(&java_v_type) {
                                         None => {
                                             println!("Unable to get java_folder_path_sub");
@@ -684,31 +715,47 @@ fn check_java_version(version_manifest: &version::Main, tx: Sender<Message>) -> 
                                                                             version
                                                                                 .clone()
                                                                                 .manifest,
-                                                                            online_version, tx
+                                                                            online_version,
+                                                                            tx,
                                                                         ) {
                                                                             None => None,
                                                                             Some(tx) => {
                                                                                 tx.send(Message::NewSubStep(String::from("Done"), 5, 5));
                                                                                 Some(tx)
-                                                                            },
+                                                                            }
                                                                         }
                                                                     }
                                                                 }
                                                             }
                                                             Err(_) => {
                                                                 // println!("Failed to opened .version file");
-                                                                tx.send(Message::NewSubStep(String::from("Installing missing files"), 4, 5));
+                                                                tx.send(Message::NewSubStep(
+                                                                    String::from(
+                                                                        "Installing missing files",
+                                                                    ),
+                                                                    4,
+                                                                    5,
+                                                                ));
                                                                 match install_java_version(
                                                                     &java_v_type,
                                                                     os_fol,
                                                                     version.clone().manifest,
-                                                                    online_version, tx
+                                                                    online_version,
+                                                                    tx,
                                                                 ) {
                                                                     None => None,
                                                                     Some(tx) => {
-                                                                        tx.send(Message::NewSubStep(String::from("Done"), 5, 5));
+                                                                        tx.send(
+                                                                            Message::NewSubStep(
+                                                                                String::from(
+                                                                                    "Done",
+                                                                                ),
+                                                                                5,
+                                                                                5,
+                                                                            ),
+                                                                        );
                                                                         Some(tx)
-                                                                    },
+                                                                    }
                                                                 }
                                                             }
                                                         }
@@ -716,18 +763,29 @@ fn check_java_version(version_manifest: &version::Main, tx: Sender<Message>) -> 
                                                         // println!(
                                                         //     "java_folder_path_sub doesn't exists"
                                                         // );
-                                                        tx.send(Message::NewSubStep(String::from("Installing missing files"), 4, 5));
+                                                        tx.send(Message::NewSubStep(
+                                                            String::from(
+                                                                "Installing missing files",
+                                                            ),
+                                                            4,
+                                                            5,
+                                                        ));
                                                         match install_java_version(
                                                             &java_v_type,
                                                             os_fol,
                                                             version.clone().manifest,
-                                                            online_version, tx
+                                                            online_version,
+                                                            tx,
                                                         ) {
                                                             None => None,
                                                             Some(tx) => {
-                                                                tx.send(Message::NewSubStep(String::from("Done"), 5, 5));
+                                                                tx.send(Message::NewSubStep(
+                                                                    String::from("Done"),
+                                                                    5,
+                                                                    5,
+                                                                ));
                                                                 Some(tx)
-                                                            },
+                                                            }
                                                         }
                                                     }
                                                 }
@@ -749,7 +807,7 @@ fn install_java_version(
     os_folder: PathBuf,
     manifest: java_versions::Manifest,
     online_version: String,
-    tx: Sender<Message>
+    tx: Sender<Message>,
 ) -> Option<Sender<Message>> {
     let v_folder = match path::get_or_create_dir(&os_folder, type_.clone()) {
         None => {
@@ -776,7 +834,11 @@ fn install_java_version(
                         }
                         current_file_index += 1;
                         let file_path = file.0;
-                        tx.send(Message::NewSubSubStep(format!("{}", file_path), current_file_index, (file_amount as u64) + 1));
+                        tx.send(Message::NewSubSubStep(
+                            format!("{}", file_path),
+                            current_file_index,
+                            (file_amount as u64) + 1,
+                        ));
                         let element_info = file.1;
                         let el_type = element_info.element_type;
                         let executable = match element_info.executable {
@@ -887,7 +949,11 @@ fn install_java_version(
                         }
                     }
                     if status.is_some() {
-                        tx.send(Message::NewSubSubStep(format!(".version"), (file_amount as u64) + 1, (file_amount as u64) + 1));
+                        tx.send(Message::NewSubSubStep(
+                            format!(".version"),
+                            (file_amount as u64) + 1,
+                            (file_amount as u64) + 1,
+                        ));
                         let v_path = os_folder.join(".version");
                         match File::open(&v_path) {
                             Ok(mut v_path) => match v_path.write(online_version.as_bytes()) {
@@ -917,8 +983,8 @@ fn install_java_version(
                         }
                     }
                     match status {
-                        None => {None}
-                        Some(_) => {Some(tx)}
+                        None => None,
+                        Some(_) => Some(tx),
                     }
                 }
                 Err(err) => {

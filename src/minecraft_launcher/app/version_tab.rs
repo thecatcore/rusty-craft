@@ -88,7 +88,7 @@ impl VersionTab {
             KeyCode::Enter => {
                 self.select();
                 match &self.selected {
-                    None => {Action::None}
+                    None => Action::None,
                     Some(version) => {
                         Action::NextTab(Tab::Download(version.clone(), self.versions.clone()))
                     }
@@ -102,7 +102,7 @@ impl VersionTab {
                 self.current_table.next();
                 Action::None
             }
-            _ => {Action::None}
+            _ => Action::None,
         }
     }
 
