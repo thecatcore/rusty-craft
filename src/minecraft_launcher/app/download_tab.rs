@@ -4,7 +4,7 @@ use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crossterm::event::KeyCode;
 use std::io::Stdout;
 use std::sync::mpsc;
-use std::sync::mpsc::{Receiver};
+use std::sync::mpsc::Receiver;
 use std::thread;
 use tui::backend::CrosstermBackend;
 use tui::layout::{Constraint, Direction, Layout, Rect};

@@ -26,7 +26,8 @@ pub fn install_version(
         String::from("Checking Version folder"),
         1,
         3,
-    )).expect("Can't send message to renderer thread");
+    ))
+    .expect("Can't send message to renderer thread");
     match path::get_version_folder(&id) {
         None => None,
         Some(version_folder) => {
@@ -54,7 +55,8 @@ fn install_manifest(
         String::from("Downloading Version manifest"),
         2,
         3,
-    )).expect("Can't send message to renderer thread");
+    ))
+    .expect("Can't send message to renderer thread");
     match path::download_file_to(&version.url, &file_path) {
         Ok(_) => read_version_manifest(file_path, tx),
         Err(_) => None,
@@ -66,7 +68,8 @@ fn read_version_manifest(manifest_path: PathBuf, tx: Sender<Message>) -> Option<
         String::from("Reading Version manifest"),
         3,
         3,
-    )).expect("Can't send message to renderer thread");
+    ))
+    .expect("Can't send message to renderer thread");
     match File::open(manifest_path) {
         Ok(mut file) => {
             let mut body = String::new();
@@ -106,9 +109,10 @@ fn install_version_from_manifest(
                                     match check_log_file(version_manifest, tx) {
                                         None => None,
                                         Some(tx) => {
-                                            tx.send(Message::NewStep(7)).expect("Can't send message to renderer thread");
+                                            tx.send(Message::NewStep(7))
+                                                .expect("Can't send message to renderer thread");
                                             Some(())
-                                        },
+                                        }
                                     }
                                 }
                             }
@@ -125,7 +129,8 @@ fn install_client_jar(
     tx: Sender<Message>,
 ) -> Option<Sender<Message>> {
     let version_manifest = version_manifest.clone();
-    tx.send(Message::NewStep(3)).expect("Can't send message to renderer thread");
+    tx.send(Message::NewStep(3))
+        .expect("Can't send message to renderer thread");
     match version_manifest.downloads {
         None => {
             println!("No client jar to download in version manifest!");
@@ -182,7 +187,8 @@ fn install_libraries(
 ) -> Option<Sender<Message>> {
     let version_manifest = version_manifest.clone();
 
-    tx.send(Message::NewStep(4)).expect("Can't send message to renderer thread");
+    tx.send(Message::NewStep(4))
+        .expect("Can't send message to renderer thread");
     let mut result = Some(());
 
     let library_count = version_manifest.libraries.len();
@@ -196,7 +202,12 @@ fn install_libraries(
         let name = *lib_name.get(1).expect("Library doesn't have a name???");
         let version = *lib_name.get(2).expect("Library doesn't have a version???");
 
-        tx.send(Message::NewSubStep(format!("{}-{}", &name, &version), index, library_count as u64)).expect("Can't send message to renderer thread");
+        tx.send(Message::NewSubStep(
+            format!("{}-{}", &name, &version),
+            index,
+            library_count as u64,
+        ))
+        .expect("Can't send message to renderer thread");
 
         let allowed = match library.rules {
             None => RuleAction::Allow,
@@ -358,11 +369,16 @@ fn install_libraries(
     }
 }
 
-fn install_assets_index(version_manifest: &version::Main, tx: Sender<Message>) -> Option<Sender<Message>> {
+fn install_assets_index(
+    version_manifest: &version::Main,
+    tx: Sender<Message>,
+) -> Option<Sender<Message>> {
     let version_manifest = version_manifest.clone();
 
-    tx.send(Message::NewStep(5)).expect("Can't send message to renderer thread");
-    tx.send(Message::NewSubStep(format!("Checking asset index"), 1, 2)).expect("Can't send message to renderer thread");
+    tx.send(Message::NewStep(5))
+        .expect("Can't send message to renderer thread");
+    tx.send(Message::NewSubStep(format!("Checking asset index"), 1, 2))
+        .expect("Can't send message to renderer thread");
     match version_manifest.asset_index {
         None => {
             println!("Version manifest doesn't contain any asset index!");
@@ -441,7 +457,8 @@ fn install_assets_index(version_manifest: &version::Main, tx: Sender<Message>) -
 }
 
 fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> {
-    tx.send(Message::NewSubStep(format!("Checking assets"), 2, 2)).expect("Can't send message to renderer thread");
+    tx.send(Message::NewSubStep(format!("Checking assets"), 2, 2))
+        .expect("Can't send message to renderer thread");
     match path::get_assets_folder(&String::from("indexes")) {
         None => {
             println!("Unable to get indexes folder");
@@ -553,8 +570,8 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                     }
                                                 }
                                                 match ret {
-                                                    None => {None}
-                                                    Some(_) => {Some(tx)}
+                                                    None => None,
+                                                    Some(_) => Some(tx),
                                                 }
                                             }
                                         }
@@ -589,12 +606,14 @@ fn check_java_version(
     tx: Sender<Message>,
 ) -> Option<Sender<Message>> {
     let version_manifest = version_manifest.clone();
-    tx.send(Message::NewStep(2)).expect("Can't send message to renderer thread");
+    tx.send(Message::NewStep(2))
+        .expect("Can't send message to renderer thread");
     tx.send(Message::NewSubStep(
         String::from("Downloading java versions manifest"),
         1,
         5,
-    )).expect("Can't send message to renderer thread");
+    ))
+    .expect("Can't send message to renderer thread");
     match get_java_version_manifest() {
         None => {
             // println!("Can't get java versions manifest");
@@ -602,7 +621,8 @@ fn check_java_version(
                 String::from("Checking if required version is installed"),
                 3,
                 5,
-            )).expect("Can't send message to renderer thread");
+            ))
+            .expect("Can't send message to renderer thread");
             match path::get_java_folder_path_sub(
                 &(match version_manifest.java_version {
                     None => {
@@ -625,7 +645,8 @@ fn check_java_version(
                         Some(bin) => {
                             if (&java_folder).exists() {
                                 if bin.join(get_java_ex_for_os()).exists() {
-                                    tx.send(Message::NewSubStep(String::from("Done"), 5, 5)).expect("Can't send message to renderer thread");
+                                    tx.send(Message::NewSubStep(String::from("Done"), 5, 5))
+                                        .expect("Can't send message to renderer thread");
                                     Some(tx)
                                 } else {
                                     None
@@ -652,7 +673,8 @@ fn check_java_version(
                         String::from("Getting right java version"),
                         2,
                         5,
-                    )).expect("Can't send message to renderer thread");
+                    ))
+                    .expect("Can't send message to renderer thread");
                     let java_v_type = match version_manifest.java_version {
                         None => {
                             // println!("Using default java version");
@@ -683,7 +705,8 @@ fn check_java_version(
                                         String::from("Checking if required version is installed"),
                                         3,
                                         5,
-                                    )).expect("Can't send message to renderer thread");
+                                    ))
+                                    .expect("Can't send message to renderer thread");
                                     match path::get_java_folder_path_sub(&java_v_type) {
                                         None => {
                                             println!("Unable to get java_folder_path_sub");
@@ -790,7 +813,10 @@ fn check_java_version(
                                                             ),
                                                             4,
                                                             5,
-                                                        )).expect("Can't send message to renderer thread");
+                                                        ))
+                                                        .expect(
+                                                            "Can't send message to renderer thread",
+                                                        );
                                                         match install_java_version(
                                                             &java_v_type,
                                                             os_fol,
@@ -859,7 +885,8 @@ fn install_java_version(
                             format!("{}", file_path),
                             current_file_index,
                             (file_amount as u64) + 1,
-                        )).expect("Can't send message to renderer thread");
+                        ))
+                        .expect("Can't send message to renderer thread");
                         let element_info = file.1;
                         let el_type = element_info.element_type;
                         let executable = match element_info.executable {
@@ -974,7 +1001,8 @@ fn install_java_version(
                             format!(".version"),
                             (file_amount as u64) + 1,
                             (file_amount as u64) + 1,
-                        )).expect("Can't send message to renderer thread");
+                        ))
+                        .expect("Can't send message to renderer thread");
                         let v_path = os_folder.join(".version");
                         match File::open(&v_path) {
                             Ok(mut v_path) => match v_path.write(online_version.as_bytes()) {
@@ -1133,9 +1161,13 @@ fn get_java_version_manifest() -> Option<java_versions::Main> {
     }
 }
 
-fn check_log_file(version_manifest: &version::Main, tx: Sender<Message>) -> Option<Sender<Message>> {
+fn check_log_file(
+    version_manifest: &version::Main,
+    tx: Sender<Message>,
+) -> Option<Sender<Message>> {
     let version_manifest = version_manifest.clone();
-    tx.send(Message::NewStep(6)).expect("Can't send message to renderer thread");
+    tx.send(Message::NewStep(6))
+        .expect("Can't send message to renderer thread");
     match version_manifest.logging {
         None => {
             println!("No logging, that's fine");

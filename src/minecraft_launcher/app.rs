@@ -92,7 +92,9 @@ impl App {
                 }
                 if last_tick.elapsed() >= tick_rate {
                     match tx.send(Event::Tick) {
-                        Ok(_) => {last_tick = Instant::now();}
+                        Ok(_) => {
+                            last_tick = Instant::now();
+                        }
                         Err(_) => {}
                     };
                 }
