@@ -1,4 +1,4 @@
-use crate::minecraft_launcher::app::Action;
+use crate::minecraft_launcher::app::{Action, Tab};
 use crate::minecraft_launcher::install;
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crate::minecraft_launcher::rendering::utils::StatefulTable;
@@ -88,28 +88,22 @@ impl VersionTab {
             KeyCode::Enter => {
                 self.select();
                 match &self.selected {
-                    None => {}
+                    None => {Action::None}
                     Some(version) => {
-                        match install::install_version(version.clone().id, self.clone().versions) {
-                            None => {
-                                panic!("Failed to install version {}", version.id)
-                            }
-                            Some(_) => {
-                                panic!("Successfully installed version {}", version.id)
-                            }
-                        }
+                        Action::NextTab(Tab::Download(version.clone(), self.versions.clone()))
                     }
                 }
             }
             KeyCode::Up => {
                 self.current_table.previous();
+                Action::None
             }
             KeyCode::Down => {
                 self.current_table.next();
+                Action::None
             }
-            _ => {}
+            _ => {Action::None}
         }
-        Action::None
     }
 
     pub fn select(&mut self) {
