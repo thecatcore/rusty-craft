@@ -1,5 +1,4 @@
 use crate::minecraft_launcher::app::{Action, Tab};
-use crate::minecraft_launcher::install;
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crate::minecraft_launcher::rendering::utils::StatefulTable;
 use crossterm::event::KeyCode;

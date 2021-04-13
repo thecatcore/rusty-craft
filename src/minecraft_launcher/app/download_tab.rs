@@ -4,7 +4,7 @@ use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crossterm::event::KeyCode;
 use std::io::Stdout;
 use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, RecvError, SendError, Sender};
+use std::sync::mpsc::{Receiver};
 use std::thread;
 use tui::backend::CrosstermBackend;
 use tui::layout::{Constraint, Direction, Layout, Rect};
@@ -40,7 +40,7 @@ impl DownloadTab {
                     panic!("Failed to install version {}", version.id)
                 }
                 Some(_) => {
-                    panic!("Successfully installed version {}", version.id)
+                    // panic!("Successfully installed version {}", version.id)
                 }
             }
         });
@@ -68,7 +68,7 @@ impl DownloadTab {
                             self.current_sub_sub_step = Some((name, index, max))
                         }
                     },
-                    Err(err) => {
+                    Err(_) => {
                         // println!("Error while trying to receive message from install thread: {}", err)
                     }
                 }
@@ -87,7 +87,7 @@ impl DownloadTab {
                     .gauge_style(Style::default().bg(Color::White).fg(Color::Black))
                     .ratio((self.current_step as f64 / 7.0) as f64)
                     .label(format!(
-                        "{}/6 - {}",
+                        "{}/7 - {}",
                         self.current_step,
                         get_step_name(self.current_step)
                     ));

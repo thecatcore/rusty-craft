@@ -60,7 +60,7 @@ impl App {
 
     pub fn run(mut self) -> Result<(), Box<dyn Error>> {
         let cli = Cli {
-            tick_rate: 250,
+            tick_rate: 10,
             enhanced_graphics: true,
         };
 
@@ -84,12 +84,17 @@ impl App {
                     .unwrap_or_else(|| Duration::from_secs(0));
                 if event::poll(timeout).unwrap() {
                     if let CEvent::Key(key) = event::read().unwrap() {
-                        tx.send(Event::Input(key)).unwrap();
+                        match tx.send(Event::Input(key)) {
+                            Ok(_) => {}
+                            Err(_) => {}
+                        };
                     }
                 }
                 if last_tick.elapsed() >= tick_rate {
-                    tx.send(Event::Tick).unwrap();
-                    last_tick = Instant::now();
+                    match tx.send(Event::Tick) {
+                        Ok(_) => {last_tick = Instant::now();}
+                        Err(_) => {}
+                    };
                 }
             }
         });
