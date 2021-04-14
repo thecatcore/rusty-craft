@@ -112,14 +112,34 @@ pub fn match_rules(rules: Vec<version::Rule>, options: Option<&LaunchOptions>) -
         } else if rule.os.is_some() {
             let mut mat = true;
             for i in rule.os.expect("Wut") {
+                if !mat {
+                    break;
+                }
                 mat = match i.0.as_str() {
                     "name" => i.1 == get_os().to_str(),
                     "version" => match get_os_info().version() {
                         Version::Unknown => false,
-                        Version::Semantic(maj, _min, _pat) => {
-                            let v = i.1.replace("^", "").replace("\\", "").replace(".", "");
-                            let v_64: u64 = v.parse().unwrap();
-                            maj >= &v_64
+                        Version::Semantic(maj, min, pat) => {
+                            let mut v = i.1.replace("\\", "").replace("d$", "0");
+
+                            let mut sup_or_equ = false;
+                            if v.starts_with("^") {
+                                sup_or_equ = true;
+                                v = v.replace("^", "");
+                            }
+
+                            match Version::from_string(v) {
+                                Version::Unknown => {false}
+                                Version::Semantic(major, minor, patch) => {
+                                    if sup_or_equ {
+                                        major > *maj || major == *maj && (minor > *min || minor == *min && patch >= *pat)
+                                    } else {
+                                        *maj == major && *min == minor && *pat == patch
+                                    }
+                                }
+                                Version::Rolling(_) => {false}
+                                Version::Custom(_) => {false}
+                            }
                         }
                         Version::Rolling(_) => false,
                         Version::Custom(_) => false,
@@ -127,9 +147,6 @@ pub fn match_rules(rules: Vec<version::Rule>, options: Option<&LaunchOptions>) -
                     "arch" => i.1 == consts::ARCH,
                     _ => false,
                 };
-                if !mat {
-                    break;
-                }
             }
             if mat {
                 val = rule.action;
