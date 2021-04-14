@@ -12,7 +12,7 @@ use crate::minecraft_launcher::app::download_tab::Message;
 use crate::minecraft_launcher::manifest;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{Read, Write, Error};
+use std::io::{Read, Write};
 use std::path::PathBuf;
 
 pub fn install_version(
@@ -452,8 +452,12 @@ fn install_assets_index(
 }
 
 fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> {
-    tx.send(Message::NewSubStep(format!("Installing missing assets"), 2, 3))
-        .expect("Can't send message to renderer thread");
+    tx.send(Message::NewSubStep(
+        format!("Installing missing assets"),
+        2,
+        3,
+    ))
+    .expect("Can't send message to renderer thread");
     match path::get_assets_folder(&String::from("indexes")) {
         None => {
             println!("Unable to get indexes folder");
@@ -475,7 +479,9 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                 match assets::parse(&body) {
                                     Ok(main) => {
                                         // println!("Parsed index file");
-                                        let result = match path::get_assets_folder(&String::from("objects")) {
+                                        let result = match path::get_assets_folder(&String::from(
+                                            "objects",
+                                        )) {
                                             None => {
                                                 println!("Unable to get objects folder");
                                                 None
@@ -572,30 +578,48 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                         };
 
                                         match result {
-                                            None => {None}
+                                            None => None,
                                             Some(tx) => {
                                                 match main.map_to_resources {
-                                                    None => {Some(tx)}
+                                                    None => Some(tx),
                                                     Some(map_to_resources) => {
                                                         if map_to_resources {
                                                             tx.send(Message::NewSubStep(format !("Relocating to resources folder"), 3, 3))
                                                                 .expect("Can't send message to renderer thread");
-                                                            match path::get_minecraft_sub_folder(&String::from("resources")) {
-                                                                None => {None}
+                                                            match path::get_minecraft_sub_folder(
+                                                                &String::from("resources"),
+                                                            ) {
+                                                                None => None,
                                                                 Some(resources) => {
-                                                                    match path::get_assets_folder(&String::from("objects")) {
-                                                                        None => {None}
+                                                                    match path::get_assets_folder(
+                                                                        &String::from("objects"),
+                                                                    ) {
+                                                                        None => None,
                                                                         Some(objects_path) => {
-                                                                            let entry_count = main.objects.len();
+                                                                            let entry_count =
+                                                                                main.objects.len();
                                                                             let mut entry_index = 0;
                                                                             let mut res = Some(());
-                                                                            for (entry, asset_info) in main.objects {
+                                                                            for (
+                                                                                entry,
+                                                                                asset_info,
+                                                                            ) in main.objects
+                                                                            {
                                                                                 entry_index += 1;
                                                                                 tx.send(Message::NewSubSubStep(format!("{}", entry.clone()), entry_index, entry_count as u64)).expect("Can't send message to renderer thread");
                                                                                 let hashed_path = asset_info.get_download_path(&objects_path);
-                                                                                if hashed_path.1.exists() {
-                                                                                    match File::open(hashed_path.1) {
-                                                                                        Ok(mut file) => {
+                                                                                if hashed_path
+                                                                                    .1
+                                                                                    .exists()
+                                                                                {
+                                                                                    match File::open(
+                                                                                        hashed_path
+                                                                                            .1,
+                                                                                    ) {
+                                                                                        Ok(
+                                                                                            mut
+                                                                                            file,
+                                                                                        ) => {
                                                                                             let mut body: Vec<u8> = Vec::new();
                                                                                             match file.read_to_end(&mut body) {
                                                                                                 Ok(_) => {
@@ -670,13 +694,14 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                                                                 }
                                                                                             }
                                                                                         }
-                                                                                        Err(err) => {
+                                                                                        Err(
+                                                                                            err,
+                                                                                        ) => {
                                                                                             println!("Unable to open asset file: {}", err);
                                                                                             res = None;
                                                                                             break;
                                                                                         }
                                                                                     }
-
                                                                                 } else {
                                                                                     res = None;
                                                                                     break;
@@ -684,8 +709,8 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                                             }
 
                                                                             match res {
-                                                                                None => {None}
-                                                                                Some(_) => {Some(tx)}
+                                                                                None => None,
+                                                                                Some(_) => Some(tx),
                                                                             }
                                                                         }
                                                                     }

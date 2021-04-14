@@ -129,16 +129,18 @@ pub fn match_rules(rules: Vec<version::Rule>, options: Option<&LaunchOptions>) -
                             }
 
                             match Version::from_string(v) {
-                                Version::Unknown => {false}
+                                Version::Unknown => false,
                                 Version::Semantic(major, minor, patch) => {
                                     if sup_or_equ {
-                                        major > *maj || major == *maj && (minor > *min || minor == *min && patch >= *pat)
+                                        major > *maj
+                                            || major == *maj
+                                                && (minor > *min || minor == *min && patch >= *pat)
                                     } else {
                                         *maj == major && *min == minor && *pat == patch
                                     }
                                 }
-                                Version::Rolling(_) => {false}
-                                Version::Custom(_) => {false}
+                                Version::Rolling(_) => false,
+                                Version::Custom(_) => false,
                             }
                         }
                         Version::Rolling(_) => false,
