@@ -120,7 +120,7 @@ impl DownloadTab {
         }
     }
 
-    pub fn on_key_press(&mut self, key_code: KeyCode) -> Action {
+    pub fn on_key_press(&mut self, _key_code: KeyCode) -> Action {
         Action::None
     }
 }
