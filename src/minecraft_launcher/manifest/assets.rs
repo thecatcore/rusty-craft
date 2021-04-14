@@ -6,6 +6,7 @@ use std::path::PathBuf;
 #[derive(Deserialize, Clone)]
 pub struct Main {
     pub objects: HashMap<String, AssetIndex>,
+    pub map_to_resources: Option<bool>,
 }
 
 #[derive(Deserialize, Clone)]
