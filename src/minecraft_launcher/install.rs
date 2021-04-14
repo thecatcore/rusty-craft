@@ -1222,7 +1222,9 @@ fn set_executable(file_buf: PathBuf) -> Option<()> {
 }
 
 #[cfg(windows)]
-fn set_executable(file_buf: PathBuf) -> Option<()> {}
+fn set_executable(file_buf: PathBuf) -> Option<()> {
+    Some(())
+}
 
 #[cfg(unix)]
 use std::os::unix::fs::symlink;
