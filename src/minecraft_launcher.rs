@@ -14,6 +14,7 @@ mod options;
 mod path;
 mod rendering;
 mod utils;
+mod modding;
 
 use manifest::version;
 
