@@ -1,7 +1,6 @@
 use crate::minecraft_launcher::{
     arguments,
     manifest::assets,
-    manifest::java_versions,
     manifest::version,
     manifest::version::{LibraryDownloadArtifact, RuleAction},
     path,
@@ -789,43 +788,6 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                 println!("Asset index file doesn't exist");
                 None
             }
-        }
-    }
-}
-
-fn get_java_folder_for_os() -> Vec<String> {
-    match std::env::consts::OS {
-        "macos" => vec![
-            String::from("jre.bundle"),
-            String::from("Contents"),
-            String::from("Home"),
-            String::from("bin"),
-        ],
-        &_ => vec![String::from("bin")],
-    }
-}
-
-fn get_java_ex_for_os() -> &'static str {
-    match std::env::consts::OS {
-        "windows" => "java.exe",
-        &_ => "java",
-    }
-}
-
-fn get_java_version_manifest() -> Option<java_versions::Main> {
-    match path::read_file_from_url_to_string(&"https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json".to_string()) {
-        Ok(body) => {
-            match java_versions::parse_java_versions_manifest(&body) {
-                Ok(manifest) => Some(manifest),
-                Err(err) => {
-                    print!("Error: {}", err.to_string());
-                    None
-                }
-            }
-        }
-        Err(err) => {
-            print!("Error: {}", err);
-            None
         }
     }
 }

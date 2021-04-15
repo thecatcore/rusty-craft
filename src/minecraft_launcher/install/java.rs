@@ -7,9 +7,6 @@ use std::os::unix::fs::symlink;
 use std::os::unix::fs::PermissionsExt;
 
 use crate::minecraft_launcher::app::download_tab::Message;
-use crate::minecraft_launcher::install::{
-    get_java_ex_for_os, get_java_folder_for_os, get_java_version_manifest,
-};
 use crate::minecraft_launcher::manifest;
 use crate::minecraft_launcher::manifest::java_versions::Version;
 use crate::minecraft_launcher::manifest::{java_versions, version};
@@ -416,6 +413,43 @@ fn install_java_version(
         }
         Err(err) => {
             println!("Failed to read java_version_manifest {}", err);
+            None
+        }
+    }
+}
+
+fn get_java_folder_for_os() -> Vec<String> {
+    match std::env::consts::OS {
+        "macos" => vec![
+            String::from("jre.bundle"),
+            String::from("Contents"),
+            String::from("Home"),
+            String::from("bin"),
+        ],
+        &_ => vec![String::from("bin")],
+    }
+}
+
+fn get_java_ex_for_os() -> &'static str {
+    match std::env::consts::OS {
+        "windows" => "java.exe",
+        &_ => "java",
+    }
+}
+
+fn get_java_version_manifest() -> Option<java_versions::Main> {
+    match path::read_file_from_url_to_string(&"https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json".to_string()) {
+        Ok(body) => {
+            match java_versions::parse_java_versions_manifest(&body) {
+                Ok(manifest) => Some(manifest),
+                Err(err) => {
+                    print!("Error: {}", err.to_string());
+                    None
+                }
+            }
+        }
+        Err(err) => {
+            print!("Error: {}", err);
             None
         }
     }
