@@ -20,6 +20,7 @@ use tui::{Frame, Terminal};
 
 pub mod download_tab;
 mod version_tab;
+mod log_tab;
 
 pub struct App {
     pub version_tab: version_tab::VersionTab,
