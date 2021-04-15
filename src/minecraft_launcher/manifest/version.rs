@@ -41,7 +41,7 @@ impl Main {
             None => {}
             Some(vname) => {
                 if &from.id != vname {
-                    panic!("Trying to inherit from the from version!");
+                    panic!("Trying to inherit from the wrong version!");
                 };
             }
         }
