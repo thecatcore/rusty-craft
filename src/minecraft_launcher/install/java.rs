@@ -1,11 +1,23 @@
-use std::path::PathBuf;
-use crate::minecraft_launcher::manifest;
-use crate::minecraft_launcher::manifest::{java_versions, version};
-use std::sync::mpsc::Sender;
+#[cfg(windows)]
+use std::os::windows::fs::{symlink_dir, symlink_file};
+
+#[cfg(unix)]
+use std::os::unix::fs::symlink;
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
+
 use crate::minecraft_launcher::app::download_tab::Message;
+use crate::minecraft_launcher::install::{
+    get_java_ex_for_os, get_java_folder_for_os, get_java_version_manifest,
+};
+use crate::minecraft_launcher::manifest;
+use crate::minecraft_launcher::manifest::java_versions::Version;
+use crate::minecraft_launcher::manifest::{java_versions, version};
 use crate::minecraft_launcher::path;
 use std::fs::File;
-use std::io::{Write, Read};
+use std::io::{Read, Write};
+use std::path::PathBuf;
+use std::sync::mpsc::Sender;
 
 pub fn check_java_version(
     version_manifest: &version::Main,
@@ -19,7 +31,7 @@ pub fn check_java_version(
         1,
         5,
     ))
-        .expect("Can't send message to renderer thread");
+    .expect("Can't send message to renderer thread");
     match get_java_version_manifest() {
         None => {
             tx.send(Message::NewSubStep(
@@ -27,7 +39,7 @@ pub fn check_java_version(
                 3,
                 5,
             ))
-                .expect("Can't send message to renderer thread");
+            .expect("Can't send message to renderer thread");
             match get_java_folder_path_sub(&version_manifest) {
                 None => {
                     println!("Can't get java_folder_path_sub");
@@ -54,70 +66,65 @@ pub fn check_java_version(
             }
         }
 
-        Some(manifest) => {
-            match manifest.get_os_version() {
-                None => {
-                    println!("Unable to get os_version");
-                    None
-                }
-                Some(os_version) => {
-                    tx.send(Message::NewSubStep(
-                        String::from("Getting right java version"),
-                        2,
-                        5,
-                    ))
-                        .expect("Can't send message to renderer thread");
-                    let java_v_type = match version_manifest.java_version {
+        Some(manifest) => match manifest.get_os_version() {
+            None => {
+                println!("Unable to get os_version");
+                None
+            }
+            Some(os_version) => {
+                tx.send(Message::NewSubStep(
+                    String::from("Getting right java version"),
+                    2,
+                    5,
+                ))
+                .expect("Can't send message to renderer thread");
+                let java_v_type = match version_manifest.java_version {
+                    None => String::from("jre-legacy"),
+                    Some(ver) => ver.component,
+                };
+                match os_version.get_java_version(&java_v_type) {
+                    None => {
+                        println!("Unable to get java_version");
+                        None
+                    }
+                    Some(versions) => match versions.get(0) {
                         None => {
-                            String::from("jre-legacy")
-                        }
-                        Some(ver) => {
-                            ver.component
-                        }
-                    };
-                    match os_version.get_java_version(&java_v_type) {
-                        None => {
-                            println!("Unable to get java_version");
+                            println!("Unable to get first version");
                             None
                         }
-                        Some(versions) => {
-                            match versions.get(0) {
+                        Some(version) => {
+                            let online_version = version.clone().version.name;
+                            tx.send(Message::NewSubStep(
+                                String::from("Checking if required version is installed"),
+                                3,
+                                5,
+                            ))
+                            .expect("Can't send message to renderer thread");
+                            match path::get_java_folder_path_sub(&java_v_type) {
                                 None => {
-                                    println!("Unable to get first version");
+                                    println!("Unable to get java_folder_path_sub");
                                     None
                                 }
-                                Some(version) => {
-                                    let online_version = version.clone().version.name;
-                                    tx.send(Message::NewSubStep(
-                                        String::from("Checking if required version is installed"),
-                                        3,
-                                        5,
-                                    ))
-                                        .expect("Can't send message to renderer thread");
-                                    match path::get_java_folder_path_sub(&java_v_type) {
-                                        None => {
-                                            println!("Unable to get java_folder_path_sub");
-                                            None
-                                        }
-                                        Some(j_folder) => {
-                                            match path::get_java_folder_path(&java_v_type) {
-                                                None => {
-                                                    println!("Unable to get java_folder_path");
-                                                    None
-                                                }
-                                                Some(os_fol) => {
-                                                    check_if_install_is_needed(j_folder, os_fol, java_v_type, version, online_version, tx)
-                                                }
-                                            }
-                                        }
+                                Some(j_folder) => match path::get_java_folder_path(&java_v_type) {
+                                    None => {
+                                        println!("Unable to get java_folder_path");
+                                        None
                                     }
-                                }
+                                    Some(os_fol) => check_if_install_is_needed(
+                                        j_folder,
+                                        os_fol,
+                                        java_v_type,
+                                        version,
+                                        online_version,
+                                        tx,
+                                    ),
+                                },
                             }
                         }
-                    }
+                    },
                 }
             }
-        }
+        },
     }
 }
 
@@ -127,36 +134,52 @@ fn check_if_install_is_needed(
     java_v_type: String,
     version: &Version,
     online_version: String,
-    tx: Sender<Message>
+    tx: Sender<Message>,
 ) -> Option<Sender<Message>> {
     if (&j_folder).exists() {
         match File::open(os_fol.join(".version")) {
             Ok(mut v_file) => {
                 let mut v_content = String::new();
-                match v_file
-                    .read_to_string(&mut v_content)
-                {
+                match v_file.read_to_string(&mut v_content) {
                     Ok(_) => {
-                        if online_version
-                            != v_content
-                        {
-                            install(&java_v_type, os_fol, version.clone().manifest, online_version, tx)
+                        if online_version != v_content {
+                            install(
+                                &java_v_type,
+                                os_fol,
+                                version.clone().manifest,
+                                online_version,
+                                tx,
+                            )
                         } else {
                             // install(&java_v_type, os_fol, version.clone().manifest, online_version, tx)
                             Some(tx)
                         }
                     }
-                    Err(_) => {
-                        install(&java_v_type, os_fol, version.clone().manifest, online_version, tx)
-                    }
+                    Err(_) => install(
+                        &java_v_type,
+                        os_fol,
+                        version.clone().manifest,
+                        online_version,
+                        tx,
+                    ),
                 }
             }
-            Err(_) => {
-                install(&java_v_type, os_fol, version.clone().manifest, online_version, tx)
-            }
+            Err(_) => install(
+                &java_v_type,
+                os_fol,
+                version.clone().manifest,
+                online_version,
+                tx,
+            ),
         }
     } else {
-        install(&java_v_type, os_fol, version.clone().manifest, online_version, tx)
+        install(
+            &java_v_type,
+            os_fol,
+            version.clone().manifest,
+            online_version,
+            tx,
+        )
     }
 }
 
@@ -183,29 +206,16 @@ fn install(
     tx: Sender<Message>,
 ) -> Option<Sender<Message>> {
     tx.send(Message::NewSubStep(
-        String::from(
-            "Installing missing files",
-        ),
+        String::from("Installing missing files"),
         4,
         5,
     ))
-        .expect(
-            "Can't send message to renderer thread",
-        );
-    match install_java_version(
-        &java_v_type,
-        os_fol,
-        manifest,
-        online_version,
-        tx,
-    ) {
+    .expect("Can't send message to renderer thread");
+    match install_java_version(&java_v_type, os_fol, manifest, online_version, tx) {
         None => None,
         Some(tx) => {
-            tx.send(Message::NewSubStep(
-                String::from("Done"),
-                5,
-                5,
-            )).expect("Can't send message to renderer thread");
+            tx.send(Message::NewSubStep(String::from("Done"), 5, 5))
+                .expect("Can't send message to renderer thread");
             Some(tx)
         }
     }
@@ -248,7 +258,7 @@ fn install_java_version(
                             current_file_index,
                             (file_amount as u64) + 1,
                         ))
-                            .expect("Can't send message to renderer thread");
+                        .expect("Can't send message to renderer thread");
                         let element_info = file.1;
                         let el_type = element_info.element_type;
                         let executable = match element_info.executable {
@@ -364,7 +374,7 @@ fn install_java_version(
                             (file_amount as u64) + 1,
                             (file_amount as u64) + 1,
                         ))
-                            .expect("Can't send message to renderer thread");
+                        .expect("Can't send message to renderer thread");
                         let v_path = os_folder.join(".version");
                         match File::open(&v_path) {
                             Ok(mut v_path) => match v_path.write(online_version.as_bytes()) {
@@ -411,9 +421,6 @@ fn install_java_version(
     }
 }
 
-
-#[cfg(unix)]
-use std::os::unix::fs::PermissionsExt;
 #[cfg(unix)]
 fn set_executable(file_buf: PathBuf) -> Option<()> {
     match &file_buf.metadata() {
@@ -440,8 +447,6 @@ fn set_executable(file_buf: PathBuf) -> Option<()> {
     Some(())
 }
 
-#[cfg(unix)]
-use std::os::unix::fs::symlink;
 #[cfg(unix)]
 fn create_symlink(v_folder: &PathBuf, path_name: String, target: Option<String>) -> Option<()> {
     match target {
@@ -477,11 +482,6 @@ fn create_symlink(v_folder: &PathBuf, path_name: String, target: Option<String>)
         }
     }
 }
-
-#[cfg(windows)]
-use std::os::windows::fs::{symlink_dir, symlink_file};
-use crate::minecraft_launcher::install::{get_java_version_manifest, get_java_folder_for_os, get_java_ex_for_os};
-use crate::minecraft_launcher::manifest::java_versions::Version;
 
 #[cfg(windows)]
 fn create_symlink(v_folder: &PathBuf, path_name: String, target: Option<String>) -> Option<()> {

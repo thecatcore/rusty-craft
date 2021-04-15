@@ -15,12 +15,12 @@ use tui::backend::CrosstermBackend;
 use tui::layout::{Constraint, Layout, Rect};
 use tui::style::{Color, Style};
 use tui::text::Spans;
-use tui::widgets::{Block, Borders, Tabs, Paragraph};
+use tui::widgets::{Block, Borders, Paragraph, Tabs};
 use tui::{Frame, Terminal};
 
 pub mod download_tab;
-mod version_tab;
 mod log_tab;
+mod version_tab;
 
 pub struct App {
     pub version_tab: version_tab::VersionTab,
@@ -113,7 +113,14 @@ impl App {
             };
             terminal.draw(|f| {
                 let chunks = Layout::default()
-                    .constraints([Constraint::Length(3), Constraint::Min(0), Constraint::Length(1)].as_ref())
+                    .constraints(
+                        [
+                            Constraint::Length(3),
+                            Constraint::Min(0),
+                            Constraint::Length(1),
+                        ]
+                        .as_ref(),
+                    )
                     .split(f.size());
 
                 let mut ve: Vec<Spans> = Vec::new();
@@ -128,7 +135,10 @@ impl App {
                     .select(selected_tab);
                 f.render_widget(tabs, chunks[0]);
                 self.render(f, chunks[1]);
-                f.render_widget(Paragraph::new(vec![Spans::from("© 2021 CatCore")]), chunks[2]);
+                f.render_widget(
+                    Paragraph::new(vec![Spans::from("© 2021 CatCore")]),
+                    chunks[2],
+                );
             })?;
 
             match rx.recv()? {

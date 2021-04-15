@@ -9,13 +9,13 @@ use std::{
 mod app;
 mod arguments;
 mod install;
+mod launch;
 mod manifest;
+mod modding;
 mod options;
 mod path;
 mod rendering;
 mod utils;
-mod modding;
-mod launch;
 
 use manifest::version;
 

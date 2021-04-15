@@ -1,4 +1,3 @@
-
 const MAVEN: &str = "http://dl.liteloader.com/versions/";
 
 const MAIN_CLASS: &str = "net.minecraft.launchwrapper.Launch";

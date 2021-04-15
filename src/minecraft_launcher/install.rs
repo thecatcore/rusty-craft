@@ -267,7 +267,7 @@ fn install_libraries(
                                         }
                                     }
                                 }
-                            },
+                            }
                         }
 
                         match downloads.classifiers {
@@ -301,8 +301,9 @@ fn install_libraries(
                                         match lib_path.metadata() {
                                             Ok(meta) => {
                                                 if meta.len() != class.size {
-                                                    match path::download_file_to(&class.url, &lib_path)
-                                                    {
+                                                    match path::download_file_to(
+                                                        &class.url, &lib_path,
+                                                    ) {
                                                         Ok(_) => {}
                                                         Err(ohno) => {
                                                             println!("{}", ohno);
@@ -338,8 +339,14 @@ fn install_libraries(
                     None => {}
                     Some(url) => {
                         downloaded = true;
-                        let url_path =
-                            group.replace(".", "/") + "/" + name + "/" + name + "-" + version + ".jar";
+                        let url_path = group.replace(".", "/")
+                            + "/"
+                            + name
+                            + "/"
+                            + name
+                            + "-"
+                            + version
+                            + ".jar";
                         match path::get_library_path(&url_path) {
                             None => {
                                 result = None;
@@ -347,7 +354,10 @@ fn install_libraries(
                             }
                             Some(lib_path) => {
                                 if !lib_path.exists() {
-                                    match path::download_file_to(&(url + "/" + &*url_path), &lib_path) {
+                                    match path::download_file_to(
+                                        &(url + "/" + &*url_path),
+                                        &lib_path,
+                                    ) {
                                         Ok(_) => {}
                                         Err(ohno) => {
                                             println!("{}", ohno);
@@ -371,7 +381,11 @@ fn install_libraries(
                         }
                         Some(lib_path) => {
                             if !lib_path.exists() {
-                                match path::download_file_to(&(String::from("https://libraries.minecraft.net/") + &*url_path), &lib_path) {
+                                match path::download_file_to(
+                                    &(String::from("https://libraries.minecraft.net/")
+                                        + &*url_path),
+                                    &lib_path,
+                                ) {
                                     Ok(_) => {}
                                     Err(ohno) => {
                                         println!("{}", ohno);
