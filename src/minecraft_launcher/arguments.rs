@@ -152,6 +152,11 @@ pub fn match_rules(rules: Vec<version::Rule>, options: Option<&LaunchOptions>) -
             }
             if mat {
                 val = rule.action;
+            } else {
+                val = match rule.action {
+                    RuleAction::Allow => {RuleAction::Disallow}
+                    RuleAction::Disallow => {RuleAction::Allow}
+                }
             }
         } else {
             val = rule.action;

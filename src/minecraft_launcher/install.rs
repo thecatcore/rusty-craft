@@ -212,142 +212,140 @@ fn install_libraries(
             Some(rules) => arguments::match_rules(rules, None),
         };
 
-        if allowed.to_string() == RuleAction::Allow.to_string() {
-            let mut classifiers: HashMap<String, LibraryDownloadArtifact> = HashMap::new();
+        match allowed {
+            RuleAction::Allow => {
+                let mut classifiers: HashMap<String, LibraryDownloadArtifact> = HashMap::new();
 
-            match library.downloads {
-                None => {}
-                Some(downloads) => {
-                    match downloads.artifact {
-                        None => {}
-                        Some(artifact) => match path::get_library_path(&artifact.path) {
-                            None => {
-                                result = None;
-                                break;
-                            }
-                            Some(lib_path) => {
-                                if lib_path.exists() && lib_path.is_file() {
-                                    match lib_path.metadata() {
-                                        Ok(meta) => {
-                                            if meta.len() != artifact.size {
-                                                match path::download_file_to(
-                                                    &artifact.url,
-                                                    &lib_path,
-                                                ) {
-                                                    Ok(_) => {}
-                                                    Err(err) => {
-                                                        println!("{}", err);
-                                                        result = None;
-                                                        break;
+                match library.downloads {
+                    None => {}
+                    Some(downloads) => {
+                        match downloads.artifact {
+                            None => {}
+                            Some(artifact) => match path::get_library_path(&artifact.path) {
+                                None => {
+                                    result = None;
+                                    break;
+                                }
+                                Some(lib_path) => {
+                                    if lib_path.exists() && lib_path.is_file() {
+                                        match lib_path.metadata() {
+                                            Ok(meta) => {
+                                                if meta.len() != artifact.size {
+                                                    match path::download_file_to(
+                                                        &artifact.url,
+                                                        &lib_path,
+                                                    ) {
+                                                        Ok(_) => {}
+                                                        Err(err) => {
+                                                            println!("{}", err);
+                                                            result = None;
+                                                            break;
+                                                        }
                                                     }
                                                 }
                                             }
+                                            Err(meta_err) => {
+                                                println!("{}", meta_err);
+                                                result = None;
+                                                break;
+                                            }
                                         }
-                                        Err(meta_err) => {
-                                            println!("{}", meta_err);
-                                            result = None;
-                                            break;
-                                        }
-                                    }
-                                } else {
-                                    match path::download_file_to(&artifact.url, &lib_path) {
-                                        Ok(_) => {}
-                                        Err(ohno) => {
-                                            println!("{}", ohno);
-                                            result = None;
-                                            break;
+                                    } else {
+                                        match path::download_file_to(&artifact.url, &lib_path) {
+                                            Ok(_) => {}
+                                            Err(ohno) => {
+                                                println!("{}", ohno);
+                                                result = None;
+                                                break;
+                                            }
                                         }
                                     }
                                 }
-                            }
-                        },
-                    }
+                            },
+                        }
 
-                    match downloads.classifiers {
-                        None => {}
-                        Some(class) => {
-                            for classier in class {
-                                classifiers.insert(classier.0, classier.1);
+                        match downloads.classifiers {
+                            None => {}
+                            Some(class) => {
+                                for classier in class {
+                                    classifiers.insert(classier.0, classier.1);
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            match library.natives {
-                None => {}
-                Some(nat) => match nat.get(arguments::get_os().to_str().as_str()) {
+                match library.natives {
                     None => {}
-                    Some(nat_name) => match classifiers.get(nat_name) {
+                    Some(nat) => match nat.get(arguments::get_os().to_str().as_str()) {
                         None => {}
-                        Some(class) => match path::get_library_path(&class.path) {
+                        Some(nat_name) => match classifiers.get(nat_name) {
                             None => {
                                 result = None;
                                 break;
                             }
-                            Some(lib_path) => {
-                                if lib_path.exists() && lib_path.is_file() {
-                                    match lib_path.metadata() {
-                                        Ok(meta) => {
-                                            if meta.len() != class.size {
-                                                match path::download_file_to(&class.url, &lib_path)
-                                                {
-                                                    Ok(_) => {}
-                                                    Err(ohno) => {
-                                                        println!("{}", ohno);
-                                                        result = None;
-                                                        break;
+                            Some(class) => match path::get_library_path(&class.path) {
+                                None => {
+                                    result = None;
+                                    break;
+                                }
+                                Some(lib_path) => {
+                                    if lib_path.exists() && lib_path.is_file() {
+                                        match lib_path.metadata() {
+                                            Ok(meta) => {
+                                                if meta.len() != class.size {
+                                                    match path::download_file_to(&class.url, &lib_path)
+                                                    {
+                                                        Ok(_) => {}
+                                                        Err(ohno) => {
+                                                            println!("{}", ohno);
+                                                            result = None;
+                                                            break;
+                                                        }
                                                     }
                                                 }
                                             }
+                                            Err(meta_err) => {
+                                                println!("{}", meta_err);
+                                                result = None;
+                                                break;
+                                            }
                                         }
-                                        Err(meta_err) => {
-                                            println!("{}", meta_err);
-                                            result = None;
-                                            break;
-                                        }
-                                    }
-                                } else {
-                                    match path::download_file_to(&class.url, &lib_path) {
-                                        Ok(_) => {}
-                                        Err(ohno) => {
-                                            println!("{}", ohno);
-                                            result = None;
-                                            break;
+                                    } else {
+                                        match path::download_file_to(&class.url, &lib_path) {
+                                            Ok(_) => {}
+                                            Err(ohno) => {
+                                                println!("{}", ohno);
+                                                result = None;
+                                                break;
+                                            }
                                         }
                                     }
                                 }
-                            }
+                            },
                         },
                     },
-                },
-            }
-
-            match library.extract {
-                None => {}
-                Some(_) => {
-                    // println!("Library extraction is not handled yet, sorry :/")
                 }
-            }
 
-            match library.url {
-                None => {}
-                Some(url) => {
-                    let url_path =
-                        group.replace(".", "/") + "/" + name + "/" + name + "-" + version + ".jar";
-                    match path::get_library_path(&url_path) {
-                        None => {
-                            result = None;
-                            break;
-                        }
-                        Some(lib_path) => {
-                            if !lib_path.exists() {
-                                match path::download_file_to(&(url + "/" + &*url_path), &lib_path) {
-                                    Ok(_) => {}
-                                    Err(ohno) => {
-                                        println!("{}", ohno);
-                                        result = None;
-                                        break;
+                match library.url {
+                    None => {}
+                    Some(url) => {
+                        let url_path =
+                            group.replace(".", "/") + "/" + name + "/" + name + "-" + version + ".jar";
+                        match path::get_library_path(&url_path) {
+                            None => {
+                                result = None;
+                                break;
+                            }
+                            Some(lib_path) => {
+                                if !lib_path.exists() {
+                                    match path::download_file_to(&(url + "/" + &*url_path), &lib_path) {
+                                        Ok(_) => {}
+                                        Err(ohno) => {
+                                            println!("{}", ohno);
+                                            result = None;
+                                            break;
+                                        }
                                     }
                                 }
                             }
@@ -355,6 +353,7 @@ fn install_libraries(
                     }
                 }
             }
+            RuleAction::Disallow => {}
         }
     }
 
