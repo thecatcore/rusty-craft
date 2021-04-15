@@ -214,6 +214,7 @@ fn install_libraries(
 
         match allowed {
             RuleAction::Allow => {
+                let mut downloaded = false;
                 let mut classifiers: HashMap<String, LibraryDownloadArtifact> = HashMap::new();
 
                 match library.downloads {
@@ -221,42 +222,45 @@ fn install_libraries(
                     Some(downloads) => {
                         match downloads.artifact {
                             None => {}
-                            Some(artifact) => match path::get_library_path(&artifact.path) {
-                                None => {
-                                    result = None;
-                                    break;
-                                }
-                                Some(lib_path) => {
-                                    if lib_path.exists() && lib_path.is_file() {
-                                        match lib_path.metadata() {
-                                            Ok(meta) => {
-                                                if meta.len() != artifact.size {
-                                                    match path::download_file_to(
-                                                        &artifact.url,
-                                                        &lib_path,
-                                                    ) {
-                                                        Ok(_) => {}
-                                                        Err(err) => {
-                                                            println!("{}", err);
-                                                            result = None;
-                                                            break;
+                            Some(artifact) => {
+                                downloaded = true;
+                                match path::get_library_path(&artifact.path) {
+                                    None => {
+                                        result = None;
+                                        break;
+                                    }
+                                    Some(lib_path) => {
+                                        if lib_path.exists() && lib_path.is_file() {
+                                            match lib_path.metadata() {
+                                                Ok(meta) => {
+                                                    if meta.len() != artifact.size {
+                                                        match path::download_file_to(
+                                                            &artifact.url,
+                                                            &lib_path,
+                                                        ) {
+                                                            Ok(_) => {}
+                                                            Err(err) => {
+                                                                println!("{}", err);
+                                                                result = None;
+                                                                break;
+                                                            }
                                                         }
                                                     }
                                                 }
+                                                Err(meta_err) => {
+                                                    println!("{}", meta_err);
+                                                    result = None;
+                                                    break;
+                                                }
                                             }
-                                            Err(meta_err) => {
-                                                println!("{}", meta_err);
-                                                result = None;
-                                                break;
-                                            }
-                                        }
-                                    } else {
-                                        match path::download_file_to(&artifact.url, &lib_path) {
-                                            Ok(_) => {}
-                                            Err(ohno) => {
-                                                println!("{}", ohno);
-                                                result = None;
-                                                break;
+                                        } else {
+                                            match path::download_file_to(&artifact.url, &lib_path) {
+                                                Ok(_) => {}
+                                                Err(ohno) => {
+                                                    println!("{}", ohno);
+                                                    result = None;
+                                                    break;
+                                                }
                                             }
                                         }
                                     }
@@ -267,6 +271,7 @@ fn install_libraries(
                         match downloads.classifiers {
                             None => {}
                             Some(class) => {
+                                downloaded = true;
                                 for classier in class {
                                     classifiers.insert(classier.0, classier.1);
                                 }
@@ -330,6 +335,7 @@ fn install_libraries(
                 match library.url {
                     None => {}
                     Some(url) => {
+                        downloaded = true;
                         let url_path =
                             group.replace(".", "/") + "/" + name + "/" + name + "-" + version + ".jar";
                         match path::get_library_path(&url_path) {
@@ -346,6 +352,29 @@ fn install_libraries(
                                             result = None;
                                             break;
                                         }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if !downloaded {
+                    let url_path =
+                        group.replace(".", "/") + "/" + name + "/" + name + "-" + version + ".jar";
+                    match path::get_library_path(&url_path) {
+                        None => {
+                            result = None;
+                            break;
+                        }
+                        Some(lib_path) => {
+                            if !lib_path.exists() {
+                                match path::download_file_to(&("https://libraries.minecraft.net/" + &*url_path), &lib_path) {
+                                    Ok(_) => {}
+                                    Err(ohno) => {
+                                        println!("{}", ohno);
+                                        result = None;
+                                        break;
                                     }
                                 }
                             }
