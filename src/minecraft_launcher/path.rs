@@ -253,6 +253,10 @@ pub fn get_java_folder_path_sub(type_: &String) -> Option<PathBuf> {
     }
 }
 
+pub fn get_bin_folder(version_name: String) -> Option<PathBuf> {
+    get_or_create_dirs(&get_minecraft_directory(), vec![String::from("bin"), version_name])
+}
+
 fn get_os_java_name() -> &'static str {
     match consts::OS {
         "windows" => match consts::ARCH {

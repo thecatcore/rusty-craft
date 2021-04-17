@@ -4,6 +4,7 @@ mod liteloader;
 mod legacy_fabric;
 mod fabric;
 mod cursed_legacy;
+mod rift;
 
 pub trait ModLoaderInstaller {
 
