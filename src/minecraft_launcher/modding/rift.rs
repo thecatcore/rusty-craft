@@ -45,11 +45,11 @@ impl ModLoaderInstaller for RiftInstaller {
         for lib in LIBS.iter() {
             libs.push(Library {
                 downloads: None,
-                name: String::from(libs.0),
+                name: String::from(lib.0),
                 extract: None,
                 natives: None,
                 rules: None,
-                url: if lib.1.is_empty() { None } else { String::from(lib.1) }
+                url: if lib.1.is_empty() { None } else { Some(String::from(lib.1)) }
             });
         };
 

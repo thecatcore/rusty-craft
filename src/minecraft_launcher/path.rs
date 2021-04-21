@@ -90,14 +90,14 @@ pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> 
                     match File::open(path) {
                         Ok(file) => file,
                         Err(err) => {
-                            return Err(format!("Failed to download {}: {}", url, err));
+                            return Err(format!("Failed to download {} to {}: {}", url, path.to_str().unwrap(), err));
                         }
                     }
                 } else {
                     match File::create(path) {
                         Ok(file) => file,
                         Err(err) => {
-                            return Err(format!("Failed to download {}: {}", url, err));
+                            return Err(format!("Failed to download {} to {}: {}", url, path.to_str().unwrap(), err));
                         }
                     }
                 };
@@ -108,7 +108,7 @@ pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> 
                         url,
                         path.file_name().expect("Ohno").to_str().expect("OhnoV2")
                     )),
-                    Err(err) => Err(format!("Failed to download {}: {}", url, err)),
+                    Err(err) => Err(format!("Failed to download {} to {}: {}", url, path.to_str().unwrap(), err)),
                 }
             }
             ReturnType::String(_) => {
@@ -116,8 +116,7 @@ pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> 
             }
         },
         Err(err) => Err(format!(
-            "Failed to download {}: {}",
-            url,
+            "Failed to download {} to {}: {}", url, path.to_str().unwrap(),
             match err {
                 ErrorType::STD(e) => {
                     e.to_string()
@@ -209,23 +208,11 @@ pub fn get_library_path(sub: &String) -> Option<PathBuf> {
         None => None,
         Some(vs) => {
             if sub.contains("/") {
-                let mut subs: Vec<&str> = sub.split("/").collect();
-
-                let file_name = subs.remove(subs.len() - 1);
-
-                let mut path = vs;
-
-                for sub in subs {
-                    let sub_path = get_or_create_dir(&path, String::from(sub));
-                    match sub_path {
-                        None => return None,
-                        Some(s_path) => {
-                            path = s_path;
-                        }
-                    }
+                let sub = PathBuf::from(sub);
+                match get_or_create_dir(&vs, sub.parent().unwrap().to_str().unwrap().parse().unwrap()) {
+                    None => None,
+                    Some(lib_fol) => Some(lib_fol.join(sub.components().last().unwrap().as_os_str()))
                 }
-
-                Some(path.join(file_name))
             } else {
                 get_or_create_dir(&vs, sub.clone())
             }

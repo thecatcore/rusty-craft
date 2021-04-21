@@ -1,5 +1,6 @@
 use crate::minecraft_launcher::app::Action;
 use crate::minecraft_launcher::install;
+use crate::minecraft_launcher::launch;
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crossterm::event::KeyCode;
 use std::io::Stdout;
@@ -85,9 +86,9 @@ impl DownloadTab {
                 let main_gauge = Gauge::default()
                     .block(Block::default().borders(Borders::ALL))
                     .gauge_style(Style::default().bg(Color::White).fg(Color::Black))
-                    .ratio((self.current_step as f64 / 7.0) as f64)
+                    .ratio((self.current_step as f64 / 8.0) as f64)
                     .label(format!(
-                        "{}/7 - {}",
+                        "{}/8 - {}",
                         self.current_step,
                         get_step_name(self.current_step)
                     ));
@@ -133,7 +134,8 @@ fn get_step_name(index: u8) -> &'static str {
         4 => "Checking libraries",
         5 => "Checking assets",
         6 => "Checking log file",
-        _ => "Done",
+        7 => "Extracting natives",
+        _ => "Done"
     }
 }
 

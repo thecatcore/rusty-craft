@@ -61,7 +61,7 @@ impl App {
 
     pub fn run(mut self) -> Result<(), Box<dyn Error>> {
         let cli = Cli {
-            tick_rate: 10,
+            tick_rate: 250,
             enhanced_graphics: true,
         };
 
@@ -76,6 +76,7 @@ impl App {
         let (tx, rx) = mpsc::channel();
 
         let tick_rate = Duration::from_millis(cli.tick_rate);
+        let tx2 = tx.clone();
         thread::spawn(move || {
             let mut last_tick = Instant::now();
             loop {
@@ -92,7 +93,21 @@ impl App {
                     }
                 }
                 if last_tick.elapsed() >= tick_rate {
-                    match tx.send(Event::Tick) {
+                    // match tx.send(Event::Tick) {
+                    //     Ok(_) => {
+                    //
+                    //     }
+                    //     Err(_) => {}
+                    // };
+                    last_tick = Instant::now();
+                }
+            }
+        });
+        thread::spawn(move || {
+            let mut last_tick = Instant::now();
+            loop {
+                if last_tick.elapsed() >= Duration::from_millis(10) {
+                    match tx2.send(Event::Tick) {
                         Ok(_) => {
                             last_tick = Instant::now();
                         }

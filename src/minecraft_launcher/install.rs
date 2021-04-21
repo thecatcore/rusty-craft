@@ -4,6 +4,7 @@ use crate::minecraft_launcher::{
     manifest::version,
     manifest::version::{LibraryDownloadArtifact, RuleAction},
     path,
+    launch,
 };
 
 use crate::minecraft_launcher::app::download_tab::Message;
@@ -108,8 +109,7 @@ fn install_version_from_manifest(
                                     match check_log_file(version_manifest, tx) {
                                         None => None,
                                         Some(tx) => {
-                                            tx.send(Message::NewStep(7))
-                                                .expect("Can't send message to renderer thread");
+                                            launch::pre_launch(version_manifest.clone(), tx);
                                             Some(())
                                         }
                                     }
