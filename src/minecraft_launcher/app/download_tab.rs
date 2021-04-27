@@ -1,4 +1,4 @@
-use crate::minecraft_launcher::app::Action;
+use crate::minecraft_launcher::app::{Action, TabBinding, TabTrait};
 use crate::minecraft_launcher::install;
 use crate::minecraft_launcher::launch;
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
@@ -48,8 +48,10 @@ impl DownloadTab {
 
         self.rx = Some(rx);
     }
+}
 
-    pub fn render(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect) {
+impl TabTrait for DownloadTab {
+    fn render(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect) {
         match &self.rx {
             None => {}
             Some(rx) => {
@@ -121,8 +123,14 @@ impl DownloadTab {
         }
     }
 
-    pub fn on_key_press(&mut self, _key_code: KeyCode) -> Action {
+    fn on_key_press(&mut self, _key_code: KeyCode) -> Action {
         Action::None
+    }
+
+    fn get_bindings(&self) -> Vec<TabBinding> {
+        let mut vec = Vec::new();
+
+        vec
     }
 }
 

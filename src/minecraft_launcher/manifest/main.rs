@@ -86,6 +86,10 @@ impl VersionType {
     pub fn is_old(&self) -> bool {
         self == &VersionType::OldAlpha || self == &VersionType::OldBeta
     }
+
+    pub fn is_release(&self) -> bool {
+        self == &VersionType::Release
+    }
 }
 
 impl Version {

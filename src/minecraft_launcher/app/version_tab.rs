@@ -1,4 +1,4 @@
-use crate::minecraft_launcher::app::{Action, Tab};
+use crate::minecraft_launcher::app::{Action, Tab, TabBinding, TabTrait};
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crate::minecraft_launcher::rendering::utils::StatefulTable;
 use crossterm::event::KeyCode;
@@ -25,21 +25,38 @@ impl VersionTab {
         let mut items: Vec<MinVersion> = Vec::new();
 
         for version in self.all_versions.clone() {
-            if (self.snapshot == version._type.is_snapshot())
-                && (self.old == version._type.is_old())
-            {
-                items.push(version.clone());
+            if version._type.is_release() {
+                items.push(version.clone())
+            } else if self.snapshot && version._type.is_snapshot() {
+                items.push(version.clone())
+            } else if self.old && version._type.is_old() {
+                items.push(version.clone())
             }
         }
 
         self.current_table = StatefulTable::with_items(items);
     }
 
-    pub fn render(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect) {
-        // self.build_table_state();
+    pub fn select(&mut self) {
+        match self
+            .current_table
+            .items
+            .get(self.current_table.state.selected().expect(":flushed:"))
+        {
+            None => self.selected = None,
+            Some(version) => self.selected = Some(version.clone()),
+        }
+    }
+}
+
+impl TabTrait for VersionTab {
+
+    fn render(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect) {
         let chunks = Layout::default()
-            .direction(Direction::Horizontal)
-            .constraints([Constraint::Ratio(1, 1)])
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Ratio(1, 1)
+            ])
             .split(area);
 
         let version_list: Vec<Row> = self
@@ -82,7 +99,7 @@ impl VersionTab {
         f.render_stateful_widget(table, chunks[0], &mut self.current_table.state);
     }
 
-    pub fn on_key_press(&mut self, key_code: KeyCode) -> Action {
+    fn on_key_press(&mut self, key_code: KeyCode) -> Action {
         match key_code {
             KeyCode::Enter => {
                 self.select();
@@ -101,18 +118,29 @@ impl VersionTab {
                 self.current_table.next();
                 Action::None
             }
+            KeyCode::Char('s') => {
+                self.snapshot = !self.snapshot;
+                self.build_table_state();
+                Action::None
+            }
+            KeyCode::Char('o') => {
+                self.old = !self.old;
+                self.build_table_state();
+                Action::None
+            }
             _ => Action::None,
         }
     }
 
-    pub fn select(&mut self) {
-        match self
-            .current_table
-            .items
-            .get(self.current_table.state.selected().expect(":flushed:"))
-        {
-            None => self.selected = None,
-            Some(version) => self.selected = Some(version.clone()),
-        }
+    fn get_bindings(&self) -> Vec<TabBinding> {
+        let mut vec = Vec::new();
+
+        vec.push(TabBinding::Default(String::from("ENTER"), String::from("Install and Launch selected version")));
+        vec.push(TabBinding::Default(String::from("UP"), String::from("Move selector up")));
+        vec.push(TabBinding::Default(String::from("DOWN"), String::from("Move selector down")));
+        vec.push(TabBinding::Enablable(String::from("S"), String::from("Show/Hide snapshots"), self.snapshot));
+        vec.push(TabBinding::Enablable(String::from("O"), String::from("Show/Hide old betas and alphas"), self.old));
+
+        vec
     }
 }
