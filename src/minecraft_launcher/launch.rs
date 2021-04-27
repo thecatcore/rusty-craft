@@ -70,6 +70,8 @@ pub fn pre_launch(manifest: Main, mut tx: Sender<Message>) {
                                                     None => {}
                                                     Some(lib_path) => if lib_path.exists() {
                                                         tx = extract_natives(bin_folder.clone(), lib_path, exclude, tx);
+                                                        tx.send(Message::NewStep(8))
+                                                            .expect("Can't send message to renderer thread");
                                                     }
                                                 }
                                             }
@@ -109,24 +111,13 @@ fn extract_natives(bin_folder: PathBuf, lib_path: PathBuf, exclude: Option<Vec<S
         };
 
         if !excludes.contains(&String::from(file.name())) && !excludes.contains(&(String::from(file.name()) + "/")) {
-            let name = String::from(file.name());
-
-            if name.contains("/") {
-                let parent = outpath.parent().unwrap().as_os_str().to_str().unwrap();
-                match path::get_or_create_dir(&bin_folder, String::from(parent)) {
+            let file_path = outpath.as_os_str();
+            if file.is_dir() {
+                match path::get_or_create_dir(&bin_folder, String::from(file_path.to_str().unwrap())) {
                     None => {}
-                    Some(parent) => {
-                        let child = parent.join(outpath.components().last().unwrap().as_os_str());
-                        match File::create(child) {
-                            Ok(mut outfile) => {
-                                io::copy(&mut file, &mut outfile).unwrap();
-                            }
-                            Err(_) => {}
-                        }
-                    }
+                    Some(_) => {}
                 }
-            } else {
-                let file_path = outpath.as_os_str();
+            } else if file.is_file() {
                 match File::create(bin_folder.join(file_path)) {
                     Ok(mut outfile) => {
                         io::copy(&mut file, &mut outfile).unwrap();
