@@ -1,6 +1,6 @@
+use crate::minecraft_launcher::manifest::version::{Library, Main, VersionType};
 use crate::minecraft_launcher::modding::ModLoaderInstaller;
-use crate::minecraft_launcher::manifest::version::{Main, Library, VersionType};
-use chrono::{Utc};
+use chrono::Utc;
 
 const MAVEN: &str = "http://dl.liteloader.com/versions/";
 const MAIN_CLASS: &str = "net.minecraft.launchwrapper.Launch";
@@ -195,12 +195,15 @@ impl LiteLoaderInstaller {
         LiteLoaderInstaller {}
     }
 
-    fn get_version(&self, mc_version: String) -> Option<(&'static str, bool, [&'static str; 4], &'static str)> {
+    fn get_version(
+        &self,
+        mc_version: String,
+    ) -> Option<(&'static str, bool, [&'static str; 4], &'static str)> {
         for version in VERSIONS.iter() {
             if version.0 == mc_version.as_str() {
                 return Some(version.clone());
             }
-        };
+        }
         None
     }
 }
@@ -229,7 +232,11 @@ impl ModLoaderInstaller for LiteLoaderInstaller {
         }
     }
 
-    fn get_profile_name_for_loader_version(&self, mc_version: String, _loader_version: String) -> String {
+    fn get_profile_name_for_loader_version(
+        &self,
+        mc_version: String,
+        _loader_version: String,
+    ) -> String {
         self.get_profile_name_for_mc_version(mc_version)
     }
 
@@ -249,7 +256,7 @@ impl ModLoaderInstaller for LiteLoaderInstaller {
             extract: None,
             natives: None,
             rules: None,
-            url: Some(String::from(MAVEN))
+            url: Some(String::from(MAVEN)),
         });
         // Launch Wrapper
         if !version_info.2[0].is_empty() {
@@ -259,7 +266,7 @@ impl ModLoaderInstaller for LiteLoaderInstaller {
                 extract: None,
                 natives: None,
                 rules: None,
-                url: None
+                url: None,
             });
         }
         // lzma
@@ -270,7 +277,7 @@ impl ModLoaderInstaller for LiteLoaderInstaller {
                 extract: None,
                 natives: None,
                 rules: None,
-                url: None
+                url: None,
             });
         }
         // ASM
@@ -283,7 +290,9 @@ impl ModLoaderInstaller for LiteLoaderInstaller {
                 rules: None,
                 url: if mc_version.as_str() == "1.12.2" {
                     Some(String::from("http://repo.liteloader.com/"))
-                } else {None}
+                } else {
+                    None
+                },
             });
         }
         // guava
@@ -294,7 +303,7 @@ impl ModLoaderInstaller for LiteLoaderInstaller {
                 extract: None,
                 natives: None,
                 rules: None,
-                url: None
+                url: None,
             });
         }
 
@@ -314,7 +323,7 @@ impl ModLoaderInstaller for LiteLoaderInstaller {
             time: Utc::now(),
             _type: VersionType::Release,
             minecraft_arguments: Some(String::from(version_info.3)),
-            inherits_from: Some(inherits_from)
+            inherits_from: Some(inherits_from),
         }
     }
 }

@@ -265,35 +265,49 @@ fn install_java_version(
                         if el_type == "directory" {
                             status = match path::get_or_create_dir(&v_folder, file_path.clone()) {
                                 None => {
-                                    tx.send(Message::Error(format!("Unable to create folder {} in folder {}", file_path, &v_folder.display())))
-                                        .expect("Can't send message to renderer thread");
+                                    tx.send(Message::Error(format!(
+                                        "Unable to create folder {} in folder {}",
+                                        file_path,
+                                        &v_folder.display()
+                                    )))
+                                    .expect("Can't send message to renderer thread");
                                     None
-                                },
+                                }
                                 Some(_) => Some(()),
                             }
                         } else if el_type == "file" {
                             status = match element_info.downloads {
                                 None => {
-                                    tx.send(Message::Error(format!("Failed to get download for file {}", file_path)))
-                                        .expect("Can't send message to renderer thread");
+                                    tx.send(Message::Error(format!(
+                                        "Failed to get download for file {}",
+                                        file_path
+                                    )))
+                                    .expect("Can't send message to renderer thread");
                                     None
                                 }
                                 Some(downloads) => {
                                     let url = downloads.raw.url;
                                     if file_path.contains("/") {
                                         let file_pathbuf = PathBuf::from(file_path);
-                                        match path::get_or_create_dir(&v_folder, String::from(file_pathbuf.parent().unwrap().to_str().unwrap())) {
+                                        match path::get_or_create_dir(
+                                            &v_folder,
+                                            String::from(
+                                                file_pathbuf.parent().unwrap().to_str().unwrap(),
+                                            ),
+                                        ) {
                                             None => {
-                                                tx.send(Message::Error(format!("Unable to create folders")))
+                                                tx.send(Message::Error(format!(
+                                                    "Unable to create folders"
+                                                )))
                                                 .expect("Can't send message to renderer thread");
                                                 None
                                             }
                                             Some(sub_pathh) => {
                                                 // println!("Created folders");
-                                                let file_buf = sub_pathh.join(file_pathbuf.components().last().unwrap());
-                                                match path::download_file_to(
-                                                    &url, &file_buf,
-                                                ) {
+                                                let file_buf = sub_pathh.join(
+                                                    file_pathbuf.components().last().unwrap(),
+                                                );
+                                                match path::download_file_to(&url, &file_buf) {
                                                     Ok(_) => {
                                                         // println!(
                                                         //     "Successfully downloaded file!"
@@ -310,7 +324,9 @@ fn install_java_version(
                                                             "Failed to download file: {}",
                                                             err
                                                         )))
-                                                        .expect("Can't send message to renderer thread");
+                                                        .expect(
+                                                            "Can't send message to renderer thread",
+                                                        );
                                                         None
                                                     }
                                                 }
@@ -330,7 +346,10 @@ fn install_java_version(
                                                 }
                                             }
                                             Err(err) => {
-                                                tx.send(Message::Error(format!("Failed to download file: \n{}", err)))
+                                                tx.send(Message::Error(format!(
+                                                    "Failed to download file: \n{}",
+                                                    err
+                                                )))
                                                 .expect("Can't send message to renderer thread");
                                                 None
                                             }
@@ -386,13 +405,21 @@ fn install_java_version(
                     }
                 }
                 Err(err) => {
-                    tx.send(Message::Error(format!("Failed to parse java_version_manifest {}", err))).expect("Can't send message to renderer thread");
+                    tx.send(Message::Error(format!(
+                        "Failed to parse java_version_manifest {}",
+                        err
+                    )))
+                    .expect("Can't send message to renderer thread");
                     None
                 }
             }
         }
         Err(err) => {
-            tx.send(Message::Error(format!("Failed to read java_version_manifest {}", err))).expect("Can't send message to renderer thread");
+            tx.send(Message::Error(format!(
+                "Failed to read java_version_manifest {}",
+                err
+            )))
+            .expect("Can't send message to renderer thread");
             None
         }
     }
@@ -400,8 +427,7 @@ fn install_java_version(
 
 fn get_java_folder_for_os() -> String {
     match std::env::consts::OS {
-        "macos" =>
-            String::from("jre.bundle/Contents/Home/bin"),
+        "macos" => String::from("jre.bundle/Contents/Home/bin"),
         &_ => String::from("bin"),
     }
 }

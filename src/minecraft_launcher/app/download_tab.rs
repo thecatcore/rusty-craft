@@ -7,20 +7,20 @@ use std::io::Stdout;
 use std::sync::mpsc;
 use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::thread;
+use std::time::Duration;
 use tui::backend::CrosstermBackend;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 use tui::style::{Color, Style};
+use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, Gauge, Paragraph, Wrap};
 use tui::Frame;
-use tui::text::{Spans, Span};
-use std::time::Duration;
 
 pub struct DownloadTab {
     rx: Option<Receiver<Message>>,
     current_step: u8,
     current_sub_step: Option<(String, u64, u64)>,
     current_sub_sub_step: Option<(String, u64, u64)>,
-    error: Option<String>
+    error: Option<String>,
 }
 
 impl DownloadTab {
@@ -30,7 +30,7 @@ impl DownloadTab {
             current_step: 1,
             current_sub_step: None,
             current_sub_sub_step: None,
-            error: None
+            error: None,
         }
     }
 
@@ -121,7 +121,7 @@ impl TabTrait for DownloadTab {
                 match self.current_sub_sub_step.clone() {
                     None => {}
                     Some(tuple) => {
-                        let percent = ((tuple.1 as f64 / tuple.2 as f64)*100.0) as u16;
+                        let percent = ((tuple.1 as f64 / tuple.2 as f64) * 100.0) as u16;
                         let sub_gauge = Gauge::default()
                             .block(Block::default().borders(Borders::ALL))
                             .gauge_style(Style::default().bg(Color::White).fg(Color::Black))
@@ -145,30 +145,28 @@ impl TabTrait for DownloadTab {
                     while res.is_ok() {
                         let mut skipable = true;
                         match res.clone() {
-                            Ok(msg) => {
-                                match msg {
-                                    Message::Init => {
-                                        skipable = false;
-                                    }
-                                    Message::NewStep(step) => {
-                                        self.current_step = step;
-                                        self.current_sub_step = None;
-                                        self.current_sub_sub_step = None;
-                                        skipable = false;
-                                    }
-                                    Message::NewSubStep(name, index, max) => {
-                                        self.current_sub_step = Some((name, index, max));
-                                        self.current_sub_sub_step = None;
-                                    }
-                                    Message::NewSubSubStep(name, index, max) => {
-                                        self.current_sub_sub_step = Some((name, index, max))
-                                    }
-                                    Message::Error(err) => {
-                                        self.error = Some(err);
-                                        skipable = false;
-                                    }
+                            Ok(msg) => match msg {
+                                Message::Init => {
+                                    skipable = false;
                                 }
-                            }
+                                Message::NewStep(step) => {
+                                    self.current_step = step;
+                                    self.current_sub_step = None;
+                                    self.current_sub_sub_step = None;
+                                    skipable = false;
+                                }
+                                Message::NewSubStep(name, index, max) => {
+                                    self.current_sub_step = Some((name, index, max));
+                                    self.current_sub_sub_step = None;
+                                }
+                                Message::NewSubSubStep(name, index, max) => {
+                                    self.current_sub_sub_step = Some((name, index, max))
+                                }
+                                Message::Error(err) => {
+                                    self.error = Some(err);
+                                    skipable = false;
+                                }
+                            },
                             Err(_) => {}
                         }
                         if iterations > 100 {
@@ -178,7 +176,7 @@ impl TabTrait for DownloadTab {
                             res = rx.recv_timeout(Duration::from_millis(1));
                             iterations += 1;
                         } else {
-                            break
+                            break;
                         }
                     }
                 }
@@ -206,7 +204,7 @@ fn get_step_name(index: u8) -> &'static str {
         5 => "Checking assets",
         6 => "Checking log file",
         7 => "Extracting natives",
-        _ => "Done"
+        _ => "Done",
     }
 }
 
@@ -216,5 +214,5 @@ pub enum Message {
     NewStep(u8),
     NewSubStep(String, u64, u64),
     NewSubSubStep(String, u64, u64),
-    Error(String)
+    Error(String),
 }

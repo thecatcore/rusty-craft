@@ -345,7 +345,10 @@ impl Main {
 
     pub fn is_modded(&self) -> bool {
         let id = self.id.to_lowercase();
-        id.contains("fabric") || id.contains("forge") || id.contains("liteloader") || id.contains("rift")
+        id.contains("fabric")
+            || id.contains("forge")
+            || id.contains("liteloader")
+            || id.contains("rift")
     }
 }
 

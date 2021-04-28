@@ -12,10 +12,10 @@ use std::sync::mpsc;
 use std::time::{Duration, Instant};
 use std::{io, thread};
 use tui::backend::CrosstermBackend;
-use tui::layout::{Constraint, Layout, Rect, Direction, Alignment};
-use tui::style::{Color, Style, Modifier};
-use tui::text::Spans;
+use tui::layout::{Alignment, Constraint, Direction, Layout, Rect};
+use tui::style::{Color, Modifier, Style};
 use tui::text::Span;
+use tui::text::Spans;
 use tui::widgets::{Block, Borders, Paragraph, Tabs, Wrap};
 use tui::{Frame, Terminal};
 
@@ -50,10 +50,7 @@ impl App {
     pub fn render(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect) {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Min(0),
-                Constraint::Percentage(30)
-            ])
+            .constraints([Constraint::Min(0), Constraint::Percentage(30)])
             .split(area);
 
         match self.current_tab {
@@ -74,7 +71,10 @@ impl App {
         for binding in bindings {
             match binding {
                 TabBinding::Default(key, desc) => {
-                    spans.push(Spans::from(Span::styled(format!("{}: {}", key, desc), Style::default().fg(Color::Yellow))));
+                    spans.push(Spans::from(Span::styled(
+                        format!("{}: {}", key, desc),
+                        Style::default().fg(Color::Yellow),
+                    )));
                 }
                 TabBinding::Enablable(key, desc, enabled) => {
                     let mut style = Style::default();
@@ -102,7 +102,10 @@ impl App {
     fn get_bindings(&mut self) -> Vec<TabBinding> {
         let mut vec = Vec::new();
 
-        vec.push(TabBinding::Default(String::from("ESC"), String::from("Quit App")));
+        vec.push(TabBinding::Default(
+            String::from("ESC"),
+            String::from("Quit App"),
+        ));
 
         match self.current_tab {
             Tab::Version => {
@@ -159,9 +162,7 @@ impl App {
                 }
                 if last_tick.elapsed() >= tick_rate {
                     match tx.send(Event::Tick) {
-                        Ok(_) => {
-
-                        }
+                        Ok(_) => {}
                         Err(_) => {}
                     };
                     last_tick = Instant::now();
@@ -285,11 +286,10 @@ pub enum Tab {
 
 pub enum TabBinding {
     Default(String, String),
-    Enablable(String, String, bool)
+    Enablable(String, String, bool),
 }
 
 pub trait TabTrait {
-
     fn render(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect);
     fn on_key_press(&mut self, _key_code: KeyCode) -> Action;
     fn get_bindings(&self) -> Vec<TabBinding>;

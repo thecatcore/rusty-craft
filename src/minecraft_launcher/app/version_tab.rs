@@ -50,13 +50,10 @@ impl VersionTab {
 }
 
 impl TabTrait for VersionTab {
-
     fn render(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([
-                Constraint::Ratio(1, 1)
-            ])
+            .constraints([Constraint::Ratio(1, 1)])
             .split(area);
 
         let version_list: Vec<Row> = self
@@ -135,11 +132,28 @@ impl TabTrait for VersionTab {
     fn get_bindings(&self) -> Vec<TabBinding> {
         let mut vec = Vec::new();
 
-        vec.push(TabBinding::Default(String::from("ENTER"), String::from("Install and Launch selected version")));
-        vec.push(TabBinding::Default(String::from("UP"), String::from("Move selector up")));
-        vec.push(TabBinding::Default(String::from("DOWN"), String::from("Move selector down")));
-        vec.push(TabBinding::Enablable(String::from("S"), String::from("Show/Hide snapshots"), self.snapshot));
-        vec.push(TabBinding::Enablable(String::from("O"), String::from("Show/Hide old betas and alphas"), self.old));
+        vec.push(TabBinding::Default(
+            String::from("ENTER"),
+            String::from("Install and Launch selected version"),
+        ));
+        vec.push(TabBinding::Default(
+            String::from("UP"),
+            String::from("Move selector up"),
+        ));
+        vec.push(TabBinding::Default(
+            String::from("DOWN"),
+            String::from("Move selector down"),
+        ));
+        vec.push(TabBinding::Enablable(
+            String::from("S"),
+            String::from("Show/Hide snapshots"),
+            self.snapshot,
+        ));
+        vec.push(TabBinding::Enablable(
+            String::from("O"),
+            String::from("Show/Hide old betas and alphas"),
+            self.old,
+        ));
 
         vec
     }

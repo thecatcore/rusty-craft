@@ -79,14 +79,24 @@ pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> 
                     match File::open(path) {
                         Ok(file) => file,
                         Err(err) => {
-                            return Err(format!("Failed to download (open) {} to {}: {}", url, path.to_str().unwrap(), err));
+                            return Err(format!(
+                                "Failed to download (open) {} to {}: {}",
+                                url,
+                                path.to_str().unwrap(),
+                                err
+                            ));
                         }
                     }
                 } else {
                     match File::create(path) {
                         Ok(file) => file,
                         Err(err) => {
-                            return Err(format!("Failed to download (create) {} to {}: {}", url, path.to_str().unwrap(), err));
+                            return Err(format!(
+                                "Failed to download (create) {} to {}: {}",
+                                url,
+                                path.to_str().unwrap(),
+                                err
+                            ));
                         }
                     }
                 };
@@ -97,7 +107,12 @@ pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> 
                         url,
                         path.file_name().expect("Ohno").to_str().expect("OhnoV2")
                     )),
-                    Err(err) => Err(format!("Failed to download (write) {} to {}: {}", url, path.to_str().unwrap(), err)),
+                    Err(err) => Err(format!(
+                        "Failed to download (write) {} to {}: {}",
+                        url,
+                        path.to_str().unwrap(),
+                        err
+                    )),
                 }
             }
             ReturnType::String(_) => {
@@ -105,7 +120,9 @@ pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> 
             }
         },
         Err(err) => Err(format!(
-            "Failed to download {} to {}: {}", url, path.to_str().unwrap(),
+            "Failed to download {} to {}: {}",
+            url,
+            path.to_str().unwrap(),
             match err {
                 ErrorType::STD(e) => {
                     e.to_string()
@@ -198,9 +215,14 @@ pub fn get_library_path(sub: &String) -> Option<PathBuf> {
         Some(vs) => {
             if sub.contains("/") {
                 let sub = PathBuf::from(sub);
-                match get_or_create_dir(&vs, sub.parent().unwrap().to_str().unwrap().parse().unwrap()) {
+                match get_or_create_dir(
+                    &vs,
+                    sub.parent().unwrap().to_str().unwrap().parse().unwrap(),
+                ) {
                     None => None,
-                    Some(lib_fol) => Some(lib_fol.join(sub.components().last().unwrap().as_os_str()))
+                    Some(lib_fol) => {
+                        Some(lib_fol.join(sub.components().last().unwrap().as_os_str()))
+                    }
                 }
             } else {
                 get_or_create_dir(&vs, sub.clone())
@@ -230,7 +252,10 @@ pub fn get_java_folder_path_sub(type_: &String) -> Option<PathBuf> {
 }
 
 pub fn get_bin_folder(version_name: String) -> Option<PathBuf> {
-    get_or_create_dir(&get_minecraft_directory(), String::from("bin/") + &version_name)
+    get_or_create_dir(
+        &get_minecraft_directory(),
+        String::from("bin/") + &version_name,
+    )
 }
 
 fn get_os_java_name() -> &'static str {

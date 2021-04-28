@@ -1,10 +1,9 @@
 use crate::minecraft_launcher::{
-    arguments,
+    arguments, launch,
     manifest::assets,
     manifest::version,
     manifest::version::{LibraryDownloadArtifact, RuleAction},
     path,
-    launch,
 };
 
 use crate::minecraft_launcher::app::download_tab::Message;
