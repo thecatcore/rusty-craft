@@ -622,87 +622,63 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                         match result {
                                             None => None,
                                             Some(tx) => {
-                                                match main.map_to_resources {
-                                                    None => Some(tx),
-                                                    Some(map_to_resources) => {
-                                                        if map_to_resources {
-                                                            tx.send(Message::NewSubStep(format !("Relocating to resources folder"), 3, 3))
-                                                                .expect("Can't send message to renderer thread");
-                                                            match path::get_minecraft_sub_folder(
-                                                                &String::from("resources"),
+                                                if main.map_to_resources {
+                                                    tx.send(Message::NewSubStep(format !("Relocating to resources folder"), 3, 3))
+                                                        .expect("Can't send message to renderer thread");
+                                                    match path::get_minecraft_sub_folder(
+                                                        &String::from("resources"),
+                                                    ) {
+                                                        None => None,
+                                                        Some(resources) => {
+                                                            match path::get_assets_folder(
+                                                                &String::from("objects"),
                                                             ) {
                                                                 None => None,
-                                                                Some(resources) => {
-                                                                    match path::get_assets_folder(
-                                                                        &String::from("objects"),
-                                                                    ) {
-                                                                        None => None,
-                                                                        Some(objects_path) => {
-                                                                            let entry_count =
-                                                                                main.objects.len();
-                                                                            let mut entry_index = 0;
-                                                                            let mut res = Some(());
-                                                                            for (
-                                                                                entry,
-                                                                                asset_info,
-                                                                            ) in main.objects
-                                                                            {
-                                                                                entry_index += 1;
-                                                                                tx.send(Message::NewSubSubStep(format!("{}", entry.clone()), entry_index, entry_count as u64)).expect("Can't send message to renderer thread");
-                                                                                let hashed_path = asset_info.get_download_path(&objects_path);
-                                                                                if hashed_path
-                                                                                    .1
-                                                                                    .exists()
-                                                                                {
-                                                                                    match File::open(
-                                                                                        hashed_path
-                                                                                            .1,
-                                                                                    ) {
-                                                                                        Ok(
-                                                                                            mut
-                                                                                            file,
-                                                                                        ) => {
-                                                                                            let mut body: Vec<u8> = Vec::new();
-                                                                                            match file.read_to_end(&mut body) {
-                                                                                                Ok(_) => {
-                                                                                                    if entry.contains("/") {
-                                                                                                        // let parts: Vec<&str> = entry.split("/").collect();
-                                                                                                        // let mut parts2: Vec<String> = Vec::new();
-                                                                                                        // for part in parts {
-                                                                                                        //     parts2.push(part.to_string());
-                                                                                                        // }
-                                                                                                        let entry_pathbuf = PathBuf::from(entry);
+                                                                Some(objects_path) => {
+                                                                    let entry_count =
+                                                                        main.objects.len();
+                                                                    let mut entry_index = 0;
+                                                                    let mut res = Some(());
+                                                                    for (
+                                                                        entry,
+                                                                        asset_info,
+                                                                    ) in main.objects
+                                                                    {
+                                                                        entry_index += 1;
+                                                                        tx.send(Message::NewSubSubStep(format!("{}", entry.clone()), entry_index, entry_count as u64)).expect("Can't send message to renderer thread");
+                                                                        let hashed_path = asset_info.get_download_path(&objects_path);
+                                                                        if hashed_path
+                                                                            .1
+                                                                            .exists()
+                                                                        {
+                                                                            match File::open(
+                                                                                hashed_path
+                                                                                    .1,
+                                                                            ) {
+                                                                                Ok(
+                                                                                    mut
+                                                                                    file,
+                                                                                ) => {
+                                                                                    let mut body: Vec<u8> = Vec::new();
+                                                                                    match file.read_to_end(&mut body) {
+                                                                                        Ok(_) => {
+                                                                                            if entry.contains("/") {
+                                                                                                // let parts: Vec<&str> = entry.split("/").collect();
+                                                                                                // let mut parts2: Vec<String> = Vec::new();
+                                                                                                // for part in parts {
+                                                                                                //     parts2.push(part.to_string());
+                                                                                                // }
+                                                                                                let entry_pathbuf = PathBuf::from(entry);
 
-                                                                                                        match path::get_or_create_dir(&resources, String::from(entry_pathbuf.parent().unwrap().to_str().unwrap())) {
-                                                                                                            None => {
-                                                                                                                println!("Unable to get asset path");
-                                                                                                                res = None;
-                                                                                                                break;
-                                                                                                            }
-                                                                                                            Some(file_path) => {
-                                                                                                                let file_path = file_path.join(entry_pathbuf.components().last().unwrap());
-                                                                                                                match File::create(file_path) {
-                                                                                                                    Ok(mut file) => {
-                                                                                                                        match file.write(body.as_slice()) {
-                                                                                                                            Ok(_) => {}
-                                                                                                                            Err(err) => {
-                                                                                                                                println!("Unable to write to asset file: {}", err);
-                                                                                                                                res = None;
-                                                                                                                                break;
-                                                                                                                            }
-                                                                                                                        }
-                                                                                                                    }
-                                                                                                                    Err(err) => {
-                                                                                                                        println!("Unable to create asset file: {}", err);
-                                                                                                                        res = None;
-                                                                                                                        break;
-                                                                                                                    }
-                                                                                                                }
-                                                                                                            }
-                                                                                                        }
-                                                                                                    } else {
-                                                                                                        let resource_path = resources.join(entry);
-                                                                                                        match File::create(resource_path) {
+                                                                                                match path::get_or_create_dir(&resources, String::from(entry_pathbuf.parent().unwrap().to_str().unwrap())) {
+                                                                                                    None => {
+                                                                                                        println!("Unable to get asset path");
+                                                                                                        res = None;
+                                                                                                        break;
+                                                                                                    }
+                                                                                                    Some(file_path) => {
+                                                                                                        let file_path = file_path.join(entry_pathbuf.components().last().unwrap());
+                                                                                                        match File::create(file_path) {
                                                                                                             Ok(mut file) => {
                                                                                                                 match file.write(body.as_slice()) {
                                                                                                                     Ok(_) => {}
@@ -721,39 +697,58 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                                                                         }
                                                                                                     }
                                                                                                 }
-                                                                                                Err(err) => {
-                                                                                                    println!("Unable to read asset file: {}", err);
-                                                                                                    res = None;
-                                                                                                    break;
+                                                                                            } else {
+                                                                                                let resource_path = resources.join(entry);
+                                                                                                match File::create(resource_path) {
+                                                                                                    Ok(mut file) => {
+                                                                                                        match file.write(body.as_slice()) {
+                                                                                                            Ok(_) => {}
+                                                                                                            Err(err) => {
+                                                                                                                println!("Unable to write to asset file: {}", err);
+                                                                                                                res = None;
+                                                                                                                break;
+                                                                                                            }
+                                                                                                        }
+                                                                                                    }
+                                                                                                    Err(err) => {
+                                                                                                        println!("Unable to create asset file: {}", err);
+                                                                                                        res = None;
+                                                                                                        break;
+                                                                                                    }
                                                                                                 }
                                                                                             }
                                                                                         }
-                                                                                        Err(
-                                                                                            err,
-                                                                                        ) => {
-                                                                                            println!("Unable to open asset file: {}", err);
+                                                                                        Err(err) => {
+                                                                                            println!("Unable to read asset file: {}", err);
                                                                                             res = None;
                                                                                             break;
                                                                                         }
                                                                                     }
-                                                                                } else {
+                                                                                }
+                                                                                Err(
+                                                                                    err,
+                                                                                ) => {
+                                                                                    println!("Unable to open asset file: {}", err);
                                                                                     res = None;
                                                                                     break;
                                                                                 }
                                                                             }
-
-                                                                            match res {
-                                                                                None => None,
-                                                                                Some(_) => Some(tx),
-                                                                            }
+                                                                        } else {
+                                                                            res = None;
+                                                                            break;
                                                                         }
+                                                                    }
+
+                                                                    match res {
+                                                                        None => None,
+                                                                        Some(_) => Some(tx),
                                                                     }
                                                                 }
                                                             }
-                                                        } else {
-                                                            Some(tx)
                                                         }
                                                     }
+                                                } else {
+                                                    Some(tx)
                                                 }
                                             }
                                         }

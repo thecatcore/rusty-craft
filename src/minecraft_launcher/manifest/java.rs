@@ -8,9 +8,10 @@ pub struct Main {
 
 #[derive(Deserialize, Clone)]
 pub struct Element {
-    #[serde(alias = "type")]
+    #[serde(rename = "type")]
     pub element_type: String,
-    pub executable: Option<bool>,
+    #[serde(default)]
+    pub executable: bool,
     pub downloads: Option<Downloads>,
     pub target: Option<String>,
 }

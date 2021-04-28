@@ -18,14 +18,14 @@ pub struct Latest {
 #[derive(Deserialize, Clone)]
 pub struct Version {
     pub id: String,
-    #[serde(alias = "type")]
+    #[serde(rename = "type")]
     pub _type: VersionType,
     pub url: String,
     pub time: DateTime<Utc>,
-    #[serde(alias = "releaseTime")]
+    #[serde(rename = "releaseTime")]
     pub release_time: DateTime<Utc>,
     pub sha1: String,
-    #[serde(alias = "complianceLevel")]
+    #[serde(rename = "complianceLevel")]
     pub compliance_level: u8,
 }
 
@@ -39,13 +39,13 @@ pub struct MinVersion {
 
 #[derive(Deserialize, Clone)]
 pub enum VersionType {
-    #[serde(alias = "release")]
+    #[serde(rename = "release")]
     Release,
-    #[serde(alias = "snapshot")]
+    #[serde(rename = "snapshot")]
     Snapshot,
-    #[serde(alias = "old_beta")]
+    #[serde(rename = "old_beta")]
     OldBeta,
-    #[serde(alias = "old_alpha")]
+    #[serde(rename = "old_alpha")]
     OldAlpha,
 }
 

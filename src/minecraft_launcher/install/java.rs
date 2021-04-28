@@ -258,10 +258,7 @@ fn install_java_version(
                         .expect("Can't send message to renderer thread");
                         let element_info = file.1;
                         let el_type = element_info.element_type;
-                        let executable = match element_info.executable {
-                            None => false,
-                            Some(bool) => bool,
-                        };
+                        let executable = element_info.executable;
                         if el_type == "directory" {
                             status = match path::get_or_create_dir(&v_folder, file_path.clone()) {
                                 None => {
