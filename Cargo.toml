@@ -17,6 +17,7 @@ serde_json = "1.0.64"
 tui = {version="0.14.0", features = ["crossterm", "serde"], default-features = false}
 crossterm = "0.19.0"
 zip = "0.5.11"
+sage_auth = "0.1.0"
 
 [[bin]]
 name = "rusty-craft"
