@@ -1,7 +1,7 @@
 [package]
 name = "rusty-craft"
 version = "0.1.0"
-authors = ["Cat Core <arthur.koalas@free.fr>"]
+authors = ["Arthur Roussel <arthur.koalas@free.fr>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
