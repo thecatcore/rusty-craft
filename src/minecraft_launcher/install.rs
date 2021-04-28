@@ -667,44 +667,36 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                                                             match file.read_to_end(&mut body) {
                                                                                                 Ok(_) => {
                                                                                                     if entry.contains("/") {
-                                                                                                        let parts: Vec<&str> = entry.split("/").collect();
-                                                                                                        let mut parts2: Vec<String> = Vec::new();
-                                                                                                        for part in parts {
-                                                                                                            parts2.push(part.to_string());
-                                                                                                        }
-                                                                                                        match parts2.split_last() {
+                                                                                                        // let parts: Vec<&str> = entry.split("/").collect();
+                                                                                                        // let mut parts2: Vec<String> = Vec::new();
+                                                                                                        // for part in parts {
+                                                                                                        //     parts2.push(part.to_string());
+                                                                                                        // }
+                                                                                                        let entry_pathbuf = PathBuf::from(entry);
+
+                                                                                                        match path::get_or_create_dir(&resources, String::from(entry_pathbuf.parent().unwrap().to_str().unwrap())) {
                                                                                                             None => {
-                                                                                                                println!("Unable to split_last asset path");
+                                                                                                                println!("Unable to get asset path");
                                                                                                                 res = None;
                                                                                                                 break;
                                                                                                             }
-                                                                                                            Some((file_name, file_path)) => {
-                                                                                                                let parts = Vec::from(file_path);
-                                                                                                                match path::get_or_create_dirs(&resources, parts) {
-                                                                                                                    None => {
-                                                                                                                        println!("Unable to get asset path");
-                                                                                                                        res = None;
-                                                                                                                        break;
-                                                                                                                    }
-                                                                                                                    Some(file_path) => {
-                                                                                                                        let file_path = file_path.join(file_name);
-                                                                                                                        match File::create(file_path) {
-                                                                                                                            Ok(mut file) => {
-                                                                                                                                match file.write(body.as_slice()) {
-                                                                                                                                    Ok(_) => {}
-                                                                                                                                    Err(err) => {
-                                                                                                                                        println!("Unable to write to asset file: {}", err);
-                                                                                                                                        res = None;
-                                                                                                                                        break;
-                                                                                                                                    }
-                                                                                                                                }
-                                                                                                                            }
+                                                                                                            Some(file_path) => {
+                                                                                                                let file_path = file_path.join(entry_pathbuf.components().last().unwrap());
+                                                                                                                match File::create(file_path) {
+                                                                                                                    Ok(mut file) => {
+                                                                                                                        match file.write(body.as_slice()) {
+                                                                                                                            Ok(_) => {}
                                                                                                                             Err(err) => {
-                                                                                                                                println!("Unable to create asset file: {}", err);
+                                                                                                                                println!("Unable to write to asset file: {}", err);
                                                                                                                                 res = None;
                                                                                                                                 break;
                                                                                                                             }
                                                                                                                         }
+                                                                                                                    }
+                                                                                                                    Err(err) => {
+                                                                                                                        println!("Unable to create asset file: {}", err);
+                                                                                                                        res = None;
+                                                                                                                        break;
                                                                                                                     }
                                                                                                                 }
                                                                                                             }

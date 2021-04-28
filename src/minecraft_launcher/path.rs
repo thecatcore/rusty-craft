@@ -13,7 +13,7 @@ pub fn get_or_create_dir(current_folder: &PathBuf, sub: String) -> Option<PathBu
 
             match sub_path.exists() {
                 true => Some(sub_path),
-                false => match fs::create_dir(&sub_path) {
+                false => match fs::create_dir_all(&sub_path) {
                     Ok(_) => Some(sub_path),
                     Err(e) => {
                         print!(
@@ -31,13 +31,13 @@ pub fn get_or_create_dir(current_folder: &PathBuf, sub: String) -> Option<PathBu
                 },
             }
         }
-        false => match fs::create_dir(current_folder) {
+        false => match fs::create_dir_all(current_folder) {
             Ok(_) => {
                 let sub_path = current_folder.join(sub);
 
                 match sub_path.exists() {
                     true => Some(sub_path),
-                    false => match fs::create_dir(&sub_path) {
+                    false => match fs::create_dir_all(&sub_path) {
                         Ok(_) => Some(sub_path),
                         Err(e) => {
                             print!(
@@ -71,17 +71,6 @@ pub fn get_or_create_dir(current_folder: &PathBuf, sub: String) -> Option<PathBu
     }
 }
 
-pub fn get_or_create_dirs(current_folder: &PathBuf, sub: Vec<String>) -> Option<PathBuf> {
-    let mut cur = current_folder.clone();
-    for su in sub {
-        match get_or_create_dir(&cur, su) {
-            None => return None,
-            Some(s) => cur = s.clone(),
-        };
-    }
-    Some(cur)
-}
-
 pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> {
     match read_file_from_url_to_type(url, AskedType::U8Vec) {
         Ok(u8_vec) => match u8_vec {
@@ -90,14 +79,14 @@ pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> 
                     match File::open(path) {
                         Ok(file) => file,
                         Err(err) => {
-                            return Err(format!("Failed to download {} to {}: {}", url, path.to_str().unwrap(), err));
+                            return Err(format!("Failed to download (open) {} to {}: {}", url, path.to_str().unwrap(), err));
                         }
                     }
                 } else {
                     match File::create(path) {
                         Ok(file) => file,
                         Err(err) => {
-                            return Err(format!("Failed to download {} to {}: {}", url, path.to_str().unwrap(), err));
+                            return Err(format!("Failed to download (create) {} to {}: {}", url, path.to_str().unwrap(), err));
                         }
                     }
                 };
@@ -108,7 +97,7 @@ pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> 
                         url,
                         path.file_name().expect("Ohno").to_str().expect("OhnoV2")
                     )),
-                    Err(err) => Err(format!("Failed to download {} to {}: {}", url, path.to_str().unwrap(), err)),
+                    Err(err) => Err(format!("Failed to download (write) {} to {}: {}", url, path.to_str().unwrap(), err)),
                 }
             }
             ReturnType::String(_) => {
@@ -241,7 +230,7 @@ pub fn get_java_folder_path_sub(type_: &String) -> Option<PathBuf> {
 }
 
 pub fn get_bin_folder(version_name: String) -> Option<PathBuf> {
-    get_or_create_dirs(&get_minecraft_directory(), vec![String::from("bin"), version_name])
+    get_or_create_dir(&get_minecraft_directory(), String::from("bin/") + &version_name)
 }
 
 fn get_os_java_name() -> &'static str {
