@@ -43,7 +43,7 @@ pub fn check_java_version(
                     None
                 }
                 Some(java_folder) => {
-                    match path::get_or_create_dirs(&java_folder, get_java_folder_for_os()) {
+                    match path::get_or_create_dir(&java_folder, get_java_folder_for_os()) {
                         None => None,
                         Some(bin) => {
                             if (&java_folder).exists() {
@@ -258,82 +258,73 @@ fn install_java_version(
                         .expect("Can't send message to renderer thread");
                         let element_info = file.1;
                         let el_type = element_info.element_type;
-                        let executable = match element_info.executable {
-                            None => false,
-                            Some(bool) => bool,
-                        };
+                        let executable = element_info.executable;
                         if el_type == "directory" {
-                            if file_path.contains("/") {
-                                let parts: Vec<&str> = file_path.split("/").collect();
-                                let mut parts2: Vec<String> = Vec::new();
-                                for part in parts {
-                                    parts2.push(part.to_string());
+                            status = match path::get_or_create_dir(&v_folder, file_path.clone()) {
+                                None => {
+                                    tx.send(Message::Error(format!(
+                                        "Unable to create folder {} in folder {}",
+                                        file_path,
+                                        &v_folder.display()
+                                    )))
+                                    .expect("Can't send message to renderer thread");
+                                    None
                                 }
-                                let parts = parts2;
-                                status = match path::get_or_create_dirs(&v_folder, parts) {
-                                    None => None,
-                                    Some(_) => Some(()),
-                                }
-                            } else {
-                                status = match path::get_or_create_dir(&v_folder, file_path) {
-                                    None => None,
-                                    Some(_) => Some(()),
-                                }
+                                Some(_) => Some(()),
                             }
                         } else if el_type == "file" {
                             status = match element_info.downloads {
                                 None => {
-                                    println!("Failed to get download for file {}", file_path);
+                                    tx.send(Message::Error(format!(
+                                        "Failed to get download for file {}",
+                                        file_path
+                                    )))
+                                    .expect("Can't send message to renderer thread");
                                     None
                                 }
                                 Some(downloads) => {
-                                    // println!("Got download for file {}", file_path);
                                     let url = downloads.raw.url;
                                     if file_path.contains("/") {
-                                        // println!("File path contains '/'");
-                                        let parts: Vec<&str> = file_path.split("/").collect();
-                                        let mut parts2: Vec<String> = Vec::new();
-                                        for part in parts {
-                                            parts2.push(part.to_string());
-                                        }
-                                        match parts2.split_last() {
+                                        let file_pathbuf = PathBuf::from(file_path);
+                                        match path::get_or_create_dir(
+                                            &v_folder,
+                                            String::from(
+                                                file_pathbuf.parent().unwrap().to_str().unwrap(),
+                                            ),
+                                        ) {
                                             None => {
-                                                println!("Unable to split_last {}", file_path);
+                                                tx.send(Message::Error(format!(
+                                                    "Unable to create folders"
+                                                )))
+                                                .expect("Can't send message to renderer thread");
                                                 None
                                             }
-                                            Some(tuple) => {
-                                                // println!("Split_lasted {}", file_path);
-                                                let parts = Vec::from(tuple.1);
-                                                match path::get_or_create_dirs(&v_folder, parts) {
-                                                    None => {
-                                                        println!("Unable to create folders");
-                                                        None
-                                                    }
-                                                    Some(sub_pathh) => {
-                                                        // println!("Created folders");
-                                                        let file_buf = sub_pathh.join(tuple.0);
-                                                        match path::download_file_to(
-                                                            &url, &file_buf,
-                                                        ) {
-                                                            Ok(_) => {
-                                                                // println!(
-                                                                //     "Successfully downloaded file!"
-                                                                // );
-                                                                if executable {
-                                                                    // println!("Executable");
-                                                                    set_executable(file_buf)
-                                                                } else {
-                                                                    Some(())
-                                                                }
-                                                            }
-                                                            Err(err) => {
-                                                                println!(
-                                                                    "Failed to download file: {}",
-                                                                    err
-                                                                );
-                                                                None
-                                                            }
+                                            Some(sub_pathh) => {
+                                                // println!("Created folders");
+                                                let file_buf = sub_pathh.join(
+                                                    file_pathbuf.components().last().unwrap(),
+                                                );
+                                                match path::download_file_to(&url, &file_buf) {
+                                                    Ok(_) => {
+                                                        // println!(
+                                                        //     "Successfully downloaded file!"
+                                                        // );
+                                                        if executable {
+                                                            // println!("Executable");
+                                                            set_executable(file_buf)
+                                                        } else {
+                                                            Some(())
                                                         }
+                                                    }
+                                                    Err(err) => {
+                                                        tx.send(Message::Error(format!(
+                                                            "Failed to download file: {}",
+                                                            err
+                                                        )))
+                                                        .expect(
+                                                            "Can't send message to renderer thread",
+                                                        );
+                                                        None
                                                     }
                                                 }
                                             }
@@ -352,7 +343,11 @@ fn install_java_version(
                                                 }
                                             }
                                             Err(err) => {
-                                                println!("Failed to download file: {}", err);
+                                                tx.send(Message::Error(format!(
+                                                    "Failed to download file: \n{}",
+                                                    err
+                                                )))
+                                                .expect("Can't send message to renderer thread");
                                                 None
                                             }
                                         }
@@ -362,7 +357,8 @@ fn install_java_version(
                         } else if el_type == "link" {
                             status = create_symlink(&v_folder, file_path, element_info.target);
                         } else {
-                            println!("Unknown el_type {}", el_type);
+                            tx.send(Message::Error(format!("Unknown el_type {}", el_type)))
+                                .expect("Can't send message to renderer thread");
                         }
                     }
                     if status.is_some() {
@@ -406,27 +402,30 @@ fn install_java_version(
                     }
                 }
                 Err(err) => {
-                    println!("Failed to parse java_version_manifest {}", err);
+                    tx.send(Message::Error(format!(
+                        "Failed to parse java_version_manifest {}",
+                        err
+                    )))
+                    .expect("Can't send message to renderer thread");
                     None
                 }
             }
         }
         Err(err) => {
-            println!("Failed to read java_version_manifest {}", err);
+            tx.send(Message::Error(format!(
+                "Failed to read java_version_manifest {}",
+                err
+            )))
+            .expect("Can't send message to renderer thread");
             None
         }
     }
 }
 
-fn get_java_folder_for_os() -> Vec<String> {
+fn get_java_folder_for_os() -> String {
     match std::env::consts::OS {
-        "macos" => vec![
-            String::from("jre.bundle"),
-            String::from("Contents"),
-            String::from("Home"),
-            String::from("bin"),
-        ],
-        &_ => vec![String::from("bin")],
+        "macos" => String::from("jre.bundle/Contents/Home/bin"),
+        &_ => String::from("bin"),
     }
 }
 

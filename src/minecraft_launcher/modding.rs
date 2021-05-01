@@ -15,7 +15,11 @@ pub trait ModLoaderInstaller {
 
     fn get_profile_name_for_mc_version(&self, mc_version: String) -> String;
 
-    fn get_profile_name_for_loader_version(&self, mc_version: String, loader_version: String) -> String;
+    fn get_profile_name_for_loader_version(
+        &self,
+        mc_version: String,
+        loader_version: String,
+    ) -> String;
 
     fn create_profile(&self, mc_version: String, loader_version: String) -> Main;
 }

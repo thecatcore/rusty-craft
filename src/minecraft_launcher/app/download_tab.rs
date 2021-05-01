@@ -1,16 +1,18 @@
-use crate::minecraft_launcher::app::Action;
+use crate::minecraft_launcher::app::{Action, TabBinding, TabTrait};
 use crate::minecraft_launcher::install;
 use crate::minecraft_launcher::launch;
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crossterm::event::KeyCode;
 use std::io::Stdout;
 use std::sync::mpsc;
-use std::sync::mpsc::Receiver;
+use std::sync::mpsc::{Receiver, RecvTimeoutError};
 use std::thread;
+use std::time::Duration;
 use tui::backend::CrosstermBackend;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 use tui::style::{Color, Style};
-use tui::widgets::{Block, Borders, Gauge};
+use tui::text::{Span, Spans};
+use tui::widgets::{Block, Borders, Gauge, Paragraph, Wrap};
 use tui::Frame;
 
 pub struct DownloadTab {
@@ -18,6 +20,7 @@ pub struct DownloadTab {
     current_step: u8,
     current_sub_step: Option<(String, u64, u64)>,
     current_sub_sub_step: Option<(String, u64, u64)>,
+    error: Option<String>,
 }
 
 impl DownloadTab {
@@ -27,6 +30,7 @@ impl DownloadTab {
             current_step: 1,
             current_sub_step: None,
             current_sub_sub_step: None,
+            error: None,
         }
     }
 
@@ -38,7 +42,7 @@ impl DownloadTab {
                 .expect("Cannot send message to receiver!");
             match install::install_version(version.clone().id, versions, tx) {
                 None => {
-                    panic!("Failed to install version {}", version.id)
+                    // panic!("Failed to install version {}", version.id)
                 }
                 Some(_) => {
                     // panic!("Successfully installed version {}", version.id)
@@ -48,14 +52,19 @@ impl DownloadTab {
 
         self.rx = Some(rx);
     }
+}
 
-    pub fn render(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect) {
+impl TabTrait for DownloadTab {
+    fn render(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect) {
         match &self.rx {
             None => {}
             Some(rx) => {
+                let mut init = false;
                 match rx.recv() {
                     Ok(msg) => match msg {
-                        Message::Init => {}
+                        Message::Init => {
+                            init = true;
+                        }
                         Message::NewStep(step) => {
                             self.current_step = step;
                             self.current_sub_step = None;
@@ -68,6 +77,9 @@ impl DownloadTab {
                         Message::NewSubSubStep(name, index, max) => {
                             self.current_sub_sub_step = Some((name, index, max))
                         }
+                        Message::Error(err) => {
+                            self.error = Some(err);
+                        }
                     },
                     Err(_) => {
                         // println!("Error while trying to receive message from install thread: {}", err)
@@ -75,18 +87,18 @@ impl DownloadTab {
                 }
 
                 let chunks = Layout::default()
-                    .direction(Direction::Vertical)
                     .constraints([
-                        Constraint::Ratio(1, 3),
-                        Constraint::Ratio(1, 3),
-                        Constraint::Ratio(1, 3),
+                        Constraint::Ratio(2, 7),
+                        Constraint::Ratio(2, 7),
+                        Constraint::Ratio(2, 7),
+                        Constraint::Ratio(1, 7),
                     ])
                     .split(area);
 
                 let main_gauge = Gauge::default()
                     .block(Block::default().borders(Borders::ALL))
                     .gauge_style(Style::default().bg(Color::White).fg(Color::Black))
-                    .ratio((self.current_step as f64 / 8.0) as f64)
+                    .ratio(self.current_step as f64 / 8.0)
                     .label(format!(
                         "{}/8 - {}",
                         self.current_step,
@@ -100,7 +112,7 @@ impl DownloadTab {
                         let sub_gauge = Gauge::default()
                             .block(Block::default().borders(Borders::ALL))
                             .gauge_style(Style::default().bg(Color::White).fg(Color::Black))
-                            .ratio((tuple.1 as f64 / tuple.2 as f64) as f64)
+                            .ratio(tuple.1 as f64 / tuple.2 as f64)
                             .label(format!("{}/{} - {}", tuple.1, tuple.2, tuple.0));
                         f.render_widget(sub_gauge, chunks[1]);
                     }
@@ -109,20 +121,77 @@ impl DownloadTab {
                 match self.current_sub_sub_step.clone() {
                     None => {}
                     Some(tuple) => {
+                        let percent = ((tuple.1 as f64 / tuple.2 as f64) * 100.0) as u16;
                         let sub_gauge = Gauge::default()
                             .block(Block::default().borders(Borders::ALL))
                             .gauge_style(Style::default().bg(Color::White).fg(Color::Black))
-                            .ratio((tuple.1 as f64 / tuple.2 as f64) as f64)
+                            .percent(percent)
                             .label(format!("{}/{} - {}", tuple.1, tuple.2, tuple.0));
                         f.render_widget(sub_gauge, chunks[2]);
+                    }
+                }
+
+                match self.error.clone() {
+                    None => {}
+                    Some(err) => {
+                        let paragraph = Paragraph::new(Spans::from(err)).wrap(Wrap { trim: true });
+                        f.render_widget(paragraph, chunks[3]);
+                    }
+                }
+
+                if !init {
+                    let mut iterations = 1;
+                    let mut res = rx.recv_timeout(Duration::from_millis(1));
+                    while res.is_ok() {
+                        let mut skipable = true;
+                        match res.clone() {
+                            Ok(msg) => match msg {
+                                Message::Init => {
+                                    skipable = false;
+                                }
+                                Message::NewStep(step) => {
+                                    self.current_step = step;
+                                    self.current_sub_step = None;
+                                    self.current_sub_sub_step = None;
+                                    skipable = false;
+                                }
+                                Message::NewSubStep(name, index, max) => {
+                                    self.current_sub_step = Some((name, index, max));
+                                    self.current_sub_sub_step = None;
+                                }
+                                Message::NewSubSubStep(name, index, max) => {
+                                    self.current_sub_sub_step = Some((name, index, max))
+                                }
+                                Message::Error(err) => {
+                                    self.error = Some(err);
+                                    skipable = false;
+                                }
+                            },
+                            Err(_) => {}
+                        }
+                        if iterations > 100 {
+                            break;
+                        }
+                        if skipable {
+                            res = rx.recv_timeout(Duration::from_millis(1));
+                            iterations += 1;
+                        } else {
+                            break;
+                        }
                     }
                 }
             }
         }
     }
 
-    pub fn on_key_press(&mut self, _key_code: KeyCode) -> Action {
+    fn on_key_press(&mut self, _key_code: KeyCode) -> Action {
         Action::None
+    }
+
+    fn get_bindings(&self) -> Vec<TabBinding> {
+        let mut vec = Vec::new();
+
+        vec
     }
 }
 
@@ -135,13 +204,15 @@ fn get_step_name(index: u8) -> &'static str {
         5 => "Checking assets",
         6 => "Checking log file",
         7 => "Extracting natives",
-        _ => "Done"
+        _ => "Done",
     }
 }
 
+#[derive(Clone)]
 pub enum Message {
     Init,
     NewStep(u8),
     NewSubStep(String, u64, u64),
     NewSubSubStep(String, u64, u64),
+    Error(String),
 }

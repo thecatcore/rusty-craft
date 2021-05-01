@@ -1,7 +1,7 @@
 [package]
-name = "minecraft-launcher"
+name = "rusty-craft"
 version = "0.1.0"
-authors = ["Cat Core <arthur.koalas@free.fr>"]
+authors = ["Arthur Roussel <arthur.koalas@free.fr>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -9,7 +9,6 @@ edition = "2018"
 [dependencies]
 chrono = {version="0.4.19", features = ["serde"]}
 directories = "3.0.1"
-java-locator = "0.1.2"
 os_info = { version = "3.0.1", default-features = false }
 reqwest = {version="0.11.2", features = ["blocking", "json"]}
 serde = "1.0.124"
@@ -18,6 +17,7 @@ serde_json = "1.0.64"
 tui = {version="0.14.0", features = ["crossterm", "serde"], default-features = false}
 crossterm = "0.19.0"
 zip = "0.5.11"
+sage_auth = "0.1.0"
 
 [[bin]]
-name = "minecraft-launcher"
+name = "rusty-craft"

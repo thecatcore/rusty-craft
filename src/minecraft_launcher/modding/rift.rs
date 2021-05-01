@@ -1,21 +1,34 @@
+use crate::minecraft_launcher::manifest::version::{Arguments, Either, Library, Main, VersionType};
 use crate::minecraft_launcher::modding::ModLoaderInstaller;
-use crate::minecraft_launcher::manifest::version::{Main, Library, Arguments, Either, VersionType};
 use chrono::Utc;
 
 const MC_VERSIONS: &str = "1.13.2";
 
 const LIBS: [(&str, &str); 6] = [
-    ("com.github.unascribed:Rift:FINAL", "https://www.jitpack.io/"),
-    ("org.dimdev:mixin:0.7.11-evil", "https://repo.unascribed.com/"),
-    ("org.ow2.asm:asm:6.2", "https://repo.spongepowered.org/maven/"),
-    ("org.ow2.asm:asm-commons:6.2", "https://repo.spongepowered.org/maven/"),
-    ("org.ow2.asm:asm-tree:6.2", "https://repo.spongepowered.org/maven/"),
-    ("net.minecraft:launchwrapper:1.12", "")
+    (
+        "com.github.unascribed:Rift:FINAL",
+        "https://www.jitpack.io/",
+    ),
+    (
+        "org.dimdev:mixin:0.7.11-evil",
+        "https://repo.unascribed.com/",
+    ),
+    (
+        "org.ow2.asm:asm:6.2",
+        "https://repo.spongepowered.org/maven/",
+    ),
+    (
+        "org.ow2.asm:asm-commons:6.2",
+        "https://repo.spongepowered.org/maven/",
+    ),
+    (
+        "org.ow2.asm:asm-tree:6.2",
+        "https://repo.spongepowered.org/maven/",
+    ),
+    ("net.minecraft:launchwrapper:1.12", ""),
 ];
 
-pub struct RiftInstaller {
-
-}
+pub struct RiftInstaller {}
 
 impl RiftInstaller {
     pub fn new() -> RiftInstaller {
@@ -36,7 +49,11 @@ impl ModLoaderInstaller for RiftInstaller {
         String::from("1.13.2-rift-FINAL")
     }
 
-    fn get_profile_name_for_loader_version(&self, mc_version: String, loader_version: String) -> String {
+    fn get_profile_name_for_loader_version(
+        &self,
+        mc_version: String,
+        loader_version: String,
+    ) -> String {
         self.get_profile_name_for_mc_version(mc_version)
     }
 
@@ -49,17 +66,23 @@ impl ModLoaderInstaller for RiftInstaller {
                 extract: None,
                 natives: None,
                 rules: None,
-                url: if lib.1.is_empty() { None } else { Some(String::from(lib.1)) }
+                url: if lib.1.is_empty() {
+                    None
+                } else {
+                    Some(String::from(lib.1))
+                },
             });
-        };
+        }
 
         Main {
             arguments: Some(Arguments {
                 game: vec![
                     Either::Left(String::from("--tweakClass")),
-                    Either::Left(String::from("org.dimdev.riftloader.launch.RiftLoaderClientTweaker"))
+                    Either::Left(String::from(
+                        "org.dimdev.riftloader.launch.RiftLoaderClientTweaker",
+                    )),
                 ],
-                jvm: None
+                jvm: None,
             }),
             asset_index: None,
             assets: None,
@@ -75,7 +98,7 @@ impl ModLoaderInstaller for RiftInstaller {
             time: Utc::now(),
             _type: VersionType::Release,
             minecraft_arguments: None,
-            inherits_from: Some(mc_version)
+            inherits_from: Some(mc_version),
         }
     }
 }

@@ -1,36 +1,36 @@
 use crate::minecraft_launcher::manifest::main;
 use crate::minecraft_launcher::manifest::main::MinVersion;
 use chrono::{DateTime, Utc};
-use serde_derive::Deserialize;
+use serde_derive::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::{Display, Formatter};
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Main {
     pub arguments: Option<Arguments>,
-    #[serde(alias = "assetIndex")]
+    #[serde(rename = "assetIndex")]
     pub asset_index: Option<AssetIndex>,
     pub assets: Option<String>,
-    #[serde(alias = "complianceLevel")]
+    #[serde(rename = "complianceLevel")]
     pub compliance_level: Option<u8>,
     pub downloads: Option<Downloads>,
     pub id: String,
-    #[serde(alias = "javaVersion")]
+    #[serde(rename = "javaVersion")]
     pub java_version: Option<JavaVersion>,
     pub libraries: Vec<Library>,
     pub logging: Option<Logging>,
-    #[serde(alias = "mainClass")]
+    #[serde(rename = "mainClass")]
     pub main_class: String,
-    #[serde(alias = "minimumLauncherVersion")]
+    #[serde(rename = "minimumLauncherVersion")]
     pub minimum_launcher_version: Option<u8>,
-    #[serde(alias = "releaseTime")]
+    #[serde(rename = "releaseTime")]
     pub release_time: DateTime<Utc>,
     pub time: DateTime<Utc>,
-    #[serde(alias = "type")]
+    #[serde(rename = "type")]
     pub _type: VersionType,
-    #[serde(alias = "minecraftArguments")]
+    #[serde(rename = "minecraftArguments")]
     pub minecraft_arguments: Option<String>,
-    #[serde(alias = "inheritsFrom")]
+    #[serde(rename = "inheritsFrom")]
     pub inherits_from: Option<String>,
 }
 
@@ -106,7 +106,7 @@ impl Main {
     }
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Arguments {
     pub game: Vec<Either<String, CustomArguments>>,
     pub jvm: Option<Vec<Either<String, CustomArguments>>>,
@@ -144,37 +144,37 @@ impl Arguments {
     }
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 #[serde(untagged)]
 pub enum Either<A, B> {
     Left(A),
     Right(B),
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct CustomArguments {
     pub rules: Vec<Rule>,
     pub value: Either<String, Vec<String>>,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Rule {
     pub action: RuleAction,
     pub features: Option<HashMap<String, bool>>,
     pub os: Option<HashMap<String, String>>,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct AssetIndex {
     pub id: String,
     pub sha1: String,
     pub size: u64,
-    #[serde(alias = "totalSize")]
+    #[serde(rename = "totalSize")]
     pub total_size: u64,
     pub url: String,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Downloads {
     pub client: DownloadEntry,
     pub client_mappings: Option<DownloadEntry>,
@@ -200,21 +200,21 @@ impl Downloads {
     }
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct DownloadEntry {
     pub sha1: String,
     pub size: u64,
     pub url: String,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct JavaVersion {
     pub component: String,
-    #[serde(alias = "majorVersion")]
+    #[serde(rename = "majorVersion")]
     pub major_version: u8,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Library {
     pub downloads: Option<LibraryDownload>,
     pub name: String,
@@ -224,18 +224,18 @@ pub struct Library {
     pub url: Option<String>,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct LibraryDownload {
     pub artifact: Option<LibraryDownloadArtifact>,
     pub classifiers: Option<HashMap<String, LibraryDownloadArtifact>>,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct LibraryExtract {
     pub exclude: Vec<String>,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct LibraryDownloadArtifact {
     pub path: String,
     pub sha1: String,
@@ -243,20 +243,20 @@ pub struct LibraryDownloadArtifact {
     pub url: String,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct Logging {
     pub client: Option<ClientLogging>,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct ClientLogging {
     pub argument: String,
     pub file: ClientLoggingFile,
-    #[serde(alias = "type")]
+    #[serde(rename = "type")]
     pub _type: String,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub struct ClientLoggingFile {
     pub id: String,
     pub sha1: String,
@@ -264,15 +264,15 @@ pub struct ClientLoggingFile {
     pub url: String,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub enum VersionType {
-    #[serde(alias = "release")]
+    #[serde(rename = "release")]
     Release,
-    #[serde(alias = "snapshot")]
+    #[serde(rename = "snapshot")]
     Snapshot,
-    #[serde(alias = "old_beta")]
+    #[serde(rename = "old_beta")]
     OldBeta,
-    #[serde(alias = "old_alpha")]
+    #[serde(rename = "old_alpha")]
     OldAlpha,
 }
 
@@ -287,11 +287,11 @@ impl Display for VersionType {
     }
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub enum RuleAction {
-    #[serde(alias = "allow")]
+    #[serde(rename = "allow")]
     Allow,
-    #[serde(alias = "disallow")]
+    #[serde(rename = "disallow")]
     Disallow,
 }
 
@@ -304,13 +304,13 @@ impl RuleAction {
     }
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Serialize, Clone)]
 pub enum Os {
-    #[serde(alias = "windows")]
+    #[serde(rename = "windows")]
     Windows,
-    #[serde(alias = "osx")]
+    #[serde(rename = "osx")]
     MacOS,
-    #[serde(alias = "linux")]
+    #[serde(rename = "linux")]
     Linux,
 }
 
@@ -345,7 +345,10 @@ impl Main {
 
     pub fn is_modded(&self) -> bool {
         let id = self.id.to_lowercase();
-        id.contains("fabric") || id.contains("forge") || id.contains("liteloader")
+        id.contains("fabric")
+            || id.contains("forge")
+            || id.contains("liteloader")
+            || id.contains("rift")
     }
 }
 

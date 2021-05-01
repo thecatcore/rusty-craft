@@ -5,13 +5,13 @@ use std::env::consts;
 #[derive(Deserialize, Clone)]
 pub struct Main {
     pub linux: OsVersions,
-    #[serde(alias = "linux-i386")]
+    #[serde(rename = "linux-i386")]
     pub linux_i386: OsVersions,
-    #[serde(alias = "mac-os")]
+    #[serde(rename = "mac-os")]
     pub mac_os: OsVersions,
-    #[serde(alias = "windows-x64")]
+    #[serde(rename = "windows-x64")]
     pub windows_x64: OsVersions,
-    #[serde(alias = "windows-x86")]
+    #[serde(rename = "windows-x86")]
     pub windows_x86: OsVersions,
 }
 
@@ -34,11 +34,11 @@ impl Main {
 
 #[derive(Deserialize, Clone)]
 pub struct OsVersions {
-    #[serde(alias = "java-runtime-alpha")]
+    #[serde(rename = "java-runtime-alpha")]
     pub java_runtime_alpha: Vec<Version>,
-    #[serde(alias = "jre-legacy")]
+    #[serde(rename = "jre-legacy")]
     pub jre_legacy: Vec<Version>,
-    #[serde(alias = "minecraft-java-exe")]
+    #[serde(rename = "minecraft-java-exe")]
     pub java_exe: Vec<Version>,
 }
 
