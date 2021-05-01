@@ -1,5 +1,6 @@
 use crate::minecraft_launcher::manifest::version::Main;
 
+// This shouldn't be implemented in the first version of the launcher.
 mod liteloader;
 mod legacy_fabric;
 mod fabric;
