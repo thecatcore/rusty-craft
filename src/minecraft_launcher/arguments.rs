@@ -1,87 +1,144 @@
 use crate::minecraft_launcher::manifest::version;
-use crate::minecraft_launcher::manifest::version::{Either, Os, RuleAction};
+use crate::minecraft_launcher::manifest::version::{Either, Os, RuleAction, Logging, ClientLogging, Rule};
 use crate::minecraft_launcher::options::LaunchOptions;
+use crate::minecraft_launcher::path;
 use os_info::{get as get_os_info, Version};
 use std::env::consts;
 use std::ops::Add;
+use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
+use std::path::PathBuf;
 
-// pub fn get_args_from_manifest(version: &version::Main, options: &LaunchOptions) -> Option<String> {
-//     match version.clone().arguments {
-//         None => None,
-//         Some(arguments) => match locate_java_home() {
-//             Ok(path) => {
-//                 let mut command = path.clone();
-//
-//                 match arguments.jvm {
-//                     None => return None,
-//                     Some(jvm_args) => {
-//                         for i in jvm_args {
-//                             match i {
-//                                 Either::Left(string) => {
-//                                     command = command
-//                                         .add(String::from(" ").add(string.as_str()).as_str());
-//                                 }
-//                                 Either::Right(custom_arg) => {
-//                                     match match_rules(custom_arg.rules, Some(options)) {
-//                                         RuleAction::Allow => match custom_arg.value {
-//                                             Either::Left(strin) => {
-//                                                 command = command.add(
-//                                                     String::from(" ").add(strin.as_str()).as_str(),
-//                                                 );
-//                                             }
-//                                             Either::Right(strins) => {
-//                                                 for i_str in strins {
-//                                                     command = command.add(
-//                                                         String::from(" ")
-//                                                             .add(i_str.as_str())
-//                                                             .as_str(),
-//                                                     );
-//                                                 }
-//                                             }
-//                                         },
-//                                         RuleAction::Disallow => {}
-//                                     }
-//                                 }
-//                             };
-//                         }
-//                     }
-//                 };
-//
-//                 for i in arguments.game {
-//                     match i {
-//                         Either::Left(string) => {
-//                             command = command.add(String::from(" ").add(string.as_str()).as_str());
-//                         }
-//                         Either::Right(custom_arg) => {
-//                             match match_rules(custom_arg.rules, Some(options)) {
-//                                 RuleAction::Allow => match custom_arg.value {
-//                                     Either::Left(strin) => {
-//                                         command = command
-//                                             .add(String::from(" ").add(strin.as_str()).as_str());
-//                                     }
-//                                     Either::Right(strins) => {
-//                                         for i_str in strins {
-//                                             command = command.add(
-//                                                 String::from(" ").add(i_str.as_str()).as_str(),
-//                                             );
-//                                         }
-//                                     }
-//                                 },
-//                                 RuleAction::Disallow => {}
-//                             }
-//                         }
-//                     };
-//                 }
-//
-//                 Some(command)
-//             }
-//             Err(err) => {
-//                 println!("Unable to locate java! {}", err);
-//                 None
-//             }
-//         },
-//     }
-// }
+pub fn get_args_from_manifest(version: &version::Main, options: &LaunchOptions) -> Option<Vec<String>> {
+    match version.clone().arguments {
+        None => None,
+        Some(arguments) => {
+            let mut command: Vec<String> = Vec::new();
+
+            match arguments.jvm {
+                None => {
+                    command.push("-Djava.library.path=${natives_directory}".to_string());
+                    command.push("-cp".to_string());
+                    command.push("${classpath}".to_string());
+                },
+                Some(jvm_args) => {
+                    for i in jvm_args {
+                        match i {
+                            Either::Left(string) => {
+                                command.push(string);
+                            }
+                            Either::Right(custom_arg) => {
+                                match match_rules(custom_arg.rules, Some(options)) {
+                                    RuleAction::Allow => match custom_arg.value {
+                                        Either::Left(strin) => {
+                                            command.push(strin);
+                                        }
+                                        Either::Right(strins) => {
+                                            for i_str in strins {
+                                                command.push(i_str);
+                                            }
+                                        }
+                                    },
+                                    RuleAction::Disallow => {}
+                                }
+                            }
+                        };
+                    }
+                }
+            };
+
+            match version.clone().logging {
+                None => {}
+                Some(logging) => match logging.client {
+                    None => {}
+                    Some(client_logging) => {
+                        command.push(client_logging.argument);
+                    }
+                }
+            }
+
+            for i in arguments.game {
+                match i {
+                    Either::Left(string) => {
+                        command.push(string);
+                    }
+                    Either::Right(custom_arg) => {
+                        match match_rules(custom_arg.rules, Some(options)) {
+                            RuleAction::Allow => match custom_arg.value {
+                                Either::Left(strin) => {
+                                    command.push(strin);
+                                }
+                                Either::Right(strins) => {
+                                    for i_str in strins {
+                                        command.push(i_str);
+                                    }
+                                }
+                            },
+                            RuleAction::Disallow => {}
+                        }
+                    }
+                };
+            }
+
+            Some(command)
+        }
+    }
+}
+
+pub fn get_natives(version: &version::Main) -> String {
+    let mut native_arg = String::new();
+
+    let mut version = version.clone();
+
+    let separator = match get_os() {
+        Os::Windows => ";",
+        _ => ":"
+    };
+
+    for library in version.libraries {
+        let mut allowed= match library.rules {
+            None => RuleAction::Allow,
+            Some(rules) => match_rules(rules, None)
+        };
+
+        match allowed {
+            RuleAction::Allow => {
+                let name_parts: Vec<&str> = library.name.split(":").collect();
+
+                let lib_path = *name_parts.get(0).unwrap_or(&"");
+                let name = *name_parts.get(1).unwrap_or(&"");
+                let version = *name_parts.get(2).unwrap_or(&"");
+
+                let file_name = match library.natives {
+                    None => format!("{}-{}", name, version),
+                    Some(natives) => {
+                        match natives.get(get_os().to_str().as_str()) {
+                            None => format!("{}-{}", name, version),
+                            Some(native) => format!("{}-{}-{}", name, version, native),
+                        }
+                    }
+                };
+
+                match path::get_library_path(&format!("{}/{}/{}/{}.jar", lib_path, name, version, file_name)) {
+                    None => {}
+                    Some(lib_path) => {
+                        native_arg = native_arg.add(format!("{}{}", lib_path.display(), separator).as_str());
+                    }
+                }
+            }
+            RuleAction::Disallow => {}
+        }
+    }
+
+    match path::get_version_folder(&version.id) {
+        None => {}
+        Some(v_folder) => {
+            native_arg = native_arg.add(format!("{}", v_folder.join(format!("{}.jar", version.id)).display()).as_str());
+        }
+    }
+
+    native_arg
+}
 
 pub fn match_rules(rules: Vec<version::Rule>, options: Option<&LaunchOptions>) -> RuleAction {
     let mut val: RuleAction = RuleAction::Allow;

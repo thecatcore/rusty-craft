@@ -24,6 +24,7 @@ pub mod download_tab;
 mod log_tab;
 mod version_tab;
 mod login_tab;
+mod launch_tab;
 
 pub struct App {
     pub login_tab: login_tab::LoginTab,
