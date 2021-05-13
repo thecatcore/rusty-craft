@@ -22,8 +22,10 @@ use tui::{Frame, Terminal};
 pub mod download_tab;
 mod log_tab;
 mod version_tab;
+mod login_tab;
 
 pub struct App {
+    pub login_tab: login_tab::LoginTab,
     pub version_tab: version_tab::VersionTab,
     pub download_tab: download_tab::DownloadTab,
     pub current_tab: Tab,
@@ -32,6 +34,7 @@ pub struct App {
 impl App {
     pub fn new(min_versions: Vec<MinVersion>, versions: Vec<Version>) -> App {
         let mut app = App {
+            login_tab: login_tab::LoginTab::new(),
             version_tab: version_tab::VersionTab {
                 selected: None,
                 snapshot: false,
@@ -41,7 +44,7 @@ impl App {
                 versions,
             },
             download_tab: download_tab::DownloadTab::new(),
-            current_tab: Tab::Version,
+            current_tab: Tab::Login,
         };
         app.version_tab.build_table_state();
         app
@@ -54,15 +57,12 @@ impl App {
             .split(area);
 
         match self.current_tab {
-            Tab::Version => {
-                self.version_tab.render(f, chunks[0]);
-            }
-            Tab::Download(_, _) => {
-                self.download_tab.render(f, chunks[0]);
-            }
+            Tab::Login => self.login_tab.render(f, chunks[0]),
+            Tab::Version => self.version_tab.render(f, chunks[0]),
+            Tab::Download(_, _) => self.download_tab.render(f, chunks[0]),
             Tab::Mod => {}
             Tab::ModVersion => {}
-        }
+        };
 
         let bindings = self.get_bindings();
 
@@ -108,6 +108,12 @@ impl App {
         ));
 
         match self.current_tab {
+            Tab::Login => {
+                let tab_vec = self.login_tab.get_bindings();
+                for tab_binding in tab_vec {
+                    vec.push(tab_binding);
+                }
+            }
             Tab::Version => {
                 let tab_vec = self.version_tab.get_bindings();
                 for tab_binding in tab_vec {
@@ -187,10 +193,11 @@ impl App {
 
         loop {
             let selected_tab = match self.current_tab.clone() {
-                Tab::Version => 0,
-                Tab::Download(_, _) => 1,
-                Tab::Mod => 2,
-                Tab::ModVersion => 3,
+                Tab::Login => 0,
+                Tab::Version => 1,
+                Tab::Download(_, _) => 2,
+                Tab::Mod => 3,
+                Tab::ModVersion => 4,
             };
             terminal.draw(|f| {
                 let main_chunks = Layout::default()
@@ -203,6 +210,7 @@ impl App {
 
                 let mut ve: Vec<Spans> = Vec::new();
                 ve.append(&mut vec![
+                    Spans::from("Login"),
                     Spans::from("Version"),
                     Spans::from("Installation"),
                 ]);
@@ -243,6 +251,7 @@ impl App {
                             Action::NextTab(tab) => {
                                 self.current_tab = tab.clone();
                                 match tab {
+                                    Tab::Login => {}
                                     Tab::Version => {}
                                     Tab::Download(v, ref vs) => {
                                         self.download_tab.start(v, vs.clone())
@@ -263,6 +272,7 @@ impl App {
 
     pub fn on_key_press(&mut self, key_code: KeyCode) -> Action {
         match self.current_tab {
+            Tab::Login => self.login_tab.on_key_press(key_code),
             Tab::Version => self.version_tab.on_key_press(key_code),
             Tab::Download(_, _) => self.download_tab.on_key_press(key_code),
             Tab::Mod => Action::None,
@@ -278,6 +288,7 @@ pub enum Action {
 
 #[derive(Clone)]
 pub enum Tab {
+    Login,
     Version,
     Download(MinVersion, Vec<Version>),
     Mod,
