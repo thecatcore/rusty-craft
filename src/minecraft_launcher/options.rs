@@ -80,6 +80,8 @@ pub fn get_option_to_arg_map() -> HashMap<fn(LaunchOptions) -> String, &'static 
         },
         "resolution_height",
     );
+    map.insert(|options: LaunchOptions| "Rusty-Craft".to_string(), "launcher_name");
+    map.insert(|options: LaunchOptions| crate::get_version(), "launcher_version");
 
     map
 }

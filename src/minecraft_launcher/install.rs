@@ -108,7 +108,8 @@ fn install_version_from_manifest(
                                     match check_log_file(version_manifest, tx) {
                                         None => None,
                                         Some(tx) => {
-                                            launch::pre_launch(version_manifest.clone(), tx);
+                                            launch::pre_launch(version_manifest.clone(), tx.clone());
+                                            tx.send(Message::Done(version_manifest.clone()));
                                             Some(())
                                         }
                                     }

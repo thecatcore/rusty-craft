@@ -18,6 +18,7 @@ use tui::text::Span;
 use tui::text::Spans;
 use tui::widgets::{Block, Borders, Paragraph, Tabs, Wrap};
 use tui::{Frame, Terminal};
+use crate::minecraft_launcher::manifest::version;
 
 pub mod download_tab;
 mod log_tab;
@@ -60,6 +61,7 @@ impl App {
             Tab::Login => self.login_tab.render(f, chunks[0]),
             Tab::Version => self.version_tab.render(f, chunks[0]),
             Tab::Download(_, _) => self.download_tab.render(f, chunks[0]),
+            Tab::Launch(_) => {}
             Tab::Mod => {}
             Tab::ModVersion => {}
         };
@@ -126,11 +128,25 @@ impl App {
                     vec.push(tab_binding);
                 }
             }
+            Tab::Launch(_) => {
+
+            }
             Tab::Mod => {}
             Tab::ModVersion => {}
         }
 
         vec
+    }
+
+    fn tick(&mut self) -> Action {
+        match self.current_tab {
+            Tab::Login => self.login_tab.tick(),
+            Tab::Version => self.version_tab.tick(),
+            Tab::Download(_, _) => self.download_tab.tick(),
+            Tab::Launch(_) => Action::None,
+            Tab::Mod => Action::None,
+            Tab::ModVersion => Action::None,
+        }
     }
 
     pub fn run(mut self) -> Result<(), Box<dyn Error>> {
@@ -196,8 +212,9 @@ impl App {
                 Tab::Login => 0,
                 Tab::Version => 1,
                 Tab::Download(_, _) => 2,
-                Tab::Mod => 3,
-                Tab::ModVersion => 4,
+                Tab::Launch(_) => 3,
+                Tab::Mod => 4,
+                Tab::ModVersion => 5,
             };
             terminal.draw(|f| {
                 let main_chunks = Layout::default()
@@ -213,6 +230,7 @@ impl App {
                     Spans::from("Login"),
                     Spans::from("Version"),
                     Spans::from("Installation"),
+                    Spans::from("Launch"),
                 ]);
 
                 let tabs = Tabs::new(ve)
@@ -256,6 +274,9 @@ impl App {
                                     Tab::Download(v, ref vs) => {
                                         self.download_tab.start(v, vs.clone())
                                     }
+                                    Tab::Launch(version) => {
+
+                                    }
                                     Tab::Mod => {}
                                     Tab::ModVersion => {}
                                 }
@@ -263,7 +284,26 @@ impl App {
                         };
                     }
                 },
-                Event::Tick => {}
+                Event::Tick => {
+                    match self.tick() {
+                        Action::None => {}
+                        Action::NextTab(tab) => {
+                            self.current_tab = tab.clone();
+                            match tab {
+                                Tab::Login => {}
+                                Tab::Version => {}
+                                Tab::Download(v, ref vs) => {
+                                    self.download_tab.start(v, vs.clone())
+                                }
+                                Tab::Launch(version) => {
+
+                                }
+                                Tab::Mod => {}
+                                Tab::ModVersion => {}
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -275,6 +315,7 @@ impl App {
             Tab::Login => self.login_tab.on_key_press(key_code),
             Tab::Version => self.version_tab.on_key_press(key_code),
             Tab::Download(_, _) => self.download_tab.on_key_press(key_code),
+            Tab::Launch(_) => Action::None,
             Tab::Mod => Action::None,
             Tab::ModVersion => Action::None,
         }
@@ -291,6 +332,7 @@ pub enum Tab {
     Login,
     Version,
     Download(MinVersion, Vec<Version>),
+    Launch(version::Main),
     Mod,
     ModVersion,
 }
@@ -303,5 +345,8 @@ pub enum TabBinding {
 pub trait TabTrait {
     fn render(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect);
     fn on_key_press(&mut self, _key_code: KeyCode) -> Action;
+    fn tick(&mut self) -> Action {
+        Action::None
+    }
     fn get_bindings(&self) -> Vec<TabBinding>;
 }
