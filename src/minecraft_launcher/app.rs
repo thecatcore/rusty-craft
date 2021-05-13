@@ -1,4 +1,5 @@
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
+use crate::minecraft_launcher::manifest::version;
 use crate::minecraft_launcher::rendering::main::{Cli, Event};
 use crate::minecraft_launcher::rendering::utils::StatefulTable;
 use crossterm::{
@@ -18,13 +19,12 @@ use tui::text::Span;
 use tui::text::Spans;
 use tui::widgets::{Block, Borders, Paragraph, Tabs, Wrap};
 use tui::{Frame, Terminal};
-use crate::minecraft_launcher::manifest::version;
 
 pub mod download_tab;
-mod log_tab;
-mod version_tab;
-mod login_tab;
 mod launch_tab;
+mod log_tab;
+mod login_tab;
+mod version_tab;
 
 pub struct App {
     pub login_tab: login_tab::LoginTab,
@@ -129,9 +129,7 @@ impl App {
                     vec.push(tab_binding);
                 }
             }
-            Tab::Launch(_) => {
-
-            }
+            Tab::Launch(_) => {}
             Tab::Mod => {}
             Tab::ModVersion => {}
         }
@@ -275,9 +273,7 @@ impl App {
                                     Tab::Download(v, ref vs) => {
                                         self.download_tab.start(v, vs.clone())
                                     }
-                                    Tab::Launch(version) => {
-
-                                    }
+                                    Tab::Launch(version) => {}
                                     Tab::Mod => {}
                                     Tab::ModVersion => {}
                                 }
@@ -285,26 +281,20 @@ impl App {
                         };
                     }
                 },
-                Event::Tick => {
-                    match self.tick() {
-                        Action::None => {}
-                        Action::NextTab(tab) => {
-                            self.current_tab = tab.clone();
-                            match tab {
-                                Tab::Login => {}
-                                Tab::Version => {}
-                                Tab::Download(v, ref vs) => {
-                                    self.download_tab.start(v, vs.clone())
-                                }
-                                Tab::Launch(version) => {
-
-                                }
-                                Tab::Mod => {}
-                                Tab::ModVersion => {}
-                            }
+                Event::Tick => match self.tick() {
+                    Action::None => {}
+                    Action::NextTab(tab) => {
+                        self.current_tab = tab.clone();
+                        match tab {
+                            Tab::Login => {}
+                            Tab::Version => {}
+                            Tab::Download(v, ref vs) => self.download_tab.start(v, vs.clone()),
+                            Tab::Launch(version) => {}
+                            Tab::Mod => {}
+                            Tab::ModVersion => {}
                         }
                     }
-                }
+                },
             }
         }
 

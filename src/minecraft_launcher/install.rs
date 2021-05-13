@@ -108,7 +108,10 @@ fn install_version_from_manifest(
                                     match check_log_file(version_manifest, tx) {
                                         None => None,
                                         Some(tx) => {
-                                            launch::pre_launch(version_manifest.clone(), tx.clone());
+                                            launch::pre_launch(
+                                                version_manifest.clone(),
+                                                tx.clone(),
+                                            );
                                             tx.send(Message::Done(version_manifest.clone()));
                                             Some(())
                                         }
@@ -640,26 +643,21 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                                         main.objects.len();
                                                                     let mut entry_index = 0;
                                                                     let mut res = Some(());
-                                                                    for (
-                                                                        entry,
-                                                                        asset_info,
-                                                                    ) in main.objects
+                                                                    for (entry, asset_info) in
+                                                                        main.objects
                                                                     {
                                                                         entry_index += 1;
                                                                         tx.send(Message::NewSubSubStep(format!("{}", entry.clone()), entry_index, entry_count as u64)).expect("Can't send message to renderer thread");
-                                                                        let hashed_path = asset_info.get_download_path(&objects_path);
-                                                                        if hashed_path
-                                                                            .1
-                                                                            .exists()
-                                                                        {
+                                                                        let hashed_path =
+                                                                            asset_info
+                                                                                .get_download_path(
+                                                                                    &objects_path,
+                                                                                );
+                                                                        if hashed_path.1.exists() {
                                                                             match File::open(
-                                                                                hashed_path
-                                                                                    .1,
+                                                                                hashed_path.1,
                                                                             ) {
-                                                                                Ok(
-                                                                                    mut
-                                                                                    file,
-                                                                                ) => {
+                                                                                Ok(mut file) => {
                                                                                     let mut body: Vec<u8> = Vec::new();
                                                                                     match file.read_to_end(&mut body) {
                                                                                         Ok(_) => {
@@ -726,9 +724,7 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                                                         }
                                                                                     }
                                                                                 }
-                                                                                Err(
-                                                                                    err,
-                                                                                ) => {
+                                                                                Err(err) => {
                                                                                     println!("Unable to open asset file: {}", err);
                                                                                     res = None;
                                                                                     break;

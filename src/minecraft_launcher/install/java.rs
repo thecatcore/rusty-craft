@@ -13,7 +13,7 @@ use crate::minecraft_launcher::manifest::{java_versions, version};
 use crate::minecraft_launcher::path;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::Sender;
 
 pub fn check_java_version(
@@ -39,15 +39,20 @@ pub fn check_java_version(
             .expect("Can't send message to renderer thread");
             match get_java_folder_path_sub(&version_manifest) {
                 None => {
-                    tx.send(Message::Error(String::from("Can't get java_folder_path_sub")));
+                    tx.send(Message::Error(String::from(
+                        "Can't get java_folder_path_sub",
+                    )));
                     None
                 }
                 Some(java_folder) => {
                     match path::get_or_create_dir(&java_folder, get_java_folder_for_os()) {
                         None => {
-                            tx.send(Message::Error(format!("Unable to get or create java folder: {}", java_folder.display())));
+                            tx.send(Message::Error(format!(
+                                "Unable to get or create java folder: {}",
+                                java_folder.display()
+                            )));
                             None
-                        },
+                        }
                         Some(bin) => {
                             if (&java_folder).exists() {
                                 if bin.join(get_java_ex_for_os()).exists() {
@@ -55,11 +60,17 @@ pub fn check_java_version(
                                         .expect("Can't send message to renderer thread");
                                     Some(tx)
                                 } else {
-                                    tx.send(Message::Error(format!("Unable to find java executable: {}", bin.join(get_java_ex_for_os()).display())));
+                                    tx.send(Message::Error(format!(
+                                        "Unable to find java executable: {}",
+                                        bin.join(get_java_ex_for_os()).display()
+                                    )));
                                     None
                                 }
                             } else {
-                                tx.send(Message::Error(format!("Unable to find java folder: {}", java_folder.display())));
+                                tx.send(Message::Error(format!(
+                                    "Unable to find java folder: {}",
+                                    java_folder.display()
+                                )));
                                 None
                             }
                         }
@@ -86,12 +97,17 @@ pub fn check_java_version(
                 };
                 match os_version.get_java_version(&java_v_type) {
                     None => {
-                        tx.send(Message::Error(format!("Unable to get java_version from type '{}'", java_v_type)));
+                        tx.send(Message::Error(format!(
+                            "Unable to get java_version from type '{}'",
+                            java_v_type
+                        )));
                         None
                     }
                     Some(versions) => match versions.get(0) {
                         None => {
-                            tx.send(Message::Error(String::from("Unable to get first java version")));
+                            tx.send(Message::Error(String::from(
+                                "Unable to get first java version",
+                            )));
                             None
                         }
                         Some(version) => {
@@ -104,12 +120,18 @@ pub fn check_java_version(
                             .expect("Can't send message to renderer thread");
                             match path::get_java_folder_path_sub(&java_v_type) {
                                 None => {
-                                    tx.send(Message::Error(format!("Unable to get java_folder_path_sub from type '{}'", java_v_type)));
+                                    tx.send(Message::Error(format!(
+                                        "Unable to get java_folder_path_sub from type '{}'",
+                                        java_v_type
+                                    )));
                                     None
                                 }
                                 Some(j_folder) => match path::get_java_folder_path(&java_v_type) {
                                     None => {
-                                        tx.send(Message::Error(format!("Unable to get java_folder_path from type '{}'", java_v_type)));
+                                        tx.send(Message::Error(format!(
+                                            "Unable to get java_folder_path from type '{}'",
+                                            java_v_type
+                                        )));
                                         None
                                     }
                                     Some(os_fol) => check_if_install_is_needed(
@@ -188,12 +210,8 @@ fn check_if_install_is_needed(
 fn get_java_folder_path_sub(version_manifest: &version::Main) -> Option<PathBuf> {
     path::get_java_folder_path_sub(
         &(match version_manifest.java_version.clone() {
-            None => {
-                String::from("jre-legacy")
-            }
-            Some(java_v) => {
-                java_v.component
-            }
+            None => String::from("jre-legacy"),
+            Some(java_v) => java_v.component,
         }),
     )
 }
@@ -229,12 +247,8 @@ fn install_java_version(
     tx: Sender<Message>,
 ) -> Option<Sender<Message>> {
     let v_folder = match path::get_or_create_dir(&os_folder, type_.clone()) {
-        None => {
-            os_folder.clone()
-        }
-        Some(v) => {
-            v
-        }
+        None => os_folder.clone(),
+        Some(v) => v,
     };
     match path::read_file_from_url_to_string(&manifest.url) {
         Ok(stri) => {
@@ -354,7 +368,12 @@ fn install_java_version(
                                 }
                             };
                         } else if el_type == "link" {
-                            status = create_symlink(&v_folder, file_path, element_info.target, tx.clone());
+                            status = create_symlink(
+                                &v_folder,
+                                file_path,
+                                element_info.target,
+                                tx.clone(),
+                            );
                         } else {
                             tx.send(Message::Error(format!("Unknown el_type {}", el_type)))
                                 .expect("Can't send message to renderer thread");
@@ -480,12 +499,17 @@ fn set_executable(file_buf: PathBuf) -> Option<()> {
 }
 
 #[cfg(unix)]
-fn create_symlink(v_folder: &PathBuf, path_name: String, target: Option<String>, tx: Sender<Message>) -> Option<()> {
+fn create_symlink(
+    v_folder: &PathBuf,
+    path_name: String,
+    target: Option<String>,
+    tx: Sender<Message>,
+) -> Option<()> {
     match target {
         None => {
             tx.send(Message::Error(format!("Link target is none!")));
             None
-        },
+        }
         Some(target) => {
             let path_buffer = PathBuf::from(path_name.clone());
 
@@ -494,7 +518,9 @@ fn create_symlink(v_folder: &PathBuf, path_name: String, target: Option<String>,
                 Some(p) => {
                     match path::get_or_create_dir(&v_folder, p.display().to_string()) {
                         None => {
-                            tx.send(Message::Error(format!("Failed to create folder in which symlink is!")));
+                            tx.send(Message::Error(format!(
+                                "Failed to create folder in which symlink is!"
+                            )));
                             return None;
                         }
                         Some(_) => {}
@@ -530,14 +556,21 @@ fn create_symlink(v_folder: &PathBuf, path_name: String, target: Option<String>,
                 Err(err) => {
                     tx.send(Message::Error(format!("Failed to create symlink: {}", err)));
                     None
-                },
+                }
             }
         }
     }
 }
 
 #[cfg(windows)]
-fn create_symlink(v_folder: &PathBuf, path_name: String, target: Option<String>, tx: Sender<Message>) -> Option<()> {
-    tx.send(Message::Error(format!("Symlink aren't handled on windows!")));
+fn create_symlink(
+    v_folder: &PathBuf,
+    path_name: String,
+    target: Option<String>,
+    tx: Sender<Message>,
+) -> Option<()> {
+    tx.send(Message::Error(format!(
+        "Symlink aren't handled on windows!"
+    )));
     None
 }

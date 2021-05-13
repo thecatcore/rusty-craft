@@ -1,7 +1,9 @@
-use crate::minecraft_launcher::app::{Action, TabBinding, TabTrait, Tab};
+use crate::minecraft_launcher::app::{Action, Tab, TabBinding, TabTrait};
 use crate::minecraft_launcher::install;
 use crate::minecraft_launcher::launch;
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
+use crate::minecraft_launcher::manifest::version;
+use crate::minecraft_launcher::manifest::version::Main;
 use crossterm::event::KeyCode;
 use std::io::Stdout;
 use std::sync::mpsc;
@@ -14,8 +16,6 @@ use tui::style::{Color, Style};
 use tui::text::{Span, Spans};
 use tui::widgets::{Block, Borders, Gauge, Paragraph, Wrap};
 use tui::Frame;
-use crate::minecraft_launcher::manifest::version;
-use crate::minecraft_launcher::manifest::version::Main;
 
 pub struct DownloadTab {
     rx: Option<Receiver<Message>>,
@@ -23,7 +23,7 @@ pub struct DownloadTab {
     current_sub_step: Option<(String, u64, u64)>,
     current_sub_sub_step: Option<(String, u64, u64)>,
     error: Option<String>,
-    installed: Option<version::Main>
+    installed: Option<version::Main>,
 }
 
 impl DownloadTab {
@@ -34,7 +34,7 @@ impl DownloadTab {
             current_sub_step: None,
             current_sub_sub_step: None,
             error: None,
-            installed: None
+            installed: None,
         }
     }
 
@@ -202,7 +202,7 @@ impl TabTrait for DownloadTab {
     fn tick(&mut self) -> Action {
         match self.installed.clone() {
             None => Action::None,
-            Some(version) => Action::NextTab(Tab::Launch(version))
+            Some(version) => Action::NextTab(Tab::Launch(version)),
         }
     }
 
@@ -233,5 +233,5 @@ pub enum Message {
     NewSubStep(String, u64, u64),
     NewSubSubStep(String, u64, u64),
     Error(String),
-    Done(version::Main)
+    Done(version::Main),
 }

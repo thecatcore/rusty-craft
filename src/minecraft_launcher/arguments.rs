@@ -1,15 +1,20 @@
 use crate::minecraft_launcher::manifest::version;
-use crate::minecraft_launcher::manifest::version::{Either, Os, RuleAction, Logging, ClientLogging, Rule};
+use crate::minecraft_launcher::manifest::version::{
+    ClientLogging, Either, Logging, Os, Rule, RuleAction,
+};
 use crate::minecraft_launcher::options::LaunchOptions;
 use crate::minecraft_launcher::path;
 use os_info::{get as get_os_info, Version};
-use std::env::consts;
-use std::ops::Add;
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
+use std::env::consts;
+use std::ops::Add;
 use std::path::PathBuf;
 
-pub fn get_args_from_manifest(version: &version::Main, options: &LaunchOptions) -> Option<Vec<String>> {
+pub fn get_args_from_manifest(
+    version: &version::Main,
+    options: &LaunchOptions,
+) -> Option<Vec<String>> {
     match version.clone().arguments {
         None => None,
         Some(arguments) => {
@@ -20,7 +25,7 @@ pub fn get_args_from_manifest(version: &version::Main, options: &LaunchOptions) 
                     command.push("-Djava.library.path=${natives_directory}".to_string());
                     command.push("-cp".to_string());
                     command.push("${classpath}".to_string());
-                },
+                }
                 Some(jvm_args) => {
                     for i in jvm_args {
                         match i {
@@ -54,7 +59,7 @@ pub fn get_args_from_manifest(version: &version::Main, options: &LaunchOptions) 
                     Some(client_logging) => {
                         command.push(client_logging.argument);
                     }
-                }
+                },
             }
 
             for i in arguments.game {
@@ -92,13 +97,13 @@ pub fn get_natives(version: &version::Main) -> String {
 
     let separator = match get_os() {
         Os::Windows => ";",
-        _ => ":"
+        _ => ":",
     };
 
     for library in version.libraries {
-        let mut allowed= match library.rules {
+        let mut allowed = match library.rules {
             None => RuleAction::Allow,
-            Some(rules) => match_rules(rules, None)
+            Some(rules) => match_rules(rules, None),
         };
 
         match allowed {
@@ -111,18 +116,20 @@ pub fn get_natives(version: &version::Main) -> String {
 
                 let file_name = match library.natives {
                     None => format!("{}-{}", name, version),
-                    Some(natives) => {
-                        match natives.get(get_os().to_str().as_str()) {
-                            None => format!("{}-{}", name, version),
-                            Some(native) => format!("{}-{}-{}", name, version, native),
-                        }
-                    }
+                    Some(natives) => match natives.get(get_os().to_str().as_str()) {
+                        None => format!("{}-{}", name, version),
+                        Some(native) => format!("{}-{}-{}", name, version, native),
+                    },
                 };
 
-                match path::get_library_path(&format!("{}/{}/{}/{}.jar", lib_path, name, version, file_name)) {
+                match path::get_library_path(&format!(
+                    "{}/{}/{}/{}.jar",
+                    lib_path, name, version, file_name
+                )) {
                     None => {}
                     Some(lib_path) => {
-                        native_arg = native_arg.add(format!("{}{}", lib_path.display(), separator).as_str());
+                        native_arg =
+                            native_arg.add(format!("{}{}", lib_path.display(), separator).as_str());
                     }
                 }
             }
@@ -133,7 +140,9 @@ pub fn get_natives(version: &version::Main) -> String {
     match path::get_version_folder(&version.id) {
         None => {}
         Some(v_folder) => {
-            native_arg = native_arg.add(format!("{}", v_folder.join(format!("{}.jar", version.id)).display()).as_str());
+            native_arg = native_arg.add(
+                format!("{}", v_folder.join(format!("{}.jar", version.id)).display()).as_str(),
+            );
         }
     }
 

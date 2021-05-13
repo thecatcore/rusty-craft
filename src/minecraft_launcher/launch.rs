@@ -93,9 +93,8 @@ pub fn pre_launch(manifest: Main, mut tx: Sender<Message>) {
                     RuleAction::Disallow => {}
                 }
             }
-            tx.send(Message::NewStep(8)).expect(
-                "Can't send message to renderer thread",
-            );
+            tx.send(Message::NewStep(8))
+                .expect("Can't send message to renderer thread");
         }
     };
 }

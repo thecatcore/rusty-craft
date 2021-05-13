@@ -26,18 +26,12 @@ pub fn get_option_to_arg_map() -> HashMap<fn(LaunchOptions) -> String, &'static 
         |options: LaunchOptions| options.natives_directory,
         "natives_directory",
     );
-    map.insert(
-        |options: LaunchOptions| options.classpath,
-        "classpath",
-    );
+    map.insert(|options: LaunchOptions| options.classpath, "classpath");
     map.insert(
         |options: LaunchOptions| options.player_name,
         "auth_player_name",
     );
-    map.insert(
-        |options: LaunchOptions| options.version,
-        "version_name",
-    );
+    map.insert(|options: LaunchOptions| options.version, "version_name");
     map.insert(
         |options: LaunchOptions| options.game_directory,
         "game_directory",
@@ -50,18 +44,12 @@ pub fn get_option_to_arg_map() -> HashMap<fn(LaunchOptions) -> String, &'static 
         |options: LaunchOptions| options.assets_index,
         "assets_index_name",
     );
-    map.insert(
-        |options: LaunchOptions| options.player_uuid,
-        "auth_uuid",
-    );
+    map.insert(|options: LaunchOptions| options.player_uuid, "auth_uuid");
     map.insert(
         |options: LaunchOptions| options.player_token,
         "auth_access_token",
     );
-    map.insert(
-        |options: LaunchOptions| options.user_type,
-        "user_type",
-    );
+    map.insert(|options: LaunchOptions| options.user_type, "user_type");
     map.insert(
         |options: LaunchOptions| options.version_type,
         "version_type",
@@ -80,8 +68,14 @@ pub fn get_option_to_arg_map() -> HashMap<fn(LaunchOptions) -> String, &'static 
         },
         "resolution_height",
     );
-    map.insert(|options: LaunchOptions| "Rusty-Craft".to_string(), "launcher_name");
-    map.insert(|options: LaunchOptions| crate::get_version(), "launcher_version");
+    map.insert(
+        |options: LaunchOptions| "Rusty-Craft".to_string(),
+        "launcher_name",
+    );
+    map.insert(
+        |options: LaunchOptions| crate::get_version(),
+        "launcher_version",
+    );
 
     map
 }

@@ -1,17 +1,17 @@
-use crate::minecraft_launcher::app::{TabTrait, Action, TabBinding, Tab};
-use tui::Frame;
-use tui::layout::{Rect, Layout, Direction, Constraint, Alignment};
-use tui::text::{Span, Spans};
-use tui::backend::CrosstermBackend;
+use crate::minecraft_launcher::app::{Action, Tab, TabBinding, TabTrait};
 use crossterm::event::KeyCode;
-use std::io::Stdout;
-use tui::widgets::{Paragraph, Block, Borders};
-use tui::style::{Style, Color};
 use sage_auth::auth::{AuthenticateBuilder, AuthenticateResponse};
+use sage_auth::types::{Profile, User};
 use sage_auth::Error;
-use tokio::runtime::Runtime;
-use sage_auth::types::{User, Profile};
+use std::io::Stdout;
 use std::panic::panic_any;
+use tokio::runtime::Runtime;
+use tui::backend::CrosstermBackend;
+use tui::layout::{Alignment, Constraint, Direction, Layout, Rect};
+use tui::style::{Color, Style};
+use tui::text::{Span, Spans};
+use tui::widgets::{Block, Borders, Paragraph};
+use tui::Frame;
 use uuid::Uuid;
 
 pub struct LoginTab {
@@ -35,7 +35,7 @@ impl LoginTab {
             name: "".to_string(),
             user_type: "".to_string(),
             selected: InputBox::Account,
-            error: "".to_string()
+            error: "".to_string(),
         }
     }
 
@@ -44,7 +44,8 @@ impl LoginTab {
             .username(self.account.clone().as_str())
             .password(self.password.clone().as_str())
             .request_user()
-            .request().await;
+            .request()
+            .await;
 
         // request.await;
 
@@ -74,19 +75,26 @@ impl TabTrait for LoginTab {
     fn render(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect) {
         let chunks = Layout::default()
             .direction(Direction::Vertical)
-            .constraints([Constraint::Length(3), Constraint::Length(1), Constraint::Length(3), Constraint::Length(3)])
+            .constraints([
+                Constraint::Length(3),
+                Constraint::Length(1),
+                Constraint::Length(3),
+                Constraint::Length(3),
+            ])
             .vertical_margin(1)
             .horizontal_margin(1)
             .split(area);
 
         let account_input = Paragraph::new(vec![Spans::from(self.account.clone())])
-            .block(Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(match self.selected {
-                    InputBox::Account => Color::Yellow,
-                    InputBox::Password => Color::White
-                }))
-            ).alignment(Alignment::Center);
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(match self.selected {
+                        InputBox::Account => Color::Yellow,
+                        InputBox::Password => Color::White,
+                    })),
+            )
+            .alignment(Alignment::Center);
         f.render_widget(account_input, chunks[0]);
 
         let mut hidden_password = String::new();
@@ -96,17 +104,19 @@ impl TabTrait for LoginTab {
         }
 
         let password_input = Paragraph::new(vec![Spans::from(hidden_password)])
-            .block(Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(match self.selected {
-                    InputBox::Account => Color::White,
-                    InputBox::Password => Color::Yellow
-                }))
-            ).alignment(Alignment::Center);
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(Style::default().fg(match self.selected {
+                        InputBox::Account => Color::White,
+                        InputBox::Password => Color::Yellow,
+                    })),
+            )
+            .alignment(Alignment::Center);
         f.render_widget(password_input, chunks[2]);
 
-        let error_text = Paragraph::new(vec![Spans::from(self.error.clone())])
-            .alignment(Alignment::Center);
+        let error_text =
+            Paragraph::new(vec![Spans::from(self.error.clone())]).alignment(Alignment::Center);
         f.render_widget(error_text, chunks[3])
     }
 
@@ -126,15 +136,23 @@ impl TabTrait for LoginTab {
             KeyCode::Tab => {
                 match self.selected {
                     InputBox::Account => self.selected = InputBox::Password,
-                    InputBox::Password => self.selected = InputBox::Account
+                    InputBox::Password => self.selected = InputBox::Account,
                 }
 
                 Action::None
             }
             KeyCode::Backspace => {
                 match self.selected {
-                    InputBox::Account => if !self.account.is_empty() { self.account.remove(self.account.clone().len() - 1);},
-                    InputBox::Password => if !self.password.is_empty() { self.password.remove(self.password.clone().len() - 1);}
+                    InputBox::Account => {
+                        if !self.account.is_empty() {
+                            self.account.remove(self.account.clone().len() - 1);
+                        }
+                    }
+                    InputBox::Password => {
+                        if !self.password.is_empty() {
+                            self.password.remove(self.password.clone().len() - 1);
+                        }
+                    }
                 };
 
                 Action::None
@@ -142,21 +160,30 @@ impl TabTrait for LoginTab {
             KeyCode::Char(chr) => {
                 match self.selected {
                     InputBox::Account => self.account.push(chr),
-                    InputBox::Password => self.password.push(chr)
+                    InputBox::Password => self.password.push(chr),
                 };
 
                 Action::None
             }
-            _ => Action::None
+            _ => Action::None,
         }
     }
 
     fn get_bindings(&self) -> Vec<TabBinding> {
         let mut vec = Vec::new();
 
-        vec.push(TabBinding::Default("TAB".to_string(), "Select the other text input".to_string()));
-        vec.push(TabBinding::Default("BACKSPACE/DELETE".to_string(), "Remove the last character of the selected text input".to_string()));
-        vec.push(TabBinding::Default("ENTER".to_string(), "Try to login".to_string()));
+        vec.push(TabBinding::Default(
+            "TAB".to_string(),
+            "Select the other text input".to_string(),
+        ));
+        vec.push(TabBinding::Default(
+            "BACKSPACE/DELETE".to_string(),
+            "Remove the last character of the selected text input".to_string(),
+        ));
+        vec.push(TabBinding::Default(
+            "ENTER".to_string(),
+            "Try to login".to_string(),
+        ));
 
         vec
     }
@@ -164,5 +191,5 @@ impl TabTrait for LoginTab {
 
 enum InputBox {
     Account,
-    Password
+    Password,
 }

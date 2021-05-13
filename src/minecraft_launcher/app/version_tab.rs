@@ -25,7 +25,10 @@ impl VersionTab {
         let mut items: Vec<MinVersion> = Vec::new();
 
         for version in self.all_versions.clone() {
-            if version._type.is_release() || (self.snapshot && version._type.is_snapshot()) || (self.old && version._type.is_old()) {
+            if version._type.is_release()
+                || (self.snapshot && version._type.is_snapshot())
+                || (self.old && version._type.is_old())
+            {
                 items.push(version.clone())
             }
         }
