@@ -4,9 +4,9 @@ use std::env::consts;
 use std::fs;
 use std::fs::File;
 use std::io::{Error, Read, Write};
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
-pub fn get_or_create_dir(current_folder: &PathBuf, sub: String) -> Option<PathBuf> {
+pub fn get_or_create_dir(current_folder: &Path, sub: String) -> Option<PathBuf> {
     match current_folder.exists() {
         true => {
             let sub_path = current_folder.join(sub);
@@ -71,7 +71,7 @@ pub fn get_or_create_dir(current_folder: &PathBuf, sub: String) -> Option<PathBu
     }
 }
 
-pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> {
+pub fn download_file_to(url: &str, path: &Path) -> Result<String, String> {
     match read_file_from_url_to_type(url, AskedType::U8Vec) {
         Ok(u8_vec) => match u8_vec {
             ReturnType::U8Vec(body) => {
@@ -116,7 +116,7 @@ pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> 
                 }
             }
             ReturnType::String(_) => {
-                Err(format!("Wrong Return type, expected Vec<u8> found String!"))
+                Err("Wrong Return type, expected Vec<u8> found String!".to_string())
             }
         },
         Err(err) => Err(format!(
@@ -135,11 +135,11 @@ pub fn download_file_to(url: &String, path: &PathBuf) -> Result<String, String> 
     }
 }
 
-pub fn read_file_from_url_to_string(url: &String) -> Result<String, String> {
+pub fn read_file_from_url_to_string(url: &str) -> Result<String, String> {
     match read_file_from_url_to_type(url, AskedType::String) {
         Ok(string) => match string {
             ReturnType::U8Vec(_) => {
-                Err(format!("Wrong Return type, expected String found Vec<u8>!"))
+                Err("Wrong Return type, expected String found Vec<u8>!".to_string())
             }
             ReturnType::String(string) => Ok(string),
         },
@@ -158,7 +158,7 @@ pub fn read_file_from_url_to_string(url: &String) -> Result<String, String> {
     }
 }
 
-pub fn read_file_from_url_to_type(url: &String, type_: AskedType) -> Result<ReturnType, ErrorType> {
+pub fn read_file_from_url_to_type(url: &str, type_: AskedType) -> Result<ReturnType, ErrorType> {
     match get_url(url) {
         Ok(mut data) => match type_ {
             AskedType::U8Vec => {
@@ -195,25 +195,25 @@ pub enum AskedType {
     String,
 }
 
-pub fn get_version_folder(version: &String) -> Option<PathBuf> {
+pub fn get_version_folder(version: &str) -> Option<PathBuf> {
     match get_minecraft_sub_folder(&String::from("versions")) {
         None => None,
-        Some(vs) => get_or_create_dir(&vs, version.clone()),
+        Some(vs) => get_or_create_dir(&vs, version.to_string()),
     }
 }
 
-pub fn get_assets_folder(sub: &String) -> Option<PathBuf> {
+pub fn get_assets_folder(sub: &str) -> Option<PathBuf> {
     match get_minecraft_sub_folder(&String::from("assets")) {
         None => None,
-        Some(vs) => get_or_create_dir(&vs, sub.clone()),
+        Some(vs) => get_or_create_dir(&vs, sub.to_string()),
     }
 }
 
-pub fn get_library_path(sub: &String) -> Option<PathBuf> {
+pub fn get_library_path(sub: &str) -> Option<PathBuf> {
     match get_minecraft_sub_folder(&String::from("libraries")) {
         None => None,
         Some(vs) => {
-            if sub.contains("/") {
+            if sub.contains('/') {
                 let sub = PathBuf::from(sub);
                 match get_or_create_dir(
                     &vs,
@@ -225,16 +225,16 @@ pub fn get_library_path(sub: &String) -> Option<PathBuf> {
                     }
                 }
             } else {
-                get_or_create_dir(&vs, sub.clone())
+                get_or_create_dir(&vs, sub.to_string())
             }
         }
     }
 }
 
-pub fn get_java_folder_path(type_: &String) -> Option<PathBuf> {
+pub fn get_java_folder_path(type_: &str) -> Option<PathBuf> {
     match get_minecraft_sub_folder(&String::from("runtime")) {
         None => None,
-        Some(runtime) => match get_or_create_dir(&runtime, type_.clone()) {
+        Some(runtime) => match get_or_create_dir(&runtime, type_.to_string()) {
             None => None,
             Some(type1) => match get_or_create_dir(&type1, String::from(get_os_java_name())) {
                 None => None,
@@ -244,7 +244,7 @@ pub fn get_java_folder_path(type_: &String) -> Option<PathBuf> {
     }
 }
 
-pub fn get_java_folder_path_sub(type_: &String) -> Option<PathBuf> {
+pub fn get_java_folder_path_sub(type_: &str) -> Option<PathBuf> {
     match get_java_folder_path(type_) {
         None => None,
         Some(os) => Some(os.join(type_)),
@@ -273,7 +273,7 @@ fn get_os_java_name() -> &'static str {
     }
 }
 
-pub fn get_minecraft_sub_folder(sub: &String) -> Option<PathBuf> {
+pub fn get_minecraft_sub_folder(sub: &str) -> Option<PathBuf> {
     get_or_create_dir(&get_minecraft_directory(), sub.to_string())
 }
 

@@ -1,15 +1,15 @@
 use crate::minecraft_launcher::manifest::version;
 use crate::minecraft_launcher::manifest::version::{
-    ClientLogging, Either, Logging, Os, Rule, RuleAction,
+    Either, Logging, Os, Rule, RuleAction,
 };
 use crate::minecraft_launcher::options::LaunchOptions;
 use crate::minecraft_launcher::path;
 use os_info::{get as get_os_info, Version};
-use std::collections::hash_map::RandomState;
-use std::collections::HashMap;
+
+
 use std::env::consts;
 use std::ops::Add;
-use std::path::PathBuf;
+
 
 pub fn get_args_from_manifest(
     version: &version::Main,
@@ -93,7 +93,7 @@ pub fn get_args_from_manifest(
 pub fn get_natives(version: &version::Main) -> String {
     let mut native_arg = String::new();
 
-    let mut version = version.clone();
+    let version = version.clone();
 
     let separator = match get_os() {
         Os::Windows => ";",
@@ -101,14 +101,14 @@ pub fn get_natives(version: &version::Main) -> String {
     };
 
     for library in version.libraries {
-        let mut allowed = match library.rules {
+        let allowed = match library.rules {
             None => RuleAction::Allow,
             Some(rules) => match_rules(rules, None),
         };
 
         match allowed {
             RuleAction::Allow => {
-                let name_parts: Vec<&str> = library.name.split(":").collect();
+                let name_parts: Vec<&str> = library.name.split(':').collect();
 
                 let lib_path = *name_parts.get(0).unwrap_or(&"");
                 let name = *name_parts.get(1).unwrap_or(&"");
@@ -159,11 +159,11 @@ pub fn match_rules(rules: Vec<version::Rule>, options: Option<&LaunchOptions>) -
                 mat = match i.0.as_str() {
                     "is_demo_user" => match options {
                         None => false,
-                        Some(opt) => opt.demo == true,
+                        Some(opt) => opt.demo,
                     },
                     "has_custom_resolution" => match options {
                         None => false,
-                        Some(opt) => opt.custom_resolution == true,
+                        Some(opt) => opt.custom_resolution,
                     },
                     _ => false,
                 };
@@ -188,7 +188,7 @@ pub fn match_rules(rules: Vec<version::Rule>, options: Option<&LaunchOptions>) -
                             let mut v = i.1.replace("\\", "").replace("d$", "0");
 
                             let mut sup_or_equ = false;
-                            if v.starts_with("^") {
+                            if v.starts_with('^') {
                                 sup_or_equ = true;
                                 v = v.replace("^", "");
                             }
@@ -234,7 +234,7 @@ pub fn match_rules(rules: Vec<version::Rule>, options: Option<&LaunchOptions>) -
 pub fn get_os() -> Os {
     match consts::OS {
         "windows" => Os::Windows,
-        "macos" => Os::MacOS,
+        "macos" => Os::MacOs,
         &_ => Os::Linux,
     }
 }

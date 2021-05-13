@@ -201,7 +201,7 @@ impl LiteLoaderInstaller {
     ) -> Option<(&'static str, bool, [&'static str; 4], &'static str)> {
         for version in VERSIONS.iter() {
             if version.0 == mc_version.as_str() {
-                return Some(version.clone());
+                return Some(*version);
             }
         }
         None
@@ -249,9 +249,9 @@ impl ModLoaderInstaller for LiteLoaderInstaller {
         libraries.push(Library {
             downloads: None,
             name: if version_info.1 {
-                String::from(LOADER_NAME).replace("{mc_version}", &*mc_version.clone())
+                String::from(LOADER_NAME).replace("{mc_version}", &*mc_version)
             } else {
-                String::from(LOADER_NAME_SNAPSHOT).replace("{mc_version}", &*mc_version.clone())
+                String::from(LOADER_NAME_SNAPSHOT).replace("{mc_version}", &*mc_version)
             },
             extract: None,
             natives: None,

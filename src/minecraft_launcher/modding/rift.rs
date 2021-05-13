@@ -41,23 +41,23 @@ impl ModLoaderInstaller for RiftInstaller {
         vec![String::from(MC_VERSIONS)]
     }
 
-    fn get_loader_versions(&self, mc_version: String) -> Vec<String> {
+    fn get_loader_versions(&self, _mc_version: String) -> Vec<String> {
         vec![String::from("FINAL")]
     }
 
-    fn get_profile_name_for_mc_version(&self, mc_version: String) -> String {
+    fn get_profile_name_for_mc_version(&self, _mc_version: String) -> String {
         String::from("1.13.2-rift-FINAL")
     }
 
     fn get_profile_name_for_loader_version(
         &self,
         mc_version: String,
-        loader_version: String,
+        _loader_version: String,
     ) -> String {
         self.get_profile_name_for_mc_version(mc_version)
     }
 
-    fn create_profile(&self, mc_version: String, loader_version: String) -> Main {
+    fn create_profile(&self, mc_version: String, _loader_version: String) -> Main {
         let mut libs: Vec<Library> = Vec::new();
         for lib in LIBS.iter() {
             libs.push(Library {

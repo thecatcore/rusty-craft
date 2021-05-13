@@ -18,6 +18,7 @@ mod rendering;
 mod utils;
 
 use manifest::version;
+use std::path::Path;
 
 pub fn main() {
     minecraft_folder();
@@ -78,7 +79,7 @@ fn minecraft_folder() {
     all_versions.sort_by(|a, b| a.release_time.cmp(&b.release_time));
     all_versions.reverse();
 
-    let app = app::App::new(all_versions, manifest.clone().versions);
+    let app = app::App::new(all_versions, manifest.versions);
 
     match rendering::main::main(app) {
         Ok(_) => {
@@ -90,7 +91,7 @@ fn minecraft_folder() {
     };
 }
 
-fn upgrade_manifest(version_folder: &PathBuf) -> manifest::main::Main {
+fn upgrade_manifest(version_folder: &Path) -> manifest::main::Main {
     let manifest_path = version_folder.join("version_manifest_v2.json");
 
     let manifest_body = match utils::get_body_from_url_else_from_file(
@@ -121,7 +122,7 @@ fn upgrade_manifest(version_folder: &PathBuf) -> manifest::main::Main {
     }
 }
 
-fn get_local_versions(version_folder: &PathBuf) -> Vec<version::Main> {
+fn get_local_versions(version_folder: &Path) -> Vec<version::Main> {
     let version_read = match fs::read_dir(version_folder) {
         Ok(read_dir) => read_dir,
         Err(_) => {
@@ -192,7 +193,7 @@ fn get_local_versions(version_folder: &PathBuf) -> Vec<version::Main> {
     installed
 }
 
-fn get_manifest_from_installed(version_name: &str, version_folder: &PathBuf) -> Option<String> {
+fn get_manifest_from_installed(version_name: &str, version_folder: &Path) -> Option<String> {
     let version_read = match fs::read_dir(version_folder) {
         Ok(read_dir) => read_dir,
         Err(_) => {

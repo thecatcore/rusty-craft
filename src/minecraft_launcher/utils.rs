@@ -1,9 +1,9 @@
 use reqwest::blocking::get as get_url;
 use std::fs::File;
 use std::io::Read;
-use std::path::PathBuf;
+use std::path::{Path};
 
-pub fn get_body_from_url_else_from_file(url: &str, path: &PathBuf) -> Option<String> {
+pub fn get_body_from_url_else_from_file(url: &str, path: &Path) -> Option<String> {
     match get_url(url) {
         Ok(mut response) => {
             let mut manifest_body = String::new();

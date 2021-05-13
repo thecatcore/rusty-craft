@@ -61,19 +61,16 @@ impl TabTrait for VersionTab {
             .iter()
             .map(|v| {
                 let cells = vec![
-                    Cell::from(Span::raw(format!("{}", v.id))),
-                    Cell::from(Span::raw(format!("{}", v._type.to_string()))),
-                    Cell::from(Span::raw(format!(
-                        "{}",
-                        match v.installed {
+                    Cell::from(Span::raw(v.id.to_string())),
+                    Cell::from(Span::raw(v._type.to_string())),
+                    Cell::from(Span::raw(match v.installed {
                             true => {
                                 "Yes"
                             }
                             false => {
                                 "No"
                             }
-                        }
-                    ))),
+                        }.to_string())),
                     Cell::from(Span::raw(format!("{:?}", v.release_time))),
                 ];
                 Row::new(cells)

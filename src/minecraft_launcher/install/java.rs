@@ -217,7 +217,7 @@ fn get_java_folder_path_sub(version_manifest: &version::Main) -> Option<PathBuf>
 }
 
 fn install(
-    java_v_type: &String,
+    java_v_type: &str,
     os_fol: PathBuf,
     manifest: java_versions::Manifest,
     online_version: String,
@@ -240,13 +240,13 @@ fn install(
 }
 
 fn install_java_version(
-    type_: &String,
+    type_: &str,
     os_folder: PathBuf,
     manifest: java_versions::Manifest,
     online_version: String,
     tx: Sender<Message>,
 ) -> Option<Sender<Message>> {
-    let v_folder = match path::get_or_create_dir(&os_folder, type_.clone()) {
+    let v_folder = match path::get_or_create_dir(&os_folder, type_.to_string()) {
         None => os_folder.clone(),
         Some(v) => v,
     };
@@ -264,7 +264,7 @@ fn install_java_version(
                         current_file_index += 1;
                         let file_path = file.0;
                         tx.send(Message::NewSubSubStep(
-                            format!("{}", file_path),
+                            file_path.to_string(),
                             current_file_index,
                             (file_amount as u64) + 1,
                         ))
@@ -297,7 +297,7 @@ fn install_java_version(
                                 }
                                 Some(downloads) => {
                                     let url = downloads.raw.url;
-                                    if file_path.contains("/") {
+                                    if file_path.contains('/') {
                                         let file_pathbuf = PathBuf::from(file_path);
                                         match path::get_or_create_dir(
                                             &v_folder,
@@ -306,9 +306,7 @@ fn install_java_version(
                                             ),
                                         ) {
                                             None => {
-                                                tx.send(Message::Error(format!(
-                                                    "Unable to create folders"
-                                                )))
+                                                tx.send(Message::Error("Unable to create folders".to_string()))
                                                 .expect("Can't send message to renderer thread");
                                                 None
                                             }
@@ -381,7 +379,7 @@ fn install_java_version(
                     }
                     if status.is_some() {
                         tx.send(Message::NewSubSubStep(
-                            format!(".version"),
+                            ".version".to_string(),
                             (file_amount as u64) + 1,
                             (file_amount as u64) + 1,
                         ))
@@ -500,27 +498,25 @@ fn set_executable(file_buf: PathBuf) -> Option<()> {
 
 #[cfg(unix)]
 fn create_symlink(
-    v_folder: &PathBuf,
+    v_folder: &Path,
     path_name: String,
     target: Option<String>,
     tx: Sender<Message>,
 ) -> Option<()> {
     match target {
         None => {
-            tx.send(Message::Error(format!("Link target is none!")));
+            tx.send(Message::Error("Link target is none!".to_string()));
             None
         }
         Some(target) => {
             let path_buffer = PathBuf::from(path_name.clone());
 
-            match path_buffer.clone().parent() {
+            match path_buffer.parent() {
                 None => {}
                 Some(p) => {
                     match path::get_or_create_dir(&v_folder, p.display().to_string()) {
                         None => {
-                            tx.send(Message::Error(format!(
-                                "Failed to create folder in which symlink is!"
-                            )));
+                            tx.send(Message::Error("Failed to create folder in which symlink is!".to_string()));
                             return None;
                         }
                         Some(_) => {}
@@ -528,10 +524,10 @@ fn create_symlink(
                 }
             }
 
-            let path_parts: Vec<&str> = path_name.split("/").collect();
-            let target_parts: Vec<&str> = target.split("/").collect();
+            let path_parts: Vec<&str> = path_name.split('/').collect();
+            let target_parts: Vec<&str> = target.split('/').collect();
 
-            let mut path_buf = v_folder.clone();
+            let mut path_buf = PathBuf::from(v_folder);
             for path_part in path_parts {
                 path_buf = path_buf.join(path_part);
             }

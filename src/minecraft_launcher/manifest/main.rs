@@ -103,7 +103,7 @@ impl Version {
     }
 }
 
-pub fn parse_manifest(manifest_str: &String) -> serde_json::Result<Main> {
+pub fn parse_manifest(manifest_str: &str) -> serde_json::Result<Main> {
     let manifest: serde_json::Result<Main> = serde_json::from_str(manifest_str);
 
     manifest

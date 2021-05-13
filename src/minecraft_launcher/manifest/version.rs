@@ -50,13 +50,11 @@ impl Main {
             if from.arguments.is_some() {
                 self.arguments = from.arguments;
             }
-        } else {
-            if from.arguments.is_some() {
-                self.arguments = Some(Arguments::inherit(
-                    self.arguments.expect("How?"),
-                    from.arguments.expect("How??"),
-                ));
-            }
+        } else if from.arguments.is_some() {
+            self.arguments = Some(Arguments::inherit(
+                self.arguments.expect("How?"),
+                from.arguments.expect("How??"),
+            ));
         }
 
         if self.asset_index.is_none() && from.asset_index.is_some() {
@@ -73,13 +71,11 @@ impl Main {
 
         if self.downloads.is_none() && from.downloads.is_some() {
             self.downloads = from.downloads
-        } else {
-            if from.downloads.is_some() {
-                self.downloads = Some(Downloads::inherit(
-                    self.downloads.expect("Concern"),
-                    from.downloads.expect("Concern"),
-                ));
-            }
+        } else if from.downloads.is_some() {
+            self.downloads = Some(Downloads::inherit(
+                self.downloads.expect("Concern"),
+                from.downloads.expect("Concern"),
+            ));
         }
 
         if self.java_version.is_none() && from.java_version.is_some() {
@@ -115,18 +111,16 @@ pub struct Arguments {
 impl Arguments {
     pub fn inherit(mut self, from: Arguments) -> Arguments {
         for arg in from.game {
-            &self.game.push(arg);
+            self.game.push(arg);
         }
 
         if self.jvm.is_none() {
             if from.jvm.is_some() {
                 self.jvm = from.jvm;
             }
-        } else {
-            if from.jvm.is_some() {
-                for i in from.jvm.expect("How??") {
-                    self = self.add_to_jvm(i);
-                }
+        } else if from.jvm.is_some() {
+            for i in from.jvm.expect("How??") {
+                self = self.add_to_jvm(i);
             }
         }
 
@@ -295,21 +289,12 @@ pub enum RuleAction {
     Disallow,
 }
 
-impl RuleAction {
-    pub fn to_string(&self) -> String {
-        match self {
-            RuleAction::Allow => String::from("allow"),
-            RuleAction::Disallow => String::from("disallow"),
-        }
-    }
-}
-
 #[derive(Deserialize, Serialize, Clone)]
 pub enum Os {
     #[serde(rename = "windows")]
     Windows,
     #[serde(rename = "osx")]
-    MacOS,
+    MacOs,
     #[serde(rename = "linux")]
     Linux,
 }
@@ -318,7 +303,7 @@ impl Os {
     pub fn from_str(string: &str) -> Option<Os> {
         match string {
             "windows" => Some(Os::Windows),
-            "osx" => Some(Os::MacOS),
+            "osx" => Some(Os::MacOs),
             "linux" => Some(Os::Linux),
             &_ => None,
         }
@@ -327,7 +312,7 @@ impl Os {
     pub fn to_str(&self) -> String {
         String::from(match self {
             Os::Windows => "windows",
-            Os::MacOS => "osx",
+            Os::MacOs => "osx",
             Os::Linux => "linux",
         })
     }
@@ -352,7 +337,7 @@ impl Main {
     }
 }
 
-pub fn parse_version_manifest(version_str: &String) -> serde_json::Result<Main> {
+pub fn parse_version_manifest(version_str: &str) -> serde_json::Result<Main> {
     let version_test: serde_json::Result<Main> = serde_json::from_str(version_str);
 
     version_test

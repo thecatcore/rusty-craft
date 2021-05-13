@@ -14,11 +14,13 @@ use std::time::{Duration, Instant};
 use std::{io, thread};
 use tui::backend::CrosstermBackend;
 use tui::layout::{Alignment, Constraint, Direction, Layout, Rect};
-use tui::style::{Color, Modifier, Style};
+use tui::style::{Color, Style};
 use tui::text::Span;
 use tui::text::Spans;
-use tui::widgets::{Block, Borders, Paragraph, Tabs, Wrap};
+use tui::widgets::{Block, Borders, Paragraph, Tabs};
 use tui::{Frame, Terminal};
+use crossterm::event::KeyEvent;
+use std::sync::mpsc::SendError;
 
 pub mod download_tab;
 mod launch_tab;
@@ -166,7 +168,7 @@ impl App {
 
         let tick_rate = Duration::from_millis(cli.tick_rate);
         // let tx2 = tx.clone();
-        thread::spawn(move || {
+        thread::spawn(move || -> Result<(), SendError<Event<KeyEvent>>> {
             let mut last_tick = Instant::now();
             loop {
                 // poll for tick rate duration, if no events, sent tick event.
@@ -175,20 +177,15 @@ impl App {
                     .unwrap_or_else(|| Duration::from_secs(0));
                 if event::poll(timeout).unwrap() {
                     if let CEvent::Key(key) = event::read().unwrap() {
-                        match tx.send(Event::Input(key)) {
-                            Ok(_) => {}
-                            Err(_) => {}
-                        };
+                        tx.send(Event::Input(key))?;
                     }
                 }
                 if last_tick.elapsed() >= tick_rate {
-                    match tx.send(Event::Tick) {
-                        Ok(_) => {}
-                        Err(_) => {}
-                    };
+                    tx.send(Event::Tick)?;
                     last_tick = Instant::now();
                 }
             }
+            // Ok(())
         });
         // thread::spawn(move || {
         //     let mut last_tick = Instant::now();
@@ -245,22 +242,12 @@ impl App {
             })?;
 
             match rx.recv()? {
-                Event::Input(key) => match key.code.clone() {
-                    KeyCode::Esc => match disable_raw_mode() {
-                        Ok(_) => {
-                            match execute!(
-                                terminal.backend_mut(),
-                                LeaveAlternateScreen,
-                                DisableMouseCapture
-                            ) {
-                                Ok(_) => match terminal.show_cursor() {
-                                    Ok(_) => break,
-                                    Err(_) => {}
-                                },
-                                Err(_) => {}
-                            }
-                        }
-                        Err(_) => {}
+                Event::Input(key) => match key.code {
+                    KeyCode::Esc => {
+                        disable_raw_mode()?;
+                        execute!(terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture)?;
+                        terminal.show_cursor()?;
+                        break
                     },
                     _ => {
                         match self.on_key_press(key.code) {

@@ -43,8 +43,8 @@ pub struct OsVersions {
 }
 
 impl OsVersions {
-    pub fn get_java_version(self, version: &String) -> Option<Vec<Version>> {
-        match version.as_str() {
+    pub fn get_java_version(self, version: &str) -> Option<Vec<Version>> {
+        match version {
             "java-runtime-alpha" => Some(self.java_runtime_alpha),
             "jre-legacy" => Some(self.jre_legacy),
             "minecraft-java-exe" => Some(self.java_exe),
@@ -79,7 +79,7 @@ pub struct VersionInfo {
     pub released: DateTime<Utc>,
 }
 
-pub fn parse_java_versions_manifest(version_str: &String) -> serde_json::Result<Main> {
+pub fn parse_java_versions_manifest(version_str: &str) -> serde_json::Result<Main> {
     let version_test: serde_json::Result<Main> = serde_json::from_str(version_str);
 
     version_test

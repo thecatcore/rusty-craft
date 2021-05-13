@@ -1,15 +1,15 @@
 use crate::minecraft_launcher::app::{Action, Tab, TabBinding, TabTrait};
 use crossterm::event::KeyCode;
-use sage_auth::auth::{AuthenticateBuilder, AuthenticateResponse};
-use sage_auth::types::{Profile, User};
-use sage_auth::Error;
+use sage_auth::auth::{AuthenticateBuilder};
+
+
 use std::io::Stdout;
-use std::panic::panic_any;
-use tokio::runtime::Runtime;
+
+
 use tui::backend::CrosstermBackend;
 use tui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use tui::style::{Color, Style};
-use tui::text::{Span, Spans};
+use tui::text::{Spans};
 use tui::widgets::{Block, Borders, Paragraph};
 use tui::Frame;
 use uuid::Uuid;
@@ -50,14 +50,14 @@ impl LoginTab {
         // request.await;
 
         match request {
-            Ok(mut response) => {
+            Ok(response) => {
                 self.token = response.access_token.clone();
 
                 match response.selected_profile {
                     None => {}
                     Some(profile) => {
                         self.name = profile.name.clone();
-                        self.uuid = profile.id.clone();
+                        self.uuid = profile.id;
                     }
                 }
 

@@ -1,7 +1,7 @@
 use serde_derive::Deserialize;
 use std::collections::HashMap;
 use std::ops::Add;
-use std::path::PathBuf;
+use std::path::{PathBuf, Path};
 
 #[derive(Deserialize, Clone)]
 pub struct Main {
@@ -19,15 +19,13 @@ pub struct AssetIndex {
 impl AssetIndex {
     pub fn get_download_url(&self) -> String {
         let hach = &self.hash;
-        let mut int: u8 = 0;
         let mut small = String::new();
 
-        for hach_chr in hach.chars() {
+        for (int, hach_chr) in hach.chars().enumerate() {
             if int > 1 {
                 break;
             }
             small = small.add(hach_chr.to_string().as_str());
-            int += 1;
         }
 
         format!(
@@ -36,24 +34,22 @@ impl AssetIndex {
         )
     }
 
-    pub fn get_download_path(&self, object_path: &PathBuf) -> (String, PathBuf) {
+    pub fn get_download_path(&self, object_path: &Path) -> (String, PathBuf) {
         let hach = &self.hash;
-        let mut int: u8 = 0;
         let mut small = String::new();
 
-        for hach_chr in hach.chars() {
+        for (int, hach_chr) in hach.chars().enumerate() {
             if int > 1 {
                 break;
             }
             small = small.add(hach_chr.to_string().as_str());
-            int += 1;
         }
 
         (small.clone(), object_path.join(small).join(hach))
     }
 }
 
-pub fn parse(index: &String) -> serde_json::Result<Main> {
+pub fn parse(index: &str) -> serde_json::Result<Main> {
     let index_main: serde_json::Result<Main> = serde_json::from_str(index);
 
     index_main

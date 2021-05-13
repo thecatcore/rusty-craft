@@ -29,7 +29,7 @@ pub struct FileInfo {
     pub url: String,
 }
 
-pub fn parse_java_version_manifest(version_str: &String) -> serde_json::Result<Main> {
+pub fn parse_java_version_manifest(version_str: &str) -> serde_json::Result<Main> {
     let version_test: serde_json::Result<Main> = serde_json::from_str(version_str);
 
     version_test

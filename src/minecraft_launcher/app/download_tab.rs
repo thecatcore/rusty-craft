@@ -1,19 +1,19 @@
 use crate::minecraft_launcher::app::{Action, Tab, TabBinding, TabTrait};
 use crate::minecraft_launcher::install;
-use crate::minecraft_launcher::launch;
+
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crate::minecraft_launcher::manifest::version;
-use crate::minecraft_launcher::manifest::version::Main;
+
 use crossterm::event::KeyCode;
 use std::io::Stdout;
 use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, RecvTimeoutError};
+use std::sync::mpsc::{Receiver};
 use std::thread;
 use std::time::Duration;
 use tui::backend::CrosstermBackend;
-use tui::layout::{Constraint, Direction, Layout, Rect};
+use tui::layout::{Constraint, Layout, Rect};
 use tui::style::{Color, Style};
-use tui::text::{Span, Spans};
+use tui::text::{Spans};
 use tui::widgets::{Block, Borders, Gauge, Paragraph, Wrap};
 use tui::Frame;
 
@@ -64,34 +64,29 @@ impl TabTrait for DownloadTab {
             None => {}
             Some(rx) => {
                 let mut init = false;
-                match rx.recv() {
-                    Ok(msg) => match msg {
-                        Message::Init => {
-                            init = true;
-                        }
-                        Message::NewStep(step) => {
-                            self.current_step = step;
-                            self.current_sub_step = None;
-                            self.current_sub_sub_step = None;
-                        }
-                        Message::NewSubStep(name, index, max) => {
-                            self.current_sub_step = Some((name, index, max));
-                            self.current_sub_sub_step = None;
-                        }
-                        Message::NewSubSubStep(name, index, max) => {
-                            self.current_sub_sub_step = Some((name, index, max))
-                        }
-                        Message::Error(err) => {
-                            self.error = Some(err);
-                        }
-                        Message::Done(version) => {
-                            self.installed = Some(version);
-                        }
-                    },
-                    Err(_) => {
-                        // println!("Error while trying to receive message from install thread: {}", err)
+                if let Ok(msg) = rx.recv() { match msg {
+                    Message::Init => {
+                        init = true;
                     }
-                }
+                    Message::NewStep(step) => {
+                        self.current_step = step;
+                        self.current_sub_step = None;
+                        self.current_sub_sub_step = None;
+                    }
+                    Message::NewSubStep(name, index, max) => {
+                        self.current_sub_step = Some((name, index, max));
+                        self.current_sub_sub_step = None;
+                    }
+                    Message::NewSubSubStep(name, index, max) => {
+                        self.current_sub_sub_step = Some((name, index, max))
+                    }
+                    Message::Error(err) => {
+                        self.error = Some(err);
+                    }
+                    Message::Done(version) => {
+                        self.installed = Some(version);
+                    }
+                } }
 
                 let chunks = Layout::default()
                     .constraints([
@@ -151,35 +146,32 @@ impl TabTrait for DownloadTab {
                     let mut res = rx.recv_timeout(Duration::from_millis(1));
                     while res.is_ok() {
                         let mut skipable = true;
-                        match res.clone() {
-                            Ok(msg) => match msg {
-                                Message::Init => {
-                                    skipable = false;
-                                }
-                                Message::NewStep(step) => {
-                                    self.current_step = step;
-                                    self.current_sub_step = None;
-                                    self.current_sub_sub_step = None;
-                                    skipable = false;
-                                }
-                                Message::NewSubStep(name, index, max) => {
-                                    self.current_sub_step = Some((name, index, max));
-                                    self.current_sub_sub_step = None;
-                                }
-                                Message::NewSubSubStep(name, index, max) => {
-                                    self.current_sub_sub_step = Some((name, index, max))
-                                }
-                                Message::Error(err) => {
-                                    self.error = Some(err);
-                                    skipable = false;
-                                }
-                                Message::Done(version) => {
-                                    self.installed = Some(version);
-                                    skipable = false;
-                                }
-                            },
-                            Err(_) => {}
-                        }
+                        if let Ok(msg) = res.clone() { match msg {
+                            Message::Init => {
+                                skipable = false;
+                            }
+                            Message::NewStep(step) => {
+                                self.current_step = step;
+                                self.current_sub_step = None;
+                                self.current_sub_sub_step = None;
+                                skipable = false;
+                            }
+                            Message::NewSubStep(name, index, max) => {
+                                self.current_sub_step = Some((name, index, max));
+                                self.current_sub_sub_step = None;
+                            }
+                            Message::NewSubSubStep(name, index, max) => {
+                                self.current_sub_sub_step = Some((name, index, max))
+                            }
+                            Message::Error(err) => {
+                                self.error = Some(err);
+                                skipable = false;
+                            }
+                            Message::Done(version) => {
+                                self.installed = Some(version);
+                                skipable = false;
+                            }
+                        } }
                         if iterations > 100 {
                             break;
                         }
@@ -207,9 +199,7 @@ impl TabTrait for DownloadTab {
     }
 
     fn get_bindings(&self) -> Vec<TabBinding> {
-        let mut vec = Vec::new();
-
-        vec
+        vec![]
     }
 }
 

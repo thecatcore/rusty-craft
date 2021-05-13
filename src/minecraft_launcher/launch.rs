@@ -1,21 +1,21 @@
 use crate::minecraft_launcher::app::download_tab::Message;
 use crate::minecraft_launcher::arguments;
 use crate::minecraft_launcher::manifest::version::{
-    LibraryDownload, LibraryDownloadArtifact, LibraryExtract, Main, Rule, RuleAction,
+    LibraryDownloadArtifact, Main, Rule, RuleAction,
 };
 use crate::minecraft_launcher::path;
-use std::collections::hash_map::RandomState;
+
 use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::io;
-use std::io::Error;
+
 use std::path::PathBuf;
 use std::process::Command;
 use std::sync::mpsc::Sender;
 
-pub fn main(java_path: PathBuf) {
-    let child = Command::new("");
+pub fn main(_java_path: PathBuf) {
+    let _child = Command::new("");
 }
 
 pub fn pre_launch(manifest: Main, mut tx: Sender<Message>) {
@@ -67,7 +67,7 @@ pub fn pre_launch(manifest: Main, mut tx: Sender<Message>) {
                                     Some(lib_download_art) => {
                                         let lib_path = lib_download_art.clone().path;
                                         tx.send(Message::NewSubStep(
-                                            format!("{}", lib_path.clone()),
+                                            lib_path.clone().to_string(),
                                             i,
                                             manifest.libraries.len() as u64,
                                         ))
@@ -122,7 +122,7 @@ fn extract_natives(
         let mut file = archive.by_index(i).unwrap();
 
         tx.send(Message::NewSubSubStep(
-            format!("{}", file.name()),
+            file.name().to_string(),
             (i + 1) as u64,
             length as u64,
         ))
@@ -146,11 +146,8 @@ fn extract_natives(
                     Some(_) => {}
                 }
             } else if file.is_file() {
-                match File::create(bin_folder.join(file_path)) {
-                    Ok(mut outfile) => {
-                        io::copy(&mut file, &mut outfile).unwrap();
-                    }
-                    Err(_) => {}
+                if let Ok(mut outfile) = File::create(bin_folder.join(file_path)) {
+                    io::copy(&mut file, &mut outfile).unwrap();
                 }
             }
         }

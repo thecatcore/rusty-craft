@@ -199,7 +199,7 @@ fn install_libraries(
 
     for library in version_manifest.libraries {
         index += 1;
-        let lib_name: Vec<&str> = library.name.split(":").collect();
+        let lib_name: Vec<&str> = library.name.split(':').collect();
         let group = *lib_name.get(0).expect("Library doesn't have a group???");
         let name = *lib_name.get(1).expect("Library doesn't have a name???");
         let version = *lib_name.get(2).expect("Library doesn't have a version???");
@@ -418,7 +418,7 @@ fn install_assets_index(
 
     tx.send(Message::NewStep(5))
         .expect("Can't send message to renderer thread");
-    tx.send(Message::NewSubStep(format!("Checking asset index"), 1, 3))
+    tx.send(Message::NewSubStep("Checking asset index".to_string(), 1, 3))
         .expect("Can't send message to renderer thread");
     match version_manifest.asset_index {
         None => {
@@ -499,7 +499,7 @@ fn install_assets_index(
 
 fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> {
     tx.send(Message::NewSubStep(
-        format!("Installing missing assets"),
+        "Installing missing assets".to_string(),
         2,
         3,
     ))
@@ -540,7 +540,7 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                 for entry in main.objects.clone() {
                                                     entry_index += 1;
 
-                                                    tx.send(Message::NewSubSubStep(format!("{}", entry.0.clone()), entry_index, entry_count as u64)).expect("Can't send message to renderer thread");
+                                                    tx.send(Message::NewSubSubStep(entry.0.clone().to_string(), entry_index, entry_count as u64)).expect("Can't send message to renderer thread");
 
                                                     let asset_path =
                                                         entry.1.get_download_path(&object_path);
@@ -627,7 +627,7 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                             None => None,
                                             Some(tx) => {
                                                 if main.map_to_resources {
-                                                    tx.send(Message::NewSubStep(format !("Relocating to resources folder"), 3, 3))
+                                                    tx.send(Message::NewSubStep("Relocating to resources folder".to_string(), 3, 3))
                                                         .expect("Can't send message to renderer thread");
                                                     match path::get_minecraft_sub_folder(
                                                         &String::from("resources"),
@@ -647,7 +647,7 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                                         main.objects
                                                                     {
                                                                         entry_index += 1;
-                                                                        tx.send(Message::NewSubSubStep(format!("{}", entry.clone()), entry_index, entry_count as u64)).expect("Can't send message to renderer thread");
+                                                                        tx.send(Message::NewSubSubStep(entry.clone().to_string(), entry_index, entry_count as u64)).expect("Can't send message to renderer thread");
                                                                         let hashed_path =
                                                                             asset_info
                                                                                 .get_download_path(
@@ -661,7 +661,7 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                                                     let mut body: Vec<u8> = Vec::new();
                                                                                     match file.read_to_end(&mut body) {
                                                                                         Ok(_) => {
-                                                                                            if entry.contains("/") {
+                                                                                            if entry.contains('/') {
                                                                                                 // let parts: Vec<&str> = entry.split("/").collect();
                                                                                                 // let mut parts2: Vec<String> = Vec::new();
                                                                                                 // for part in parts {
