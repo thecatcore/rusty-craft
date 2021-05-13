@@ -7,13 +7,13 @@ use crate::minecraft_launcher::manifest::version;
 use crossterm::event::KeyCode;
 use std::io::Stdout;
 use std::sync::mpsc;
-use std::sync::mpsc::{Receiver};
+use std::sync::mpsc::Receiver;
 use std::thread;
 use std::time::Duration;
 use tui::backend::CrosstermBackend;
 use tui::layout::{Constraint, Layout, Rect};
 use tui::style::{Color, Style};
-use tui::text::{Spans};
+use tui::text::Spans;
 use tui::widgets::{Block, Borders, Gauge, Paragraph, Wrap};
 use tui::Frame;
 
@@ -64,29 +64,31 @@ impl TabTrait for DownloadTab {
             None => {}
             Some(rx) => {
                 let mut init = false;
-                if let Ok(msg) = rx.recv() { match msg {
-                    Message::Init => {
-                        init = true;
+                if let Ok(msg) = rx.recv() {
+                    match msg {
+                        Message::Init => {
+                            init = true;
+                        }
+                        Message::NewStep(step) => {
+                            self.current_step = step;
+                            self.current_sub_step = None;
+                            self.current_sub_sub_step = None;
+                        }
+                        Message::NewSubStep(name, index, max) => {
+                            self.current_sub_step = Some((name, index, max));
+                            self.current_sub_sub_step = None;
+                        }
+                        Message::NewSubSubStep(name, index, max) => {
+                            self.current_sub_sub_step = Some((name, index, max))
+                        }
+                        Message::Error(err) => {
+                            self.error = Some(err);
+                        }
+                        Message::Done(version) => {
+                            self.installed = Some(version);
+                        }
                     }
-                    Message::NewStep(step) => {
-                        self.current_step = step;
-                        self.current_sub_step = None;
-                        self.current_sub_sub_step = None;
-                    }
-                    Message::NewSubStep(name, index, max) => {
-                        self.current_sub_step = Some((name, index, max));
-                        self.current_sub_sub_step = None;
-                    }
-                    Message::NewSubSubStep(name, index, max) => {
-                        self.current_sub_sub_step = Some((name, index, max))
-                    }
-                    Message::Error(err) => {
-                        self.error = Some(err);
-                    }
-                    Message::Done(version) => {
-                        self.installed = Some(version);
-                    }
-                } }
+                }
 
                 let chunks = Layout::default()
                     .constraints([
@@ -146,32 +148,34 @@ impl TabTrait for DownloadTab {
                     let mut res = rx.recv_timeout(Duration::from_millis(1));
                     while res.is_ok() {
                         let mut skipable = true;
-                        if let Ok(msg) = res.clone() { match msg {
-                            Message::Init => {
-                                skipable = false;
+                        if let Ok(msg) = res.clone() {
+                            match msg {
+                                Message::Init => {
+                                    skipable = false;
+                                }
+                                Message::NewStep(step) => {
+                                    self.current_step = step;
+                                    self.current_sub_step = None;
+                                    self.current_sub_sub_step = None;
+                                    skipable = false;
+                                }
+                                Message::NewSubStep(name, index, max) => {
+                                    self.current_sub_step = Some((name, index, max));
+                                    self.current_sub_sub_step = None;
+                                }
+                                Message::NewSubSubStep(name, index, max) => {
+                                    self.current_sub_sub_step = Some((name, index, max))
+                                }
+                                Message::Error(err) => {
+                                    self.error = Some(err);
+                                    skipable = false;
+                                }
+                                Message::Done(version) => {
+                                    self.installed = Some(version);
+                                    skipable = false;
+                                }
                             }
-                            Message::NewStep(step) => {
-                                self.current_step = step;
-                                self.current_sub_step = None;
-                                self.current_sub_sub_step = None;
-                                skipable = false;
-                            }
-                            Message::NewSubStep(name, index, max) => {
-                                self.current_sub_step = Some((name, index, max));
-                                self.current_sub_sub_step = None;
-                            }
-                            Message::NewSubSubStep(name, index, max) => {
-                                self.current_sub_sub_step = Some((name, index, max))
-                            }
-                            Message::Error(err) => {
-                                self.error = Some(err);
-                                skipable = false;
-                            }
-                            Message::Done(version) => {
-                                self.installed = Some(version);
-                                skipable = false;
-                            }
-                        } }
+                        }
                         if iterations > 100 {
                             break;
                         }

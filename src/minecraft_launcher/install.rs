@@ -418,8 +418,12 @@ fn install_assets_index(
 
     tx.send(Message::NewStep(5))
         .expect("Can't send message to renderer thread");
-    tx.send(Message::NewSubStep("Checking asset index".to_string(), 1, 3))
-        .expect("Can't send message to renderer thread");
+    tx.send(Message::NewSubStep(
+        "Checking asset index".to_string(),
+        1,
+        3,
+    ))
+    .expect("Can't send message to renderer thread");
     match version_manifest.asset_index {
         None => {
             println!("Version manifest doesn't contain any asset index!");

@@ -306,7 +306,9 @@ fn install_java_version(
                                             ),
                                         ) {
                                             None => {
-                                                tx.send(Message::Error("Unable to create folders".to_string()))
+                                                tx.send(Message::Error(
+                                                    "Unable to create folders".to_string(),
+                                                ))
                                                 .expect("Can't send message to renderer thread");
                                                 None
                                             }
@@ -516,7 +518,9 @@ fn create_symlink(
                 Some(p) => {
                     match path::get_or_create_dir(&v_folder, p.display().to_string()) {
                         None => {
-                            tx.send(Message::Error("Failed to create folder in which symlink is!".to_string()));
+                            tx.send(Message::Error(
+                                "Failed to create folder in which symlink is!".to_string(),
+                            ));
                             return None;
                         }
                         Some(_) => {}

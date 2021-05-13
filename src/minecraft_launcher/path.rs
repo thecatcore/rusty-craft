@@ -4,7 +4,7 @@ use std::env::consts;
 use std::fs;
 use std::fs::File;
 use std::io::{Error, Read, Write};
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 
 pub fn get_or_create_dir(current_folder: &Path, sub: String) -> Option<PathBuf> {
     match current_folder.exists() {

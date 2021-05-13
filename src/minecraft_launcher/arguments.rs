@@ -1,15 +1,11 @@
 use crate::minecraft_launcher::manifest::version;
-use crate::minecraft_launcher::manifest::version::{
-    Either, Logging, Os, Rule, RuleAction,
-};
+use crate::minecraft_launcher::manifest::version::{Either, Logging, Os, Rule, RuleAction};
 use crate::minecraft_launcher::options::LaunchOptions;
 use crate::minecraft_launcher::path;
 use os_info::{get as get_os_info, Version};
 
-
 use std::env::consts;
 use std::ops::Add;
-
 
 pub fn get_args_from_manifest(
     version: &version::Main,

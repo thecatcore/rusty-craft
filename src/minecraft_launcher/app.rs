@@ -2,6 +2,7 @@ use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crate::minecraft_launcher::manifest::version;
 use crate::minecraft_launcher::rendering::main::{Cli, Event};
 use crate::minecraft_launcher::rendering::utils::StatefulTable;
+use crossterm::event::KeyEvent;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
     execute,
@@ -10,6 +11,7 @@ use crossterm::{
 use std::error::Error;
 use std::io::Stdout;
 use std::sync::mpsc;
+use std::sync::mpsc::SendError;
 use std::time::{Duration, Instant};
 use std::{io, thread};
 use tui::backend::CrosstermBackend;
@@ -19,8 +21,6 @@ use tui::text::Span;
 use tui::text::Spans;
 use tui::widgets::{Block, Borders, Paragraph, Tabs};
 use tui::{Frame, Terminal};
-use crossterm::event::KeyEvent;
-use std::sync::mpsc::SendError;
 
 pub mod download_tab;
 mod launch_tab;
@@ -245,10 +245,14 @@ impl App {
                 Event::Input(key) => match key.code {
                     KeyCode::Esc => {
                         disable_raw_mode()?;
-                        execute!(terminal.backend_mut(), LeaveAlternateScreen, DisableMouseCapture)?;
+                        execute!(
+                            terminal.backend_mut(),
+                            LeaveAlternateScreen,
+                            DisableMouseCapture
+                        )?;
                         terminal.show_cursor()?;
-                        break
-                    },
+                        break;
+                    }
                     _ => {
                         match self.on_key_press(key.code) {
                             Action::None => {}

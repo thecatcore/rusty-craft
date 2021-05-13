@@ -1,15 +1,13 @@
 use crate::minecraft_launcher::app::{Action, Tab, TabBinding, TabTrait};
 use crossterm::event::KeyCode;
-use sage_auth::auth::{AuthenticateBuilder};
-
+use sage_auth::auth::AuthenticateBuilder;
 
 use std::io::Stdout;
-
 
 use tui::backend::CrosstermBackend;
 use tui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use tui::style::{Color, Style};
-use tui::text::{Spans};
+use tui::text::Spans;
 use tui::widgets::{Block, Borders, Paragraph};
 use tui::Frame;
 use uuid::Uuid;

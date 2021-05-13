@@ -1,7 +1,7 @@
 use serde_derive::Deserialize;
 use std::collections::HashMap;
 use std::ops::Add;
-use std::path::{PathBuf, Path};
+use std::path::{Path, PathBuf};
 
 #[derive(Deserialize, Clone)]
 pub struct Main {
