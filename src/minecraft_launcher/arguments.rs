@@ -74,7 +74,13 @@ pub fn get_args_from_manifest(
                 Some(logging) => match logging.client {
                     None => {}
                     Some(client_logging) => {
-                        command.push(client_logging.argument);
+                        match path::get_assets_folder("log_configs") {
+                            None => {}
+                            Some(log_config_folder) => {
+                                let log_path = log_config_folder.join(client_logging.file.id).display().to_string();
+                                command.push(client_logging.argument.replace("${path}", log_path.as_str()));
+                            }
+                        };
                     }
                 },
             }
