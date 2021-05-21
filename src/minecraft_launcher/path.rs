@@ -5,6 +5,9 @@ use std::fs;
 use std::fs::File;
 use std::io::{Error, Read, Write};
 use std::path::{Path, PathBuf};
+use crate::minecraft_launcher::manifest::version;
+use crate::minecraft_launcher::manifest::version::JavaVersion;
+use crate::minecraft_launcher::install::java;
 
 pub fn get_or_create_dir(current_folder: &Path, sub: String) -> Option<PathBuf> {
     match current_folder.exists() {
@@ -213,6 +216,7 @@ pub fn get_library_path(sub: &str) -> Option<PathBuf> {
     match get_minecraft_sub_folder(&String::from("libraries")) {
         None => None,
         Some(vs) => {
+            let sub = sub.replace(".", "/");
             if sub.contains('/') {
                 let sub = PathBuf::from(sub);
                 match get_or_create_dir(
@@ -270,6 +274,18 @@ fn get_os_java_name() -> &'static str {
             "x86" => "linux-i386",
             &_ => "linux",
         },
+    }
+}
+
+pub fn get_java_executable_path(version_manifest: &version::Main) -> Result<PathBuf, &str> {
+    match get_java_folder_path_sub(&(match version_manifest.java_version.clone() {
+        None => String::from("jre-legacy"),
+        Some(v) => v.component
+    })) {
+        None => Err("Unable to get java folder!"),
+        Some(java_folder) => {
+            Ok(java_folder.join(java::get_java_folder_for_os()).join(java::get_java_ex_for_os()))
+        }
     }
 }
 

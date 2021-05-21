@@ -14,7 +14,7 @@ use std::io::{Read, Write};
 use std::path::PathBuf;
 use std::sync::mpsc::Sender;
 
-mod java;
+pub(crate) mod java;
 
 pub fn install_version(
     id: String,

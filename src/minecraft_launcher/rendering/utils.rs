@@ -14,8 +14,10 @@ impl<T> StatefulList<T> {
     }
 
     pub fn with_items(items: Vec<T>) -> StatefulList<T> {
+        let mut state = ListState::default();
+        state.select(Some(items.len() - 1));
         StatefulList {
-            state: ListState::default(),
+            state,
             items,
         }
     }
@@ -24,12 +26,12 @@ impl<T> StatefulList<T> {
         let i = match self.state.selected() {
             Some(i) => {
                 if i >= self.items.len() - 1 {
-                    0
+                    i
                 } else {
                     i + 1
                 }
             }
-            None => 0,
+            None => self.items.len() - 1,
         };
         self.state.select(Some(i));
     }
@@ -38,12 +40,12 @@ impl<T> StatefulList<T> {
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.items.len() - 1
+                    i
                 } else {
                     i - 1
                 }
             }
-            None => 0,
+            None => self.items.len() - 1,
         };
         self.state.select(Some(i));
     }

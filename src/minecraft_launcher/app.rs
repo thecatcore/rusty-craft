@@ -24,7 +24,6 @@ use tui::{Frame, Terminal};
 
 pub mod download_tab;
 mod launch_tab;
-mod log_tab;
 mod login_tab;
 mod version_tab;
 
@@ -32,6 +31,7 @@ pub struct App {
     pub login_tab: login_tab::LoginTab,
     pub version_tab: version_tab::VersionTab,
     pub download_tab: download_tab::DownloadTab,
+    pub launch_tab: launch_tab::GameLogTab,
     pub current_tab: Tab,
 }
 
@@ -48,6 +48,7 @@ impl App {
                 versions,
             },
             download_tab: download_tab::DownloadTab::new(),
+            launch_tab: launch_tab::GameLogTab::new(),
             current_tab: Tab::Login,
         };
         app.version_tab.build_table_state();
@@ -64,7 +65,7 @@ impl App {
             Tab::Login => self.login_tab.render(f, chunks[0]),
             Tab::Version => self.version_tab.render(f, chunks[0]),
             Tab::Download(_, _) => self.download_tab.render(f, chunks[0]),
-            Tab::Launch(_) => {}
+            Tab::Launch(_) => self.launch_tab.render(f, chunks[0]),
             Tab::Mod => {}
             Tab::ModVersion => {}
         };
@@ -131,7 +132,12 @@ impl App {
                     vec.push(tab_binding);
                 }
             }
-            Tab::Launch(_) => {}
+            Tab::Launch(_) => {
+                let tab_vec = self.launch_tab.get_bindings();
+                for tab_binding in tab_vec {
+                    vec.push(tab_binding);
+                }
+            }
             Tab::Mod => {}
             Tab::ModVersion => {}
         }
@@ -144,7 +150,7 @@ impl App {
             Tab::Login => self.login_tab.tick(),
             Tab::Version => self.version_tab.tick(),
             Tab::Download(_, _) => self.download_tab.tick(),
-            Tab::Launch(_) => Action::None,
+            Tab::Launch(_) => self.launch_tab.tick(),
             Tab::Mod => Action::None,
             Tab::ModVersion => Action::None,
         }
@@ -264,7 +270,9 @@ impl App {
                                     Tab::Download(v, ref vs) => {
                                         self.download_tab.start(v, vs.clone())
                                     }
-                                    Tab::Launch(version) => {}
+                                    Tab::Launch(version) =>
+                                        self.launch_tab.init(&version, self.login_tab.name.clone(), self.login_tab.uuid.clone().to_string(),
+                                                             self.login_tab.token.clone(), self.login_tab.user_type.clone()),
                                     Tab::Mod => {}
                                     Tab::ModVersion => {}
                                 }
@@ -280,7 +288,9 @@ impl App {
                             Tab::Login => {}
                             Tab::Version => {}
                             Tab::Download(v, ref vs) => self.download_tab.start(v, vs.clone()),
-                            Tab::Launch(version) => {}
+                            Tab::Launch(version) =>
+                                self.launch_tab.init(&version, self.login_tab.name.clone(), self.login_tab.uuid.clone().to_string(),
+                                    self.login_tab.token.clone(), self.login_tab.user_type.clone()),
                             Tab::Mod => {}
                             Tab::ModVersion => {}
                         }
@@ -297,7 +307,7 @@ impl App {
             Tab::Login => self.login_tab.on_key_press(key_code),
             Tab::Version => self.version_tab.on_key_press(key_code),
             Tab::Download(_, _) => self.download_tab.on_key_press(key_code),
-            Tab::Launch(_) => Action::None,
+            Tab::Launch(_) => self.launch_tab.on_key_press(key_code),
             Tab::Mod => Action::None,
             Tab::ModVersion => Action::None,
         }

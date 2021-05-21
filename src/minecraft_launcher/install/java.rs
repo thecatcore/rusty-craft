@@ -440,14 +440,14 @@ fn install_java_version(
     }
 }
 
-fn get_java_folder_for_os() -> String {
+pub fn get_java_folder_for_os() -> String {
     match std::env::consts::OS {
         "macos" => String::from("jre.bundle/Contents/Home/bin"),
         &_ => String::from("bin"),
     }
 }
 
-fn get_java_ex_for_os() -> &'static str {
+pub fn get_java_ex_for_os() -> &'static str {
     match std::env::consts::OS {
         "windows" => "java.exe",
         &_ => "java",

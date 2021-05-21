@@ -15,10 +15,10 @@ use uuid::Uuid;
 pub struct LoginTab {
     account: String,
     password: String,
-    uuid: Uuid,
-    token: String,
-    name: String,
-    user_type: String,
+    pub uuid: Uuid,
+    pub token: String,
+    pub name: String,
+    pub user_type: String,
     selected: InputBox,
     error: String,
 }
@@ -44,8 +44,6 @@ impl LoginTab {
             .request_user()
             .request()
             .await;
-
-        // request.await;
 
         match request {
             Ok(response) => {

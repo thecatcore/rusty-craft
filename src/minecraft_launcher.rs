@@ -12,7 +12,6 @@ mod install;
 mod launch;
 mod manifest;
 mod modding;
-mod options;
 mod path;
 mod rendering;
 mod utils;
