@@ -2,5 +2,5 @@
 /.minecraft
 /.idea
 *.iml
-/logs/latest.log
+/logs/*
 /level.dat
