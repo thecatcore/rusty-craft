@@ -48,6 +48,14 @@ impl GameLogTab {
                                     erreur.push(err.to_string());
                                 }
                                 self.game_logs = StatefulList::with_items(erreur);
+                            } else if result.1.len() > 0 {
+                                let log = String::from_utf8(result.1).unwrap();
+                                let logs: Vec<&str> = log.split("\n").collect();
+                                let mut log: Vec<String> = Vec::new();
+                                for err in logs {
+                                    log.push(err.to_string());
+                                }
+                                self.game_logs = StatefulList::with_items(log);
                             }
                         }
                         Err(_) => {}
