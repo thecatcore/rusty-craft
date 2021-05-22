@@ -11,13 +11,17 @@ use std::fs::File;
 use std::io;
 
 use std::path::PathBuf;
-use std::process::{Command, ExitStatus};
+use std::process::{Command, ExitStatus, Stdio, ChildStdout, ChildStderr, Child};
 use std::sync::mpsc::Sender;
 use std::io::Write;
 
-pub fn main(java_path: PathBuf, args: Vec<String>) -> (ExitStatus, Vec<u8>, Vec<u8>) {
-    let mut child = Command::new(java_path.clone()).args(args.clone()).output().expect("Unable to launch Minecraft!");
-    (child.status, child.stdout, child.stderr)
+pub fn main(java_path: PathBuf, args: Vec<String>) -> Child {
+    Command::new(java_path.clone())
+        .args(args.clone())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("Unable to launch Minecraft!")
 }
 
 pub fn pre_launch(manifest: Main, mut tx: Sender<Message>) {

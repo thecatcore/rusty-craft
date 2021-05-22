@@ -3,7 +3,7 @@ use tui::Frame;
 use tui::layout::Rect;
 use tui::backend::CrosstermBackend;
 use crossterm::event::KeyCode;
-use std::io::Stdout;
+use std::io::{Stdout, Read};
 use crate::minecraft_launcher::manifest::version;
 use crate::minecraft_launcher::arguments;
 use crate::minecraft_launcher::arguments::LaunchOptions;
@@ -13,15 +13,19 @@ use crate::minecraft_launcher::path;
 use std::path::PathBuf;
 use tui::widgets::{List, Block, Borders, ListItem};
 use tui::text::Span;
+use std::process::{Child, ChildStdout, ChildStderr};
 
 pub struct GameLogTab {
     launch_options: Option<LaunchOptions>,
-    game_logs: StatefulList<String>
+    game_logs: StatefulList<String>,
+    child_process: Option<Child>,
+    child_stdout: Option<ChildStdout>,
+    child_stderr: Option<ChildStderr>
 }
 
 impl GameLogTab {
     pub fn new() -> GameLogTab {
-        GameLogTab { launch_options: None, game_logs: StatefulList::new() }
+        GameLogTab { launch_options: None, game_logs: StatefulList::new(), child_process: None, child_stdout: None, child_stderr: None }
     }
 
     pub fn init(&mut self, version: &version::Main, player_name: String, player_uuid: String, player_token: String, user_type: String) {
@@ -39,24 +43,7 @@ impl GameLogTab {
                 if let Some(args) = arguments::get_args_from_manifest(version, &launch_options) {
                     match path::get_java_executable_path(version) {
                         Ok(java_exe) => {
-                            let result = launch::main(java_exe, launch_options.fill_argument_list(args));
-                            if result.2.len() > 0 {
-                                let erreur = String::from_utf8(result.2).unwrap();
-                                let erreurs: Vec<&str> = erreur.split("\n").collect();
-                                let mut erreur: Vec<String> = Vec::new();
-                                for err in erreurs {
-                                    erreur.push(err.to_string());
-                                }
-                                self.game_logs = StatefulList::with_items(erreur);
-                            } else if result.1.len() > 0 {
-                                let log = String::from_utf8(result.1).unwrap();
-                                let logs: Vec<&str> = log.split("\n").collect();
-                                let mut log: Vec<String> = Vec::new();
-                                for err in logs {
-                                    log.push(err.to_string());
-                                }
-                                self.game_logs = StatefulList::with_items(log);
-                            }
+                            self.child_process = Some(launch::main(java_exe, launch_options.fill_argument_list(args)));
                         }
                         Err(_) => {}
                     }
@@ -94,6 +81,53 @@ impl TabTrait for GameLogTab {
             }
             _ => Action::None
         }
+    }
+
+    fn tick(&mut self) -> Action {
+        if self.child_process.is_some() {
+            let mut child = self.child_process.take().unwrap();
+            self.child_stdout = child.stdout.take();
+            self.child_stderr = child.stderr.take();
+            self.child_process = Some(child);
+        }
+
+        if self.child_process.is_some() && self.child_stdout.is_some() && self.child_stderr.is_some() {
+
+            let mut stdout = self.child_stdout.take().unwrap();
+            let mut stderr = self.child_stderr.take().unwrap();
+
+            let mut stdout_string = String::new();
+            stdout.read_to_string(&mut stdout_string);
+
+            let mut stderr_string = String::new();
+            stderr.read_to_string(&mut stderr_string);
+
+            let mut lines: Vec<String> = Vec::new();
+
+            lines.push("==========Stdout=========".to_string());
+
+            let stdout_lines: Vec<&str> = stdout_string.split("\n").collect();
+
+            for stdout_line in stdout_lines {
+                lines.push(stdout_line.to_string());
+            }
+
+            lines.push("==========Stderr=========".to_string());
+
+            let stderr_lines: Vec<&str> = stderr_string.split("\n").collect();
+
+            for stderr_line in stderr_lines {
+                lines.push(stderr_line.to_string());
+            }
+
+            if self.game_logs.items.len() < lines.len() {
+                self.game_logs = StatefulList::with_items(lines);
+            }
+            self.child_stdout = Some(stdout);
+            self.child_stderr = Some(stderr);
+        }
+
+        Action::None
     }
 
     fn get_bindings(&self) -> Vec<TabBinding> {
