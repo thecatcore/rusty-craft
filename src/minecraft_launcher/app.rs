@@ -19,7 +19,7 @@ use tui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use tui::style::{Color, Style};
 use tui::text::Span;
 use tui::text::Spans;
-use tui::widgets::{Block, Borders, Paragraph, Tabs};
+use tui::widgets::{Block, Borders, Paragraph, Tabs, Wrap};
 use tui::{Frame, Terminal};
 
 pub mod download_tab;
@@ -100,7 +100,8 @@ impl App {
 
         let bindings_paragraph = Paragraph::new(spans)
             .block(Block::default().borders(Borders::ALL))
-            .alignment(Alignment::Left);
+            .alignment(Alignment::Left)
+            .wrap(Wrap { trim: true });
 
         f.render_widget(bindings_paragraph, chunks[1])
     }

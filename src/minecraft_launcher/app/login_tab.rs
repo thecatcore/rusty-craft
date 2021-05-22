@@ -8,7 +8,7 @@ use tui::backend::CrosstermBackend;
 use tui::layout::{Alignment, Constraint, Direction, Layout, Rect};
 use tui::style::{Color, Style};
 use tui::text::Spans;
-use tui::widgets::{Block, Borders, Paragraph};
+use tui::widgets::{Block, Borders, Paragraph, Wrap};
 use tui::Frame;
 use uuid::Uuid;
 
@@ -112,7 +112,7 @@ impl TabTrait for LoginTab {
         f.render_widget(password_input, chunks[2]);
 
         let error_text =
-            Paragraph::new(vec![Spans::from(self.error.clone())]).alignment(Alignment::Center);
+            Paragraph::new(vec![Spans::from(self.error.clone())]).alignment(Alignment::Center).wrap(Wrap { trim: true });
         f.render_widget(error_text, chunks[3])
     }
 
