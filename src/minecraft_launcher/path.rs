@@ -1,3 +1,6 @@
+use crate::minecraft_launcher::install::java;
+use crate::minecraft_launcher::manifest::version;
+use crate::minecraft_launcher::manifest::version::JavaVersion;
 use directories::BaseDirs;
 use reqwest::blocking::get as get_url;
 use std::env::consts;
@@ -5,9 +8,6 @@ use std::fs;
 use std::fs::File;
 use std::io::{Error, Read, Write};
 use std::path::{Path, PathBuf};
-use crate::minecraft_launcher::manifest::version;
-use crate::minecraft_launcher::manifest::version::JavaVersion;
-use crate::minecraft_launcher::install::java;
 
 pub fn get_or_create_dir(current_folder: &Path, sub: String) -> Option<PathBuf> {
     match current_folder.exists() {
@@ -278,14 +278,16 @@ fn get_os_java_name() -> &'static str {
 }
 
 pub fn get_java_executable_path(version_manifest: &version::Main) -> Result<PathBuf, &str> {
-    match get_java_folder_path_sub(&(match version_manifest.java_version.clone() {
-        None => String::from("jre-legacy"),
-        Some(v) => v.component
-    })) {
+    match get_java_folder_path_sub(
+        &(match version_manifest.java_version.clone() {
+            None => String::from("jre-legacy"),
+            Some(v) => v.component,
+        }),
+    ) {
         None => Err("Unable to get java folder!"),
-        Some(java_folder) => {
-            Ok(java_folder.join(java::get_java_folder_for_os()).join(java::get_java_ex_for_os()))
-        }
+        Some(java_folder) => Ok(java_folder
+            .join(java::get_java_folder_for_os())
+            .join(java::get_java_ex_for_os())),
     }
 }
 

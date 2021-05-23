@@ -10,10 +10,10 @@ use std::fs;
 use std::fs::File;
 use std::io;
 
-use std::path::PathBuf;
-use std::process::{Command, ExitStatus, Stdio, ChildStdout, ChildStderr, Child};
-use std::sync::mpsc::Sender;
 use std::io::Write;
+use std::path::PathBuf;
+use std::process::{Child, ChildStderr, ChildStdout, Command, ExitStatus, Stdio};
+use std::sync::mpsc::Sender;
 
 pub fn main(java_path: PathBuf, args: Vec<String>) -> Child {
     Command::new(java_path.clone())

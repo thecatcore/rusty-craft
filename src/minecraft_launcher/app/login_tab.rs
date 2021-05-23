@@ -111,8 +111,9 @@ impl TabTrait for LoginTab {
             .alignment(Alignment::Center);
         f.render_widget(password_input, chunks[2]);
 
-        let error_text =
-            Paragraph::new(vec![Spans::from(self.error.clone())]).alignment(Alignment::Center).wrap(Wrap { trim: true });
+        let error_text = Paragraph::new(vec![Spans::from(self.error.clone())])
+            .alignment(Alignment::Center)
+            .wrap(Wrap { trim: true });
         f.render_widget(error_text, chunks[3])
     }
 

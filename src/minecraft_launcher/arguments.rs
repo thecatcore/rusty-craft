@@ -1,5 +1,7 @@
 use crate::minecraft_launcher::manifest::version;
-use crate::minecraft_launcher::manifest::version::{Either, Logging, Os, Rule, RuleAction, AssetIndex};
+use crate::minecraft_launcher::manifest::version::{
+    AssetIndex, Either, Logging, Os, Rule, RuleAction,
+};
 use crate::minecraft_launcher::path;
 use os_info::{get as get_os_info, Version};
 
@@ -12,26 +14,24 @@ pub fn get_args_from_manifest(
     options: &LaunchOptions,
 ) -> Option<Vec<String>> {
     match version.clone().arguments {
-        None => {
-            match version.clone().minecraft_arguments {
-                None => None,
-                Some(minecraft_arguments) => {
-                    let mut command: Vec<String> = Vec::new();
+        None => match version.clone().minecraft_arguments {
+            None => None,
+            Some(minecraft_arguments) => {
+                let mut command: Vec<String> = Vec::new();
 
-                    command.push("-Djava.library.path=${natives_directory}".to_string());
-                    command.push("-cp".to_string());
-                    command.push("${classpath}".to_string());
+                command.push("-Djava.library.path=${natives_directory}".to_string());
+                command.push("-cp".to_string());
+                command.push("${classpath}".to_string());
 
-                    command.push(version.clone().main_class);
+                command.push(version.clone().main_class);
 
-                    let arguments: Vec<&str> = minecraft_arguments.split(" ").collect();
+                let arguments: Vec<&str> = minecraft_arguments.split(" ").collect();
 
-                    for argument in arguments {
-                        command.push(argument.to_string());
-                    }
-
-                    Some(command)
+                for argument in arguments {
+                    command.push(argument.to_string());
                 }
+
+                Some(command)
             }
         },
         Some(arguments) => {
@@ -77,8 +77,15 @@ pub fn get_args_from_manifest(
                         match path::get_assets_folder("log_configs") {
                             None => {}
                             Some(log_config_folder) => {
-                                let log_path = log_config_folder.join(client_logging.file.id).display().to_string();
-                                command.push(client_logging.argument.replace("${path}", log_path.as_str()));
+                                let log_path = log_config_folder
+                                    .join(client_logging.file.id)
+                                    .display()
+                                    .to_string();
+                                command.push(
+                                    client_logging
+                                        .argument
+                                        .replace("${path}", log_path.as_str()),
+                                );
                             }
                         };
                     }
@@ -201,7 +208,7 @@ pub fn match_rules(rules: Vec<version::Rule>, options: Option<&LaunchOptions>) -
             } else {
                 val = match rule.action {
                     RuleAction::Allow => RuleAction::Disallow,
-                    RuleAction::Disallow => RuleAction::Allow
+                    RuleAction::Disallow => RuleAction::Allow,
                 }
             }
         } else if rule.os.is_some() {
@@ -289,30 +296,39 @@ pub struct LaunchOptions {
 }
 
 impl LaunchOptions {
-    pub fn from_version(version: &version::Main, player_name: String, player_uuid: String, player_token: String, user_type: String) -> Result<LaunchOptions, &str> {
+    pub fn from_version(
+        version: &version::Main,
+        player_name: String,
+        player_uuid: String,
+        player_token: String,
+        user_type: String,
+    ) -> Result<LaunchOptions, &str> {
         let version = version.clone();
 
         let natives_directory = match path::get_bin_folder(version.id.clone()) {
             None => {
                 return Err("Unable to get natives directory!");
             }
-            Some(dir) => dir.display().to_string()
+            Some(dir) => dir.display().to_string(),
         };
 
         let classpath = get_natives(&version);
 
         let game_directory = path::get_minecraft_directory().display().to_string();
 
-        let assets_directory = path::get_minecraft_directory().join("assets").display().to_string();
+        let assets_directory = path::get_minecraft_directory()
+            .join("assets")
+            .display()
+            .to_string();
 
         let assets_index = match version.asset_index {
             None => match version.assets {
                 None => {
                     return Err("Unable to get asset index");
                 }
-                Some(index) => index
-            }
-            Some(index) => index.id
+                Some(index) => index,
+            },
+            Some(index) => index.id,
         };
 
         let version_type = version._type.to_string();
@@ -332,7 +348,7 @@ impl LaunchOptions {
             demo: false,
             custom_resolution: false,
             width: None,
-            height: None
+            height: None,
         })
     }
 
@@ -370,7 +386,14 @@ impl LaunchOptions {
                     arg = arg.replace("${resolution_height}", height.as_str());
                 }
             }
-            arg = arg.replace("${game_assets}", path::get_minecraft_directory().join("resources").display().to_string().as_str());
+            arg = arg.replace(
+                "${game_assets}",
+                path::get_minecraft_directory()
+                    .join("resources")
+                    .display()
+                    .to_string()
+                    .as_str(),
+            );
             arg = arg.replace("${auth_session}", self.player_token.as_str());
 
             new_args.push(arg);

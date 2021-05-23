@@ -271,9 +271,13 @@ impl App {
                                     Tab::Download(v, ref vs) => {
                                         self.download_tab.start(v, vs.clone())
                                     }
-                                    Tab::Launch(version) =>
-                                        self.launch_tab.init(&version, self.login_tab.name.clone(), self.login_tab.uuid.clone().to_string(),
-                                                             self.login_tab.token.clone(), self.login_tab.user_type.clone()),
+                                    Tab::Launch(version) => self.launch_tab.init(
+                                        &version,
+                                        self.login_tab.name.clone(),
+                                        self.login_tab.uuid.clone().to_string(),
+                                        self.login_tab.token.clone(),
+                                        self.login_tab.user_type.clone(),
+                                    ),
                                     Tab::Mod => {}
                                     Tab::ModVersion => {}
                                 }
@@ -289,9 +293,13 @@ impl App {
                             Tab::Login => {}
                             Tab::Version => {}
                             Tab::Download(v, ref vs) => self.download_tab.start(v, vs.clone()),
-                            Tab::Launch(version) =>
-                                self.launch_tab.init(&version, self.login_tab.name.clone(), self.login_tab.uuid.clone().to_string(),
-                                    self.login_tab.token.clone(), self.login_tab.user_type.clone()),
+                            Tab::Launch(version) => self.launch_tab.init(
+                                &version,
+                                self.login_tab.name.clone(),
+                                self.login_tab.uuid.clone().to_string(),
+                                self.login_tab.token.clone(),
+                                self.login_tab.user_type.clone(),
+                            ),
                             Tab::Mod => {}
                             Tab::ModVersion => {}
                         }

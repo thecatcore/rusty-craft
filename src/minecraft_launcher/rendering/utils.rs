@@ -16,10 +16,7 @@ impl<T> StatefulList<T> {
     pub fn with_items(items: Vec<T>) -> StatefulList<T> {
         let mut state = ListState::default();
         state.select(Some(items.len() - 1));
-        StatefulList {
-            state,
-            items,
-        }
+        StatefulList { state, items }
     }
 
     pub fn next(&mut self) {
