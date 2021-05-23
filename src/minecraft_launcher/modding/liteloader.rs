@@ -1,6 +1,7 @@
 use crate::minecraft_launcher::manifest::version::{Library, Main, VersionType};
 use crate::minecraft_launcher::modding::ModLoaderInstaller;
 use chrono::Utc;
+use std::collections::HashMap;
 
 const MAVEN: &str = "http://dl.liteloader.com/versions/";
 const MAIN_CLASS: &str = "net.minecraft.launchwrapper.Launch";
@@ -188,6 +189,7 @@ const NEW_PROFILE_NAMING: &str = "{mc_version}-LiteLoader{mc_version}";
 // 1.5.2, 1.6.2 and 1.6.4
 const OLD_PROFILE_NAMING: &str = "LiteLoader{mc_version}";
 
+#[derive(Clone)]
 pub struct LiteLoaderInstaller {}
 
 impl LiteLoaderInstaller {
@@ -209,6 +211,10 @@ impl LiteLoaderInstaller {
 }
 
 impl ModLoaderInstaller for LiteLoaderInstaller {
+    fn get_name(&self) -> String {
+        "LiteLoader".to_string()
+    }
+
     fn get_compatible_versions(&self) -> Vec<String> {
         let mut versions = Vec::new();
 
@@ -219,8 +225,11 @@ impl ModLoaderInstaller for LiteLoaderInstaller {
         versions
     }
 
-    fn get_loader_versions(&self, _mc_version: String) -> Vec<String> {
-        vec![String::from("LiteLoader")]
+    fn get_loader_versions(&self, _mc_version: String) -> HashMap<String, String> {
+        let mut map = HashMap::new();
+        map.insert("LiteLoader".to_string(), "Unknown".to_string());
+
+        map
     }
 
     fn get_profile_name_for_mc_version(&self, mc_version: String) -> String {
@@ -325,5 +334,9 @@ impl ModLoaderInstaller for LiteLoaderInstaller {
             minecraft_arguments: Some(String::from(version_info.3)),
             inherits_from: Some(inherits_from),
         }
+    }
+
+    fn clone_instance(&self) -> Box<dyn ModLoaderInstaller> {
+        Box::new(LiteLoaderInstaller::new())
     }
 }

@@ -1,6 +1,7 @@
 use crate::minecraft_launcher::manifest::version::{Arguments, Either, Library, Main, VersionType};
 use crate::minecraft_launcher::modding::ModLoaderInstaller;
 use chrono::Utc;
+use std::collections::HashMap;
 
 const MC_VERSIONS: &str = "1.13.2";
 
@@ -28,6 +29,7 @@ const LIBS: [(&str, &str); 6] = [
     ("net.minecraft:launchwrapper:1.12", ""),
 ];
 
+#[derive(Clone)]
 pub struct RiftInstaller {}
 
 impl RiftInstaller {
@@ -37,12 +39,19 @@ impl RiftInstaller {
 }
 
 impl ModLoaderInstaller for RiftInstaller {
+    fn get_name(&self) -> String {
+        "Rift".to_string()
+    }
+
     fn get_compatible_versions(&self) -> Vec<String> {
         vec![String::from(MC_VERSIONS)]
     }
 
-    fn get_loader_versions(&self, _mc_version: String) -> Vec<String> {
-        vec![String::from("FINAL")]
+    fn get_loader_versions(&self, _mc_version: String) -> HashMap<String, String> {
+        let mut map = HashMap::new();
+        map.insert("FINAL".to_string(), "Unknown".to_string());
+
+        map
     }
 
     fn get_profile_name_for_mc_version(&self, _mc_version: String) -> String {
@@ -100,5 +109,9 @@ impl ModLoaderInstaller for RiftInstaller {
             minecraft_arguments: None,
             inherits_from: Some(mc_version),
         }
+    }
+
+    fn clone_instance(&self) -> Box<dyn ModLoaderInstaller> {
+        Box::new(RiftInstaller::new())
     }
 }

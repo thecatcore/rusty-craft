@@ -334,6 +334,7 @@ impl Main {
             || id.contains("forge")
             || id.contains("liteloader")
             || id.contains("rift")
+            || id.contains("optifine")
     }
 }
 
