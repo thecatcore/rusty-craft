@@ -1,5 +1,6 @@
 use crate::minecraft_launcher::app::{Action, Tab, TabBinding, TabTrait};
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
+use crate::minecraft_launcher::modding;
 use crate::minecraft_launcher::rendering::utils::StatefulTable;
 use crossterm::event::KeyCode;
 use std::io::Stdout;
@@ -9,7 +10,6 @@ use tui::style::{Modifier, Style};
 use tui::text::Span;
 use tui::widgets::{Block, Borders, Cell, Row, Table};
 use tui::Frame;
-use crate::minecraft_launcher::modding;
 
 pub struct VersionTab {
     pub selected: Option<MinVersion>,
@@ -20,7 +20,7 @@ pub struct VersionTab {
     pub all_versions: Vec<MinVersion>,
     pub current_table: StatefulTable<MinVersion>,
     pub versions: Vec<Version>,
-    pub modding_handler: modding::ModLoaderHandler
+    pub modding_handler: modding::ModLoaderHandler,
 }
 
 impl VersionTab {
@@ -53,7 +53,7 @@ impl VersionTab {
                             true => "Yes",
                             false => "No",
                         }
-                            .to_string(),
+                        .to_string(),
                     )),
                     Cell::from(Span::raw(format!("{:?}", v.release_time))),
                 ];
@@ -100,7 +100,6 @@ impl TabTrait for VersionTab {
 
             self.selected_modloader = Some(selected_modloader);
         } else if let Some(version) = self.selected.clone() {
-
         } else {
             self.render_version_list(f, chunks[0]);
         }

@@ -1,5 +1,6 @@
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crate::minecraft_launcher::manifest::version;
+use crate::minecraft_launcher::modding::ModLoaderHandler;
 use crate::minecraft_launcher::rendering::main::{Cli, Event};
 use crate::minecraft_launcher::rendering::utils::StatefulTable;
 use crossterm::event::KeyEvent;
@@ -21,7 +22,6 @@ use tui::text::Span;
 use tui::text::Spans;
 use tui::widgets::{Block, Borders, Paragraph, Tabs, Wrap};
 use tui::{Frame, Terminal};
-use crate::minecraft_launcher::modding::ModLoaderHandler;
 
 pub mod download_tab;
 mod launch_tab;
@@ -49,7 +49,7 @@ impl App {
                 all_versions: min_versions.clone(),
                 current_table: StatefulTable::with_items(min_versions),
                 versions,
-                modding_handler: ModLoaderHandler::new()
+                modding_handler: ModLoaderHandler::new(),
             },
             download_tab: download_tab::DownloadTab::new(),
             launch_tab: launch_tab::GameLogTab::new(),

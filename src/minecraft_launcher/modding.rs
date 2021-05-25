@@ -60,7 +60,11 @@ impl ModLoaderInstaller for VanillaLoader {
         mc_version
     }
 
-    fn get_profile_name_for_loader_version(&self, mc_version: String, loader_version: String) -> String {
+    fn get_profile_name_for_loader_version(
+        &self,
+        mc_version: String,
+        loader_version: String,
+    ) -> String {
         self.get_profile_name_for_mc_version(mc_version)
     }
 
@@ -79,7 +83,7 @@ impl ModLoaderInstaller for VanillaLoader {
 
 pub struct ModLoaderHandler {
     pub mod_loaders: Vec<Box<dyn ModLoaderInstaller>>,
-    pub vanilla: VanillaLoader
+    pub vanilla: VanillaLoader,
 }
 
 impl ModLoaderHandler {
@@ -90,7 +94,10 @@ impl ModLoaderHandler {
         mod_loaders.push(Box::new(rift::RiftInstaller {}));
         mod_loaders.push(Box::new(cursed_legacy::CursedLegacyInstaller {}));
 
-        ModLoaderHandler { mod_loaders, vanilla: VanillaLoader {} }
+        ModLoaderHandler {
+            mod_loaders,
+            vanilla: VanillaLoader {},
+        }
     }
 
     pub fn get_loaders_for_version(&self, version: String) -> Vec<Box<dyn ModLoaderInstaller>> {
