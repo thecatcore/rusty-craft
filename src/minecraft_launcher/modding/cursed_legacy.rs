@@ -9,7 +9,7 @@ use std::str::FromStr;
 
 const MC_VERSIONS: [&str; 1] = ["b1.7.3"];
 const LOADER_VERSIONS: &str =
-    "https://api.github.com/repos/minecraft-cursed-legacy/Cursed-fabric-loader/commits";
+    "https://storage.googleapis.com/devan-maven/io/github/minecraft-cursed-legacy/cursed-fabric-loader/maven-metadata.xml";
 const PROFILE_NAMING: &str = "cursed-fabric-loader-{loader_version}-{mc_version}";
 const LIBS: [(&str, &str); 16] = [
     (
@@ -49,8 +49,8 @@ const LIBS: [(&str, &str); 16] = [
     ),
     ("com.google.guava:guava:21.0", "https://maven.fabricmc.net/"),
     (
-        "com.github.minecraft-cursed-legacy:Plasma:build.9",
-        "https://jitpack.io/",
+        "com.github.minecraft-cursed-legacy:Plasma:b1.7.3-build.19",
+        "https://storage.googleapis.com/devan-maven/",
     ),
 ];
 const LIB_NAME: &str = "com.github.minecraft-cursed-legacy:cursed-fabric-loader:{sha}";
