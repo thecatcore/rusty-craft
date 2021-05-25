@@ -21,6 +21,7 @@ use tui::text::Span;
 use tui::text::Spans;
 use tui::widgets::{Block, Borders, Paragraph, Tabs, Wrap};
 use tui::{Frame, Terminal};
+use crate::minecraft_launcher::modding::ModLoaderHandler;
 
 pub mod download_tab;
 mod launch_tab;
@@ -41,11 +42,14 @@ impl App {
             login_tab: login_tab::LoginTab::new(),
             version_tab: version_tab::VersionTab {
                 selected: None,
+                selected_modloader: None,
+                selected_modloader_version: None,
                 snapshot: false,
                 old: false,
                 all_versions: min_versions.clone(),
                 current_table: StatefulTable::with_items(min_versions),
                 versions,
+                modding_handler: ModLoaderHandler::new()
             },
             download_tab: download_tab::DownloadTab::new(),
             launch_tab: launch_tab::GameLogTab::new(),

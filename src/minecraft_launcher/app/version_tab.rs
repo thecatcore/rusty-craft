@@ -9,15 +9,18 @@ use tui::style::{Modifier, Style};
 use tui::text::Span;
 use tui::widgets::{Block, Borders, Cell, Row, Table};
 use tui::Frame;
+use crate::minecraft_launcher::modding;
 
-#[derive(Clone)]
 pub struct VersionTab {
     pub selected: Option<MinVersion>,
+    pub selected_modloader: Option<Box<dyn modding::ModLoaderInstaller>>,
+    pub selected_modloader_version: Option<String>,
     pub snapshot: bool,
     pub old: bool,
     pub all_versions: Vec<MinVersion>,
     pub current_table: StatefulTable<MinVersion>,
     pub versions: Vec<Version>,
+    pub modding_handler: modding::ModLoaderHandler
 }
 
 impl VersionTab {
@@ -34,6 +37,43 @@ impl VersionTab {
         }
 
         self.current_table = StatefulTable::with_items(items);
+    }
+
+    fn render_version_list(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect) {
+        let version_list: Vec<Row> = self
+            .current_table
+            .items
+            .iter()
+            .map(|v| {
+                let cells = vec![
+                    Cell::from(Span::raw(v.id.to_string())),
+                    Cell::from(Span::raw(v._type.to_string())),
+                    Cell::from(Span::raw(
+                        match v.installed {
+                            true => "Yes",
+                            false => "No",
+                        }
+                            .to_string(),
+                    )),
+                    Cell::from(Span::raw(format!("{:?}", v.release_time))),
+                ];
+                Row::new(cells)
+            })
+            .collect();
+
+        let table = Table::new(version_list)
+            .block(Block::default().borders(Borders::ALL).title("Version List"))
+            .header(Row::new(vec!["Name", "Type", "Installed", "Release Date"]))
+            .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+            .highlight_symbol("> ")
+            .widths(&[
+                Constraint::Ratio(5, 12),
+                Constraint::Ratio(3, 24),
+                Constraint::Ratio(5, 36),
+                Constraint::Ratio(4, 12),
+            ]);
+
+        f.render_stateful_widget(table, area, &mut self.current_table.state);
     }
 
     pub fn select(&mut self) {
@@ -55,40 +95,15 @@ impl TabTrait for VersionTab {
             .constraints([Constraint::Ratio(1, 1)])
             .split(area);
 
-        let version_list: Vec<Row> = self
-            .current_table
-            .items
-            .iter()
-            .map(|v| {
-                let cells = vec![
-                    Cell::from(Span::raw(v.id.to_string())),
-                    Cell::from(Span::raw(v._type.to_string())),
-                    Cell::from(Span::raw(
-                        match v.installed {
-                            true => "Yes",
-                            false => "No",
-                        }
-                        .to_string(),
-                    )),
-                    Cell::from(Span::raw(format!("{:?}", v.release_time))),
-                ];
-                Row::new(cells)
-            })
-            .collect();
+        if self.selected_modloader.is_some() {
+            let selected_modloader = self.selected_modloader.take().unwrap();
 
-        let table = Table::new(version_list)
-            .block(Block::default().borders(Borders::ALL).title("Version List"))
-            .header(Row::new(vec!["Name", "Type", "Installed", "Release Date"]))
-            .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-            .highlight_symbol("> ")
-            .widths(&[
-                Constraint::Ratio(5, 12),
-                Constraint::Ratio(3, 24),
-                Constraint::Ratio(5, 36),
-                Constraint::Ratio(4, 12),
-            ]);
+            self.selected_modloader = Some(selected_modloader);
+        } else if let Some(version) = self.selected.clone() {
 
-        f.render_stateful_widget(table, chunks[0], &mut self.current_table.state);
+        } else {
+            self.render_version_list(f, chunks[0]);
+        }
     }
 
     fn on_key_press(&mut self, key_code: KeyCode) -> Action {
