@@ -81,7 +81,7 @@ impl ModLoaderInstaller for CursedLegacyInstaller {
         let raw_maven_metadata = path::read_file_from_url_to_string(LOADER_VERSIONS)?;
         let maven_metadata = utils::MavenMetadata::from_str(raw_maven_metadata.as_str())?;
 
-        for version in maven_metadata.versioning.versions {
+        for version in maven_metadata.versioning.versions.version {
             if version.contains("local") {
                 continue;
             }

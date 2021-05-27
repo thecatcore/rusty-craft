@@ -16,6 +16,7 @@ use tui::style::{Color, Style};
 use tui::text::Spans;
 use tui::widgets::{Block, Borders, Gauge, Paragraph, Wrap};
 use tui::Frame;
+use crate::minecraft_launcher::modding::ModLoaderInstaller;
 
 pub struct DownloadTab {
     rx: Option<Receiver<Message>>,
@@ -38,7 +39,7 @@ impl DownloadTab {
         }
     }
 
-    pub fn start(&mut self, version: MinVersion, versions: Vec<Version>) {
+    pub fn start(&mut self, version: MinVersion, versions: Vec<Version>, loader: Box<dyn ModLoaderInstaller>, loader_version: Option<String>) {
         let (tx, rx) = mpsc::channel();
 
         thread::spawn(move || {

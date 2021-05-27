@@ -92,6 +92,7 @@ impl ModLoaderHandler {
 
         mod_loaders.push(Box::new(liteloader::LiteLoaderInstaller {}));
         mod_loaders.push(Box::new(rift::RiftInstaller {}));
+        mod_loaders.push(Box::new(fabric::FabricInstaller::new()));
         mod_loaders.push(Box::new(cursed_legacy::CursedLegacyInstaller {}));
 
         ModLoaderHandler {

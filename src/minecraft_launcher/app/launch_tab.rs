@@ -144,7 +144,7 @@ impl TabTrait for GameLogTab {
             }
 
             if self.game_logs.items.len() < lines.len() {
-                self.game_logs = StatefulList::with_items(lines);
+                self.game_logs = StatefulList::with_items_inverted(lines);
             }
             self.child_stdout = Some(stdout);
             self.child_stderr = Some(stderr);

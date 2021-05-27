@@ -1,24 +1,29 @@
 use crate::minecraft_launcher::app::{Action, Tab, TabBinding, TabTrait};
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crate::minecraft_launcher::modding;
-use crate::minecraft_launcher::rendering::utils::StatefulTable;
+use crate::minecraft_launcher::rendering::utils::{StatefulTable, StatefulList};
 use crossterm::event::KeyCode;
 use std::io::Stdout;
 use tui::backend::CrosstermBackend;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 use tui::style::{Modifier, Style};
 use tui::text::Span;
-use tui::widgets::{Block, Borders, Cell, Row, Table};
+use tui::widgets::{Block, Borders, Cell, Row, Table, ListItem, List};
 use tui::Frame;
+use crate::minecraft_launcher::modding::ModLoaderInstaller;
+use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
 
 pub struct VersionTab {
     pub selected: Option<MinVersion>,
-    pub selected_modloader: Option<Box<dyn modding::ModLoaderInstaller>>,
-    pub selected_modloader_version: Option<String>,
+    pub selected_mod_loader: Option<Box<dyn modding::ModLoaderInstaller>>,
+    pub selected_mod_loader_version: Option<String>,
     pub snapshot: bool,
     pub old: bool,
     pub all_versions: Vec<MinVersion>,
-    pub current_table: StatefulTable<MinVersion>,
+    pub mc_version_table: StatefulTable<MinVersion>,
+    pub loader_list: StatefulList<Box<dyn modding::ModLoaderInstaller>>,
+    pub loader_version_list: StatefulList<String>,
     pub versions: Vec<Version>,
     pub modding_handler: modding::ModLoaderHandler,
 }
@@ -36,12 +41,44 @@ impl VersionTab {
             }
         }
 
-        self.current_table = StatefulTable::with_items(items);
+        self.mc_version_table = StatefulTable::with_items(items);
+    }
+
+    pub fn build_mod_loader_list(&mut self) {
+        let mut items = match &self.selected {
+            None => vec![],
+            Some(min_version) => match self.modding_handler.get_loaders_for_version(min_version.id.clone()) {
+                Ok(loaders) => loaders,
+                Err(err) => vec![]
+            }
+        };
+
+        self.loader_list = StatefulList::with_items_oob(items);
+    }
+
+    pub fn build_mod_loader_version_list(&mut self) {
+        let mut items = match &self.selected_mod_loader {
+            None => vec![],
+            Some(mod_loader) => match mod_loader.get_loader_versions(self.selected.clone().unwrap().id) {
+                Ok(versions) => {
+                    let mut list = vec![];
+
+                    for version in versions.iter() {
+                        list.push(version.0.clone())
+                    }
+
+                    list
+                }
+                Err(err) => panic!(err)
+            }
+        };
+
+        self.loader_version_list = StatefulList::with_items_oob(items);
     }
 
     fn render_version_list(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect) {
         let version_list: Vec<Row> = self
-            .current_table
+            .mc_version_table
             .items
             .iter()
             .map(|v| {
@@ -73,17 +110,65 @@ impl VersionTab {
                 Constraint::Ratio(4, 12),
             ]);
 
-        f.render_stateful_widget(table, area, &mut self.current_table.state);
+        f.render_stateful_widget(table, area, &mut self.mc_version_table.state);
+    }
+
+    fn render_loader_list(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect) {
+        let loader_list: Vec<ListItem> = self
+            .loader_list
+            .items
+            .iter()
+            .map(|loader| ListItem::new(Span::raw(loader.get_name())))
+            .collect();
+
+        let list = List::new(loader_list)
+            .block(Block::default().borders(Borders::ALL).title("Mod Loader List"))
+            .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+            .highlight_symbol("> ");
+
+        f.render_stateful_widget(list, area, &mut self.loader_list.state)
+    }
+
+    fn render_loader_version_list(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>, area: Rect) {
+        let loader_version_list: Vec<ListItem> = self
+            .loader_version_list
+            .items
+            .iter()
+            .map(|loader| ListItem::new(Span::raw(loader)))
+            .collect();
+
+        let list = List::new(loader_version_list)
+            .block(Block::default().borders(Borders::ALL).title("Mod Loader Version List"))
+            .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+            .highlight_symbol("> ");
+
+        f.render_stateful_widget(list, area, &mut self.loader_version_list.state)
     }
 
     pub fn select(&mut self) {
-        match self
-            .current_table
-            .items
-            .get(self.current_table.state.selected().expect(":flushed:"))
-        {
-            None => self.selected = None,
-            Some(version) => self.selected = Some(version.clone()),
+        if self.selected_mod_loader.is_some() {
+            match self
+                .loader_version_list
+                .selected() {
+                None => self.selected_mod_loader_version = None,
+                Some(version) => self.selected_mod_loader_version = Some(version.clone())
+            }
+        } else if self.selected.is_some() {
+            match self
+                .loader_list
+                .selected() {
+                None => self.selected_mod_loader = None,
+                Some(mod_loader) => self.selected_mod_loader = Some(mod_loader.clone_instance())
+            }
+        } else {
+            match self
+                .mc_version_table
+                .items
+                .get(self.mc_version_table.state.selected().unwrap_or(0))
+            {
+                None => self.selected = None,
+                Some(version) => self.selected = Some(version.clone()),
+            }
         }
     }
 }
@@ -95,11 +180,10 @@ impl TabTrait for VersionTab {
             .constraints([Constraint::Ratio(1, 1)])
             .split(area);
 
-        if self.selected_modloader.is_some() {
-            let selected_modloader = self.selected_modloader.take().unwrap();
-
-            self.selected_modloader = Some(selected_modloader);
-        } else if let Some(version) = self.selected.clone() {
+        if self.selected_mod_loader.is_some() {
+            self.render_loader_version_list(f, chunks[0]);
+        } else if self.selected.is_some() {
+            self.render_loader_list(f, chunks[0])
         } else {
             self.render_version_list(f, chunks[0]);
         }
@@ -109,19 +193,59 @@ impl TabTrait for VersionTab {
         match key_code {
             KeyCode::Enter => {
                 self.select();
-                match &self.selected {
-                    None => Action::None,
-                    Some(version) => {
-                        Action::NextTab(Tab::Download(version.clone(), self.versions.clone()))
+
+                match &self.selected_mod_loader_version {
+                    None => match &self.selected_mod_loader {
+                        None => match &self.selected {
+                            None => Action::None,
+                            Some(version) => {
+                                self.build_mod_loader_list();
+                                Action::None
+                            }
+                        }
+                        Some(mod_loader) => {
+                            if mod_loader.is_vanilla() {
+                                Action::NextTab(Tab::Download(self.selected.clone().unwrap(), self.versions.clone(), mod_loader.clone_instance(), None))
+                            } else {
+                                self.build_mod_loader_version_list();
+                                Action::None
+                            }
+                        }
+                    }
+                    Some(mod_loader_version) => {
+                        Action::NextTab(Tab::Download(self.selected.clone().unwrap(), self.versions.clone(), self.selected_mod_loader.take().unwrap(), Some(mod_loader_version.clone())))
                     }
                 }
             }
             KeyCode::Up => {
-                self.current_table.previous();
+                if self.selected_mod_loader.is_some() {
+                    self.loader_version_list.previous();
+                } else if self.selected.is_some() {
+                    self.loader_list.previous();
+                } else {
+                    self.mc_version_table.previous();
+                }
                 Action::None
             }
             KeyCode::Down => {
-                self.current_table.next();
+                if self.selected_mod_loader.is_some() {
+                    self.loader_version_list.next();
+                } else if self.selected.is_some() {
+                    self.loader_list.next();
+                } else {
+                    self.mc_version_table.next();
+                }
+                Action::None
+            }
+            KeyCode::Left => {
+                if self.selected_mod_loader_version.is_some() {
+                    self.selected_mod_loader_version = None
+                } else if self.selected_mod_loader.is_some() {
+                    self.selected_mod_loader = None
+                } else if self.selected.is_some() {
+                    self.selected = None
+                }
+
                 Action::None
             }
             KeyCode::Char('s') => {

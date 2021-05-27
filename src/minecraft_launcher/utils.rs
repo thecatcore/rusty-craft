@@ -57,5 +57,10 @@ pub struct MavenVersioning {
     pub release: String,
     #[serde(rename = "lastUpdated")]
     pub last_updated: DateTime<Utc>,
-    pub versions: Vec<String>
+    pub versions: MavenVersion
+}
+
+#[derive(Deserialize, PartialEq)]
+pub struct MavenVersion {
+    pub version: Vec<String>
 }

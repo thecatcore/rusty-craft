@@ -1,8 +1,8 @@
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crate::minecraft_launcher::manifest::version;
-use crate::minecraft_launcher::modding::ModLoaderHandler;
+use crate::minecraft_launcher::modding::{ModLoaderHandler, ModLoaderInstaller};
 use crate::minecraft_launcher::rendering::main::{Cli, Event};
-use crate::minecraft_launcher::rendering::utils::StatefulTable;
+use crate::minecraft_launcher::rendering::utils::{StatefulTable, StatefulList};
 use crossterm::event::KeyEvent;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
@@ -42,12 +42,14 @@ impl App {
             login_tab: login_tab::LoginTab::new(),
             version_tab: version_tab::VersionTab {
                 selected: None,
-                selected_modloader: None,
-                selected_modloader_version: None,
+                selected_mod_loader: None,
+                selected_mod_loader_version: None,
                 snapshot: false,
                 old: false,
                 all_versions: min_versions.clone(),
-                current_table: StatefulTable::with_items(min_versions),
+                mc_version_table: StatefulTable::with_items(min_versions),
+                loader_list: StatefulList::new(),
+                loader_version_list: StatefulList::new(),
                 versions,
                 modding_handler: ModLoaderHandler::new(),
             },
@@ -68,7 +70,7 @@ impl App {
         match self.current_tab {
             Tab::Login => self.login_tab.render(f, chunks[0]),
             Tab::Version => self.version_tab.render(f, chunks[0]),
-            Tab::Download(_, _) => self.download_tab.render(f, chunks[0]),
+            Tab::Download(_, _, _, _) => self.download_tab.render(f, chunks[0]),
             Tab::Launch(_) => self.launch_tab.render(f, chunks[0]),
             Tab::Mod => {}
             Tab::ModVersion => {}
@@ -131,7 +133,7 @@ impl App {
                     vec.push(tab_binding);
                 }
             }
-            Tab::Download(_, _) => {
+            Tab::Download(_, _, _, _) => {
                 let tab_vec = self.download_tab.get_bindings();
                 for tab_binding in tab_vec {
                     vec.push(tab_binding);
@@ -154,7 +156,7 @@ impl App {
         match self.current_tab {
             Tab::Login => self.login_tab.tick(),
             Tab::Version => self.version_tab.tick(),
-            Tab::Download(_, _) => self.download_tab.tick(),
+            Tab::Download(_, _, _, _) => self.download_tab.tick(),
             Tab::Launch(_) => self.launch_tab.tick(),
             Tab::Mod => Action::None,
             Tab::ModVersion => Action::None,
@@ -218,7 +220,7 @@ impl App {
             let selected_tab = match self.current_tab.clone() {
                 Tab::Login => 0,
                 Tab::Version => 1,
-                Tab::Download(_, _) => 2,
+                Tab::Download(_, _, _, _) => 2,
                 Tab::Launch(_) => 3,
                 Tab::Mod => 4,
                 Tab::ModVersion => 5,
@@ -272,8 +274,13 @@ impl App {
                                 match tab {
                                     Tab::Login => {}
                                     Tab::Version => {}
-                                    Tab::Download(v, ref vs) => {
-                                        self.download_tab.start(v, vs.clone())
+                                    Tab::Download(v, ref vs, l, lv) => {
+                                        self.download_tab.start(
+                                            v,
+                                            vs.clone(),
+                                            l,
+                                            lv
+                                        )
                                     }
                                     Tab::Launch(version) => self.launch_tab.init(
                                         &version,
@@ -296,7 +303,12 @@ impl App {
                         match tab {
                             Tab::Login => {}
                             Tab::Version => {}
-                            Tab::Download(v, ref vs) => self.download_tab.start(v, vs.clone()),
+                            Tab::Download(v, ref vs, l, lv) => self.download_tab.start(
+                                v,
+                                vs.clone(),
+                                l,
+                                lv
+                            ),
                             Tab::Launch(version) => self.launch_tab.init(
                                 &version,
                                 self.login_tab.name.clone(),
@@ -319,7 +331,7 @@ impl App {
         match self.current_tab {
             Tab::Login => self.login_tab.on_key_press(key_code),
             Tab::Version => self.version_tab.on_key_press(key_code),
-            Tab::Download(_, _) => self.download_tab.on_key_press(key_code),
+            Tab::Download(_, _, _, _) => self.download_tab.on_key_press(key_code),
             Tab::Launch(_) => self.launch_tab.on_key_press(key_code),
             Tab::Mod => Action::None,
             Tab::ModVersion => Action::None,
@@ -332,14 +344,27 @@ pub enum Action {
     NextTab(Tab),
 }
 
-#[derive(Clone)]
 pub enum Tab {
     Login,
     Version,
-    Download(MinVersion, Vec<Version>),
+    Download(MinVersion, Vec<Version>, Box<dyn ModLoaderInstaller>, Option<String>),
     Launch(version::Main),
     Mod,
     ModVersion,
+}
+
+impl Tab {
+    pub fn clone(&self) -> Tab {
+        match self {
+            Tab::Login => Tab::Login,
+            Tab::Version => Tab::Version,
+            Tab::Download(v, vs, l, lv) =>
+                Tab::Download(v.clone(), vs.clone(), l.clone_instance(), lv.clone()),
+            Tab::Launch(v) => Tab::Launch(v.clone()),
+            Tab::Mod => Tab::Mod,
+            Tab::ModVersion => Tab::ModVersion
+        }
+    }
 }
 
 pub enum TabBinding {
