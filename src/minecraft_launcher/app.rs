@@ -247,7 +247,7 @@ impl App {
                 f.render_widget(tabs, main_chunks[0]);
                 self.render(f, main_chunks[1]);
                 f.render_widget(
-                    Paragraph::new(vec![Spans::from("© 2021 CatCore")]),
+                    Paragraph::new(vec![Spans::from("Rusty-Craft © 2021 CatCore")]),
                     main_chunks[2],
                 );
             })?;
