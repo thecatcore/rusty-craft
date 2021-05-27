@@ -62,5 +62,11 @@ pub struct MavenVersioning {
 
 #[derive(Deserialize, PartialEq)]
 pub struct MavenVersion {
-    pub version: Vec<String>
+    pub version: Vec<MavVersion>
+}
+
+#[derive(Deserialize, PartialEq)]
+pub struct MavVersion {
+    #[serde(rename = "$value")]
+    pub body: String
 }

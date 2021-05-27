@@ -82,17 +82,17 @@ impl ModLoaderInstaller for CursedLegacyInstaller {
         let maven_metadata = utils::MavenMetadata::from_str(raw_maven_metadata.as_str())?;
 
         for version in maven_metadata.versioning.versions.version {
-            if version.contains("local") {
+            if version.body.contains("local") {
                 continue;
             }
 
             let mut date = "Unknown".to_string();
-            if version == maven_metadata.versioning.release {
+            if version.body == maven_metadata.versioning.release {
                 date = maven_metadata.versioning.last_updated.to_string();
             }
 
-            map.insert(version.clone(), date);
-            key_list.insert(0, version);
+            map.insert(version.body.clone(), date);
+            key_list.insert(0, version.body);
         }
 
         let mut sorted_map = HashMap::new();

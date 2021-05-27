@@ -1064,9 +1064,9 @@ dependencies = [
  "reqwest 0.11.3",
  "sage_auth",
  "serde",
- "serde-xml-rs",
  "serde_derive",
  "serde_json",
+ "tobz1000-serde-xml-rs",
  "tokio 0.2.25",
  "tui",
  "uuid",
@@ -1138,18 +1138,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec7505abeacaec74ae4778d9d9328fe5a5d04253220a85c4ee022239fc996d03"
 dependencies = [
  "serde_derive",
-]
-
-[[package]]
-name = "serde-xml-rs"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0bf1ba0696ccf0872866277143ff1fd14d22eec235d2b23702f95e6660f7dfa"
-dependencies = [
- "log",
- "serde",
- "thiserror",
- "xml-rs",
 ]
 
 [[package]]
@@ -1309,6 +1297,18 @@ name = "tinyvec_macros"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
+
+[[package]]
+name = "tobz1000-serde-xml-rs"
+version = "0.4.1-tobz1000-1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3a8cc3672472c0107b6abf885493c03947230cdc7cdbaaca8f6af03daea7385d"
+dependencies = [
+ "log",
+ "serde",
+ "thiserror",
+ "xml-rs",
+]
 
 [[package]]
 name = "tokio"

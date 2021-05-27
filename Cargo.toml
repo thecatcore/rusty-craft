@@ -20,7 +20,7 @@ zip = "0.5.11"
 sage_auth = {git = "https://github.com/arthurbambou/sage_auth"}
 uuid = { version = "0.8", features = ["serde", "v4"] }
 tokio = "0.2.25"
-serde-xml-rs = "0.4.1"
+tobz1000-serde-xml-rs = "0.4.1-tobz1000-1"
 
 [[bin]]
 name = "rusty-craft"
