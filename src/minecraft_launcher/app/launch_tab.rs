@@ -1,4 +1,4 @@
-use crate::minecraft_launcher::app::{Action, Tab, TabBinding, TabTrait};
+use crate::minecraft_launcher::app::{Action, TabBinding, TabTrait};
 use crate::minecraft_launcher::arguments;
 use crate::minecraft_launcher::arguments::LaunchOptions;
 use crate::minecraft_launcher::launch;

@@ -31,7 +31,7 @@ pub trait ModLoaderInstaller {
         loader_version: String,
     ) -> String;
 
-    fn create_profile(&self, mc_version: String, loader_version: String) -> Main;
+    fn create_profile(&self, mc_version: String, loader_version: String) -> Result<Main, String>;
 
     fn is_vanilla(&self) -> bool {
         false
@@ -68,7 +68,7 @@ impl ModLoaderInstaller for VanillaLoader {
         self.get_profile_name_for_mc_version(mc_version)
     }
 
-    fn create_profile(&self, mc_version: String, loader_version: String) -> Main {
+    fn create_profile(&self, mc_version: String, loader_version: String) -> Result<Main, String> {
         todo!()
     }
 

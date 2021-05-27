@@ -249,7 +249,7 @@ impl ModLoaderInstaller for LiteLoaderInstaller {
         self.get_profile_name_for_mc_version(mc_version)
     }
 
-    fn create_profile(&self, mc_version: String, _loader_version: String) -> Main {
+    fn create_profile(&self, mc_version: String, _loader_version: String) -> Result<Main, String> {
         let version_info = self.get_version(mc_version.clone()).expect(":flushed:");
         let id = self.get_profile_name_for_mc_version(mc_version.clone());
         let inherits_from = mc_version.clone();
@@ -316,7 +316,7 @@ impl ModLoaderInstaller for LiteLoaderInstaller {
             });
         }
 
-        Main {
+        Ok(Main {
             arguments: None,
             asset_index: None,
             assets: None,
@@ -333,7 +333,7 @@ impl ModLoaderInstaller for LiteLoaderInstaller {
             _type: VersionType::Release,
             minecraft_arguments: Some(String::from(version_info.3)),
             inherits_from: Some(inherits_from),
-        }
+        })
     }
 
     fn clone_instance(&self) -> Box<dyn ModLoaderInstaller> {

@@ -76,19 +76,32 @@ impl ModLoaderInstaller for CursedLegacyInstaller {
     fn get_loader_versions(&self, mc_version: String) -> Result<HashMap<String, String>, String> {
         let mut map = HashMap::new();
 
+        let mut key_list = vec![];
+
         let raw_maven_metadata = path::read_file_from_url_to_string(LOADER_VERSIONS)?;
         let maven_metadata = utils::MavenMetadata::from_str(raw_maven_metadata.as_str())?;
 
         for version in maven_metadata.versioning.versions {
+            if version.contains("local") {
+                continue;
+            }
+
             let mut date = "Unknown".to_string();
             if version == maven_metadata.versioning.release {
                 date = maven_metadata.versioning.last_updated.to_string();
             }
 
-            map.insert(version, date);
+            map.insert(version.clone(), date);
+            key_list.insert(0, version);
         }
 
-        Ok(map)
+        let mut sorted_map = HashMap::new();
+
+        for key in key_list {
+            sorted_map.insert(key.clone(), map.get(&key).unwrap().clone());
+        }
+
+        Ok(sorted_map)
     }
 
     fn save_compatible_loader_versions(&self) -> bool {
@@ -108,7 +121,7 @@ impl ModLoaderInstaller for CursedLegacyInstaller {
             .replace("${loader_version}", loader_version.as_str())
     }
 
-    fn create_profile(&self, mc_version: String, loader_version: String) -> Main {
+    fn create_profile(&self, mc_version: String, loader_version: String) -> Result<Main, String> {
         let id =
             self.get_profile_name_for_loader_version(mc_version.clone(), loader_version.clone());
 
@@ -138,7 +151,7 @@ impl ModLoaderInstaller for CursedLegacyInstaller {
             url: Some("https://storage.googleapis.com/devan-maven/".to_string()),
         });
 
-        Main {
+        Ok(Main {
             arguments: None,
             asset_index: None,
             assets: None,
@@ -155,7 +168,7 @@ impl ModLoaderInstaller for CursedLegacyInstaller {
             _type: VersionType::OldBeta,
             minecraft_arguments: None,
             inherits_from: Some(mc_version),
-        }
+        })
     }
 
     fn clone_instance(&self) -> Box<dyn ModLoaderInstaller> {

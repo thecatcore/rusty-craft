@@ -66,7 +66,7 @@ impl ModLoaderInstaller for RiftInstaller {
         self.get_profile_name_for_mc_version(mc_version)
     }
 
-    fn create_profile(&self, mc_version: String, _loader_version: String) -> Main {
+    fn create_profile(&self, mc_version: String, _loader_version: String) -> Result<Main, String> {
         let mut libs: Vec<Library> = Vec::new();
         for lib in LIBS.iter() {
             libs.push(Library {
@@ -83,7 +83,7 @@ impl ModLoaderInstaller for RiftInstaller {
             });
         }
 
-        Main {
+        Ok(Main {
             arguments: Some(Arguments {
                 game: vec![
                     Either::Left(String::from("--tweakClass")),
@@ -108,7 +108,7 @@ impl ModLoaderInstaller for RiftInstaller {
             _type: VersionType::Release,
             minecraft_arguments: None,
             inherits_from: Some(mc_version),
-        }
+        })
     }
 
     fn clone_instance(&self) -> Box<dyn ModLoaderInstaller> {
