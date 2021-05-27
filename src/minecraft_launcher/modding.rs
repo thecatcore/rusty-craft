@@ -11,13 +11,13 @@ mod rift;
 pub trait ModLoaderInstaller {
     fn get_name(&self) -> String;
 
-    fn get_compatible_versions(&self) -> Vec<String>;
+    fn get_compatible_versions(&self) -> Result<Vec<String>, String>;
 
     fn save_compatible_versions(&self) -> bool {
         false
     }
 
-    fn get_loader_versions(&self, mc_version: String) -> HashMap<String, String>;
+    fn get_loader_versions(&self, mc_version: String) -> Result<HashMap<String, String>, String>;
 
     fn save_compatible_loader_versions(&self) -> bool {
         false
@@ -48,11 +48,11 @@ impl ModLoaderInstaller for VanillaLoader {
         "Vanilla".to_string()
     }
 
-    fn get_compatible_versions(&self) -> Vec<String> {
+    fn get_compatible_versions(&self) -> Result<Vec<String>, String> {
         todo!()
     }
 
-    fn get_loader_versions(&self, mc_version: String) -> HashMap<String, String> {
+    fn get_loader_versions(&self, mc_version: String) -> Result<HashMap<String, String>, String> {
         todo!()
     }
 
@@ -100,17 +100,17 @@ impl ModLoaderHandler {
         }
     }
 
-    pub fn get_loaders_for_version(&self, version: String) -> Vec<Box<dyn ModLoaderInstaller>> {
+    pub fn get_loaders_for_version(&self, version: String) -> Result<Vec<Box<dyn ModLoaderInstaller>>, String> {
         let mut loaders: Vec<Box<dyn ModLoaderInstaller>> = vec![];
 
         loaders.push(Box::new(self.vanilla.clone()));
 
         for mod_loader in self.mod_loaders.iter() {
-            if mod_loader.get_compatible_versions().contains(&version) {
+            if mod_loader.get_compatible_versions()?.contains(&version) {
                 loaders.push(mod_loader.clone_instance());
             }
         }
 
-        loaders
+        Ok(loaders)
     }
 }

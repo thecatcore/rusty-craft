@@ -2,10 +2,10 @@ use crate::minecraft_launcher::manifest::version::{Library, Main, VersionType};
 use crate::minecraft_launcher::modding::ModLoaderInstaller;
 use crate::minecraft_launcher::path;
 use chrono::{DateTime, Utc};
-use serde_derive::Deserialize;
-use serde_json::Error;
+use crate::minecraft_launcher::utils;
 use std::collections::HashMap;
 use std::str::FromStr;
+use crate::minecraft_launcher::utils::MavenMetadata;
 
 const MC_VERSIONS: [&str; 1] = ["b1.7.3"];
 const LOADER_VERSIONS: &str =
@@ -49,11 +49,11 @@ const LIBS: [(&str, &str); 16] = [
     ),
     ("com.google.guava:guava:21.0", "https://maven.fabricmc.net/"),
     (
-        "com.github.minecraft-cursed-legacy:Plasma:b1.7.3-build.19",
+        "io.github.minecraft-cursed-legacy:Plasma:b1.7.3-build.19",
         "https://storage.googleapis.com/devan-maven/",
     ),
 ];
-const LIB_NAME: &str = "com.github.minecraft-cursed-legacy:cursed-fabric-loader:{sha}";
+const LIB_NAME: &str = "io.github.minecraft-cursed-legacy:cursed-fabric-loader:{version}";
 
 #[derive(Clone)]
 pub struct CursedLegacyInstaller {}
@@ -63,47 +63,32 @@ impl ModLoaderInstaller for CursedLegacyInstaller {
         "Cursed Legacy".to_string()
     }
 
-    fn get_compatible_versions(&self) -> Vec<String> {
+    fn get_compatible_versions(&self) -> Result<Vec<String>, String> {
         let mut versions = vec![];
 
         for version in MC_VERSIONS.iter() {
             versions.push(version.to_string());
         }
 
-        versions
+        Ok(versions)
     }
 
-    fn get_loader_versions(&self, mc_version: String) -> HashMap<String, String> {
+    fn get_loader_versions(&self, mc_version: String) -> Result<HashMap<String, String>, String> {
         let mut map = HashMap::new();
 
-        match path::read_file_from_url_to_string(LOADER_VERSIONS) {
-            Ok(commit_list) => match deserialize_commit_list(commit_list) {
-                Ok(commit_list) => {
-                    for commit in commit_list {
-                        let date = commit.commit.author.date.to_string();
-                        let mut name = String::new();
+        let raw_maven_metadata = path::read_file_from_url_to_string(LOADER_VERSIONS)?;
+        let maven_metadata = utils::MavenMetadata::from_str(raw_maven_metadata.as_str())?;
 
-                        let mut counter = 0;
+        for version in maven_metadata.versioning.versions {
+            let mut date = "Unknown".to_string();
+            if version == maven_metadata.versioning.release {
+                date = maven_metadata.versioning.last_updated.to_string();
+            }
 
-                        for char in commit.sha.chars() {
-                            if counter > 6 {
-                                break;
-                            }
+            map.insert(version, date);
+        }
 
-                            name.push(char);
-
-                            counter += 1;
-                        }
-
-                        map.insert(name, date);
-                    }
-                }
-                Err(_) => {}
-            },
-            Err(err) => {}
-        };
-
-        map
+        Ok(map)
     }
 
     fn save_compatible_loader_versions(&self) -> bool {
@@ -126,8 +111,6 @@ impl ModLoaderInstaller for CursedLegacyInstaller {
     fn create_profile(&self, mc_version: String, loader_version: String) -> Main {
         let id =
             self.get_profile_name_for_loader_version(mc_version.clone(), loader_version.clone());
-        let loaders = self.get_loader_versions(mc_version.clone());
-        let date = loaders.get(loader_version.clone().as_str()).unwrap();
 
         let mut libs = vec![];
 
@@ -148,11 +131,11 @@ impl ModLoaderInstaller for CursedLegacyInstaller {
 
         libs.push(Library {
             downloads: None,
-            name: LIB_NAME.replace("{sha}", loader_version.as_str()),
+            name: LIB_NAME.replace("{version}", loader_version.as_str()),
             extract: None,
             natives: None,
             rules: None,
-            url: Some("https://jitpack.io/".to_string()),
+            url: Some("https://storage.googleapis.com/devan-maven/".to_string()),
         });
 
         Main {
@@ -167,8 +150,8 @@ impl ModLoaderInstaller for CursedLegacyInstaller {
             logging: None,
             main_class: "net.fabricmc.loader.launch.knot.KnotClient".to_string(),
             minimum_launcher_version: None,
-            release_time: DateTime::from_str(date).unwrap(),
-            time: DateTime::from_str(date).unwrap(),
+            release_time: Utc::now(),
+            time: Utc::now(),
             _type: VersionType::OldBeta,
             minecraft_arguments: None,
             inherits_from: Some(mc_version),
@@ -178,26 +161,4 @@ impl ModLoaderInstaller for CursedLegacyInstaller {
     fn clone_instance(&self) -> Box<dyn ModLoaderInstaller> {
         Box::new(CursedLegacyInstaller {})
     }
-}
-
-fn deserialize_commit_list(commit_list_raw: String) -> serde_json::Result<Vec<Commit>> {
-    let commit_list = serde_json::from_str(commit_list_raw.as_str());
-
-    commit_list
-}
-
-#[derive(Deserialize, Clone)]
-struct Commit {
-    pub sha: String,
-    pub commit: CommitInfo,
-}
-
-#[derive(Deserialize, Clone)]
-struct CommitInfo {
-    pub author: CommitAuthor,
-}
-
-#[derive(Deserialize, Clone)]
-struct CommitAuthor {
-    pub date: DateTime<Utc>,
 }

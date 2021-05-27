@@ -43,15 +43,15 @@ impl ModLoaderInstaller for RiftInstaller {
         "Rift".to_string()
     }
 
-    fn get_compatible_versions(&self) -> Vec<String> {
-        vec![String::from(MC_VERSIONS)]
+    fn get_compatible_versions(&self) -> Result<Vec<String>, String> {
+        Ok(vec![String::from(MC_VERSIONS)])
     }
 
-    fn get_loader_versions(&self, _mc_version: String) -> HashMap<String, String> {
+    fn get_loader_versions(&self, _mc_version: String) -> Result<HashMap<String, String>, String> {
         let mut map = HashMap::new();
         map.insert("FINAL".to_string(), "Unknown".to_string());
 
-        map
+        Ok(map)
     }
 
     fn get_profile_name_for_mc_version(&self, _mc_version: String) -> String {
