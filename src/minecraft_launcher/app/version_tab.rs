@@ -1,18 +1,18 @@
 use crate::minecraft_launcher::app::{Action, Tab, TabBinding, TabTrait};
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crate::minecraft_launcher::modding;
-use crate::minecraft_launcher::rendering::utils::{StatefulTable, StatefulList};
+use crate::minecraft_launcher::modding::ModLoaderInstaller;
+use crate::minecraft_launcher::rendering::utils::{StatefulList, StatefulTable};
 use crossterm::event::KeyCode;
+use std::collections::hash_map::RandomState;
+use std::collections::HashMap;
 use std::io::Stdout;
 use tui::backend::CrosstermBackend;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 use tui::style::{Modifier, Style};
 use tui::text::Span;
-use tui::widgets::{Block, Borders, Cell, Row, Table, ListItem, List};
+use tui::widgets::{Block, Borders, Cell, List, ListItem, Row, Table};
 use tui::Frame;
-use crate::minecraft_launcher::modding::ModLoaderInstaller;
-use std::collections::hash_map::RandomState;
-use std::collections::HashMap;
 
 pub struct VersionTab {
     pub selected: Option<MinVersion>,
@@ -47,10 +47,13 @@ impl VersionTab {
     pub fn build_mod_loader_list(&mut self) {
         let mut items = match &self.selected {
             None => vec![],
-            Some(min_version) => match self.modding_handler.get_loaders_for_version(min_version.id.clone()) {
+            Some(min_version) => match self
+                .modding_handler
+                .get_loaders_for_version(min_version.id.clone())
+            {
                 Ok(loaders) => loaders,
-                Err(err) => vec![]
-            }
+                Err(err) => vec![],
+            },
         };
 
         self.loader_list = StatefulList::with_items_oob(items);
@@ -59,17 +62,19 @@ impl VersionTab {
     pub fn build_mod_loader_version_list(&mut self) {
         let mut items = match &self.selected_mod_loader {
             None => vec![],
-            Some(mod_loader) => match mod_loader.get_loader_versions(self.selected.clone().unwrap().id) {
-                Ok(versions) => {
-                    let mut list = vec![];
+            Some(mod_loader) => {
+                match mod_loader.get_loader_versions(self.selected.clone().unwrap().id) {
+                    Ok(versions) => {
+                        let mut list = vec![];
 
-                    for version in versions.iter() {
-                        list.push(version.0.clone())
+                        for version in versions.iter() {
+                            list.push(version.0.clone())
+                        }
+
+                        list
                     }
-
-                    list
+                    Err(err) => panic!(err),
                 }
-                Err(err) => panic!(err)
             }
         };
 
@@ -122,7 +127,11 @@ impl VersionTab {
             .collect();
 
         let list = List::new(loader_list)
-            .block(Block::default().borders(Borders::ALL).title("Mod Loader List"))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Mod Loader List"),
+            )
             .highlight_style(Style::default().add_modifier(Modifier::BOLD))
             .highlight_symbol("> ");
 
@@ -138,7 +147,11 @@ impl VersionTab {
             .collect();
 
         let list = List::new(loader_version_list)
-            .block(Block::default().borders(Borders::ALL).title("Mod Loader Version List"))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Mod Loader Version List"),
+            )
             .highlight_style(Style::default().add_modifier(Modifier::BOLD))
             .highlight_symbol("> ");
 
@@ -147,18 +160,14 @@ impl VersionTab {
 
     pub fn select(&mut self) {
         if self.selected_mod_loader.is_some() {
-            match self
-                .loader_version_list
-                .selected() {
+            match self.loader_version_list.selected() {
                 None => self.selected_mod_loader_version = None,
-                Some(version) => self.selected_mod_loader_version = Some(version.clone())
+                Some(version) => self.selected_mod_loader_version = Some(version.clone()),
             }
         } else if self.selected.is_some() {
-            match self
-                .loader_list
-                .selected() {
+            match self.loader_list.selected() {
                 None => self.selected_mod_loader = None,
-                Some(mod_loader) => self.selected_mod_loader = Some(mod_loader.clone_instance())
+                Some(mod_loader) => self.selected_mod_loader = Some(mod_loader.clone_instance()),
             }
         } else {
             match self
@@ -202,19 +211,27 @@ impl TabTrait for VersionTab {
                                 self.build_mod_loader_list();
                                 Action::None
                             }
-                        }
+                        },
                         Some(mod_loader) => {
                             if mod_loader.is_vanilla() {
-                                Action::NextTab(Tab::Download(self.selected.clone().unwrap(), self.versions.clone(), mod_loader.clone_instance(), None))
+                                Action::NextTab(Tab::Download(
+                                    self.selected.clone().unwrap(),
+                                    self.versions.clone(),
+                                    mod_loader.clone_instance(),
+                                    None,
+                                ))
                             } else {
                                 self.build_mod_loader_version_list();
                                 Action::None
                             }
                         }
-                    }
-                    Some(mod_loader_version) => {
-                        Action::NextTab(Tab::Download(self.selected.clone().unwrap(), self.versions.clone(), self.selected_mod_loader.take().unwrap(), Some(mod_loader_version.clone())))
-                    }
+                    },
+                    Some(mod_loader_version) => Action::NextTab(Tab::Download(
+                        self.selected.clone().unwrap(),
+                        self.versions.clone(),
+                        self.selected_mod_loader.take().unwrap(),
+                        Some(mod_loader_version.clone()),
+                    )),
                 }
             }
             KeyCode::Up => {

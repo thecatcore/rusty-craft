@@ -3,7 +3,7 @@ use tui::widgets::{ListState, TableState};
 pub struct StatefulList<T> {
     pub state: ListState,
     pub items: Vec<T>,
-    pub allow_oob: bool
+    pub allow_oob: bool,
 }
 
 impl<T> StatefulList<T> {
@@ -11,7 +11,7 @@ impl<T> StatefulList<T> {
         StatefulList {
             state: ListState::default(),
             items: Vec::new(),
-            allow_oob: false
+            allow_oob: false,
         }
     }
 
@@ -19,32 +19,48 @@ impl<T> StatefulList<T> {
         StatefulList {
             state: ListState::default(),
             items: Vec::new(),
-            allow_oob: true
+            allow_oob: true,
         }
     }
 
     pub fn with_items(items: Vec<T>) -> StatefulList<T> {
         let mut state = ListState::default();
         state.select(Some(0));
-        StatefulList { state, items, allow_oob: false }
+        StatefulList {
+            state,
+            items,
+            allow_oob: false,
+        }
     }
 
     pub fn with_items_oob(items: Vec<T>) -> StatefulList<T> {
         let mut state = ListState::default();
         state.select(Some(0));
-        StatefulList { state, items, allow_oob: true }
+        StatefulList {
+            state,
+            items,
+            allow_oob: true,
+        }
     }
 
     pub fn with_items_inverted(items: Vec<T>) -> StatefulList<T> {
         let mut state = ListState::default();
         state.select(Some(items.len() - 1));
-        StatefulList { state, items, allow_oob: false }
+        StatefulList {
+            state,
+            items,
+            allow_oob: false,
+        }
     }
 
     pub fn with_items_inverted_oob(items: Vec<T>) -> StatefulList<T> {
         let mut state = ListState::default();
         state.select(Some(items.len() - 1));
-        StatefulList { state, items, allow_oob: true }
+        StatefulList {
+            state,
+            items,
+            allow_oob: true,
+        }
     }
 
     pub fn next(&mut self) {

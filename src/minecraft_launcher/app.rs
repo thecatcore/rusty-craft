@@ -2,7 +2,7 @@ use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crate::minecraft_launcher::manifest::version;
 use crate::minecraft_launcher::modding::{ModLoaderHandler, ModLoaderInstaller};
 use crate::minecraft_launcher::rendering::main::{Cli, Event};
-use crate::minecraft_launcher::rendering::utils::{StatefulTable, StatefulList};
+use crate::minecraft_launcher::rendering::utils::{StatefulList, StatefulTable};
 use crossterm::event::KeyEvent;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
@@ -275,12 +275,7 @@ impl App {
                                     Tab::Login => {}
                                     Tab::Version => {}
                                     Tab::Download(v, ref vs, l, lv) => {
-                                        self.download_tab.start(
-                                            v,
-                                            vs.clone(),
-                                            l,
-                                            lv
-                                        )
+                                        self.download_tab.start(v, vs.clone(), l, lv)
                                     }
                                     Tab::Launch(version) => self.launch_tab.init(
                                         &version,
@@ -303,12 +298,9 @@ impl App {
                         match tab {
                             Tab::Login => {}
                             Tab::Version => {}
-                            Tab::Download(v, ref vs, l, lv) => self.download_tab.start(
-                                v,
-                                vs.clone(),
-                                l,
-                                lv
-                            ),
+                            Tab::Download(v, ref vs, l, lv) => {
+                                self.download_tab.start(v, vs.clone(), l, lv)
+                            }
                             Tab::Launch(version) => self.launch_tab.init(
                                 &version,
                                 self.login_tab.name.clone(),
@@ -347,7 +339,12 @@ pub enum Action {
 pub enum Tab {
     Login,
     Version,
-    Download(MinVersion, Vec<Version>, Box<dyn ModLoaderInstaller>, Option<String>),
+    Download(
+        MinVersion,
+        Vec<Version>,
+        Box<dyn ModLoaderInstaller>,
+        Option<String>,
+    ),
     Launch(version::Main),
     Mod,
     ModVersion,
@@ -358,11 +355,12 @@ impl Tab {
         match self {
             Tab::Login => Tab::Login,
             Tab::Version => Tab::Version,
-            Tab::Download(v, vs, l, lv) =>
-                Tab::Download(v.clone(), vs.clone(), l.clone_instance(), lv.clone()),
+            Tab::Download(v, vs, l, lv) => {
+                Tab::Download(v.clone(), vs.clone(), l.clone_instance(), lv.clone())
+            }
             Tab::Launch(v) => Tab::Launch(v.clone()),
             Tab::Mod => Tab::Mod,
-            Tab::ModVersion => Tab::ModVersion
+            Tab::ModVersion => Tab::ModVersion,
         }
     }
 }

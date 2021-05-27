@@ -101,7 +101,10 @@ impl ModLoaderHandler {
         }
     }
 
-    pub fn get_loaders_for_version(&self, version: String) -> Result<Vec<Box<dyn ModLoaderInstaller>>, String> {
+    pub fn get_loaders_for_version(
+        &self,
+        version: String,
+    ) -> Result<Vec<Box<dyn ModLoaderInstaller>>, String> {
         let mut loaders: Vec<Box<dyn ModLoaderInstaller>> = vec![];
 
         loaders.push(Box::new(self.vanilla.clone()));
