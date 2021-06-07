@@ -21,27 +21,27 @@ pub fn install_version(
     versions: Vec<manifest::main::Version>,
     tx: Sender<Message>,
 ) -> Option<()> {
+
     tx.send(Message::NewSubStep(
         String::from("Checking Version folder"),
         1,
         3,
-    ))
-    .expect("Can't send message to renderer thread");
-    match path::get_version_folder(&id) {
-        None => None,
-        Some(version_folder) => {
-            let manifest_file_path = version_folder.join(id.clone() + ".json");
-            if manifest_file_path.exists() {
-                read_version_manifest(manifest_file_path, tx)
-            } else {
-                for version in versions {
-                    if version.id == id {
-                        return install_manifest(version, manifest_file_path, tx);
-                    }
+    )).unwrap_or(());
+
+    if let Some(version_folder) = path::get_version_folder(&id) {
+        let manifest_file_path = version_folder.join(id.clone() + ".json");
+        if manifest_file_path.exists() {
+            read_version_manifest(manifest_file_path, tx)
+        } else {
+            for version in versions {
+                if version.id == id {
+                    return install_manifest(version, manifest_file_path, tx);
                 }
-                None
             }
+            None
         }
+    } else {
+        None
     }
 }
 
@@ -50,12 +50,13 @@ fn install_manifest(
     file_path: PathBuf,
     tx: Sender<Message>,
 ) -> Option<()> {
+
     tx.send(Message::NewSubStep(
         String::from("Downloading Version manifest"),
         2,
         3,
-    ))
-    .expect("Can't send message to renderer thread");
+    )).unwrap_or(());
+
     match path::download_file_to(&version.url, &file_path) {
         Ok(_) => read_version_manifest(file_path, tx),
         Err(_) => None,
@@ -63,86 +64,70 @@ fn install_manifest(
 }
 
 fn read_version_manifest(manifest_path: PathBuf, tx: Sender<Message>) -> Option<()> {
+
     tx.send(Message::NewSubStep(
         String::from("Reading Version manifest"),
         3,
         3,
     ))
     .expect("Can't send message to renderer thread");
-    match File::open(manifest_path) {
-        Ok(mut file) => {
-            let mut body = String::new();
-            match file.read_to_string(&mut body) {
-                Ok(_) => match manifest::version::parse_version_manifest(&body) {
-                    Ok(version) => install_version_from_manifest(&version, tx),
-                    Err(_) => None,
-                },
-                Err(_) => None,
+
+    if let Ok(mut file) = File::open(manifest_path) {
+        let mut body = String::new();
+
+        if file.read_to_string(&mut body).is_ok() {
+            if let Ok(version) = manifest::version::parse_version_manifest(&body) {
+                return install_version_from_manifest(&version, tx);
             }
         }
-        Err(_) => None,
     }
+
+    None
 }
 
 fn install_version_from_manifest(
     version_manifest: &version::Main,
     tx: Sender<Message>,
 ) -> Option<()> {
-    // println!("Checking java");
-    match java::check_java_version(version_manifest, tx) {
-        None => None,
-        Some(tx) => {
-            // println!("Checking client jar");
-            match install_client_jar(version_manifest, tx) {
-                None => None,
-                Some(tx) => {
-                    // println!("Checking libraries");
-                    match install_libraries(version_manifest, tx) {
-                        None => None,
-                        Some(tx) => {
-                            // println!("Checking assets");
-                            match install_assets_index(version_manifest, tx) {
-                                None => None,
-                                Some(tx) => {
-                                    // println!("Checking log file");
-                                    match check_log_file(version_manifest, tx) {
-                                        None => None,
-                                        Some(tx) => {
-                                            launch::pre_launch(
-                                                version_manifest.clone(),
-                                                tx.clone(),
-                                            );
-                                            tx.send(Message::Done(version_manifest.clone()));
-                                            Some(())
-                                        }
-                                    }
-                                }
-                            }
-                        }
+
+    if let Some(tx) = java::check_java_version(version_manifest, tx) {
+        if let Some(tx) = install_client_jar(version_manifest, tx) {
+            if let Some(tx) = install_libraries(version_manifest, tx) {
+                if let Some(tx) = install_assets_index(version_manifest, tx) {
+                    if let Some(tx) = check_log_file(version_manifest, tx) {
+                        launch::pre_launch(
+                            version_manifest.clone(),
+                            tx.clone(),
+                        );
+                        tx.send(Message::Done(version_manifest.clone()));
+                        return Some(())
                     }
                 }
             }
         }
     }
+
+    None
 }
 
 fn install_client_jar(
     version_manifest: &version::Main,
     tx: Sender<Message>,
 ) -> Option<Sender<Message>> {
+
     let version_manifest = version_manifest.clone();
-    tx.send(Message::NewStep(3))
-        .expect("Can't send message to renderer thread");
+    tx.send(Message::NewStep(3)).unwrap_or(());
+
     match version_manifest.downloads {
         None => {
-            println!("No client jar to download in version manifest!");
+            tx.send(Message::Error(format!("No client jar to download in version manifest!"))).unwrap_or(());
             None
         }
         Some(d) => {
             let client_entry = d.client;
             match path::get_version_folder(&version_manifest.id) {
                 None => {
-                    println!("Unable to access or create version folder");
+                    tx.send(Message::Error(format!("Unable to access or create version folder"))).unwrap_or(());
                     None
                 }
                 Some(v_path) => {
@@ -155,7 +140,7 @@ fn install_client_jar(
                                     match path::download_file_to(&client_entry.url, &jar_path) {
                                         Ok(_) => Some(tx),
                                         Err(err) => {
-                                            println!("{}", err);
+                                            tx.send(Message::Error(format!("{}", err))).unwrap_or(());
                                             None
                                         }
                                     }
@@ -164,7 +149,7 @@ fn install_client_jar(
                                 }
                             }
                             Err(err) => {
-                                println!("Error while trying to get client jar metadata: {}", err);
+                                tx.send(Message::Error(format!("Error while trying to get client jar metadata: {}", err))).unwrap_or(());
                                 None
                             }
                         }
@@ -172,7 +157,7 @@ fn install_client_jar(
                         match path::download_file_to(&client_entry.url, &jar_path) {
                             Ok(_) => Some(tx),
                             Err(err) => {
-                                println!("{}", err);
+                                tx.send(Message::Error(format!("{}", err))).unwrap_or(());
                                 None
                             }
                         }
@@ -244,7 +229,7 @@ fn install_libraries(
                                                         ) {
                                                             Ok(_) => {}
                                                             Err(err) => {
-                                                                println!("{}", err);
+                                                                tx.send(Message::Error(format!("{}", err)));
                                                                 result = None;
                                                                 break;
                                                             }
@@ -252,7 +237,7 @@ fn install_libraries(
                                                     }
                                                 }
                                                 Err(meta_err) => {
-                                                    println!("{}", meta_err);
+                                                    tx.send(Message::Error(format!("{}", meta_err)));
                                                     result = None;
                                                     break;
                                                 }
@@ -260,8 +245,8 @@ fn install_libraries(
                                         } else {
                                             match path::download_file_to(&artifact.url, &lib_path) {
                                                 Ok(_) => {}
-                                                Err(ohno) => {
-                                                    println!("{}", ohno);
+                                                Err(err) => {
+                                                    tx.send(Message::Error(format!("{}", err)));
                                                     result = None;
                                                     break;
                                                 }
@@ -308,7 +293,7 @@ fn install_libraries(
                                                     ) {
                                                         Ok(_) => {}
                                                         Err(ohno) => {
-                                                            println!("{}", ohno);
+                                                            tx.send(Message::Error(format!("{}", ohno)));
                                                             result = None;
                                                             break;
                                                         }
@@ -316,7 +301,7 @@ fn install_libraries(
                                                 }
                                             }
                                             Err(meta_err) => {
-                                                println!("{}", meta_err);
+                                                tx.send(Message::Error(format!("{}", meta_err)));
                                                 result = None;
                                                 break;
                                             }
@@ -325,7 +310,7 @@ fn install_libraries(
                                         match path::download_file_to(&class.url, &lib_path) {
                                             Ok(_) => {}
                                             Err(ohno) => {
-                                                println!("{}", ohno);
+                                                tx.send(Message::Error(format!("{}", ohno)));
                                                 result = None;
                                                 break;
                                             }
@@ -362,7 +347,7 @@ fn install_libraries(
                                     ) {
                                         Ok(_) => {}
                                         Err(ohno) => {
-                                            println!("{}", ohno);
+                                            tx.send(Message::Error(format!("{}", ohno)));
                                             result = None;
                                             break;
                                         }
@@ -390,7 +375,7 @@ fn install_libraries(
                                 ) {
                                     Ok(_) => {}
                                     Err(ohno) => {
-                                        println!("{}", ohno);
+                                        tx.send(Message::Error(format!("{}", ohno)));
                                         result = None;
                                         break;
                                     }
@@ -426,14 +411,14 @@ fn install_assets_index(
     .expect("Can't send message to renderer thread");
     match version_manifest.asset_index {
         None => {
-            println!("Version manifest doesn't contain any asset index!");
+            tx.send(Message::Error(format!("Version manifest doesn't contain any asset index!")));
             None
         }
         Some(a_index) => {
             // println!("Got asset index");
             match path::get_assets_folder(&String::from("indexes")) {
                 None => {
-                    println!("Unable to get indexes folder");
+                    tx.send(Message::Error(format!("Unable to get indexes folder")));
                     None
                 }
                 Some(index_folder) => {
@@ -453,10 +438,10 @@ fn install_assets_index(
                                             update_assets(a_index.id, tx)
                                         }
                                         Err(err_msg) => {
-                                            println!(
+                                            tx.send(Message::Error(format!(
                                                 "Unable to download asset index file: {}",
                                                 err_msg
-                                            );
+                                            )));
                                             None
                                         }
                                     }
@@ -473,10 +458,10 @@ fn install_assets_index(
                                         update_assets(a_index.id, tx)
                                     }
                                     Err(err_msg) => {
-                                        println!(
+                                        tx.send(Message::Error(format!(
                                             "Unable to download asset index file: {}",
                                             err_msg
-                                        );
+                                        )));
                                         None
                                     }
                                 }
@@ -490,7 +475,7 @@ fn install_assets_index(
                                 update_assets(a_index.id, tx)
                             }
                             Err(err_msg) => {
-                                println!("Unable to download asset index file: {}", err_msg);
+                                tx.send(Message::Error(format!("Unable to download asset index file: {}", err_msg)));
                                 None
                             }
                         }
@@ -510,7 +495,7 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
     .expect("Can't send message to renderer thread");
     match path::get_assets_folder(&String::from("indexes")) {
         None => {
-            println!("Unable to get indexes folder");
+            tx.send(Message::Error(format!("Unable to get indexes folder")));
             None
         }
         Some(index_folder) => {
@@ -533,7 +518,7 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                             "objects",
                                         )) {
                                             None => {
-                                                println!("Unable to get objects folder");
+                                                tx.send(Message::Error(format!("Unable to get objects folder")));
                                                 None
                                             }
                                             Some(object_path) => {
@@ -559,7 +544,7 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                                     ) {
                                                                         Ok(_) => {}
                                                                         Err(err) => {
-                                                                            println!("Unable to download file {}: {}", entry.0, err);
+                                                                            tx.send(Message::Error(format!("Unable to download file {}: {}", entry.0, err)));
                                                                             ret = None;
                                                                             break;
                                                                         }
@@ -572,7 +557,7 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                                     asset_path.0,
                                                                 ) {
                                                                     None => {
-                                                                        println!("Unable to create folder for asset");
+                                                                        tx.send(Message::Error(format!("Unable to create folder for asset")));
                                                                         ret = None;
                                                                         break;
                                                                     }
@@ -585,7 +570,7 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                                         ) {
                                                                             Ok(_) => {}
                                                                             Err(err) => {
-                                                                                println!("Unable to download file {}: {}", &entry.0, err);
+                                                                                tx.send(Message::Error(format!("Unable to download file {}: {}", &entry.0, err)));
                                                                                 ret = None;
                                                                                 break;
                                                                             }
@@ -600,7 +585,7 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                             asset_path.0,
                                                         ) {
                                                             None => {
-                                                                println!("Unable to create folder for asset");
+                                                                tx.send(Message::Error(format!("Unable to create folder for asset")));
                                                                 ret = None;
                                                                 break;
                                                             }
@@ -611,7 +596,7 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                                 ) {
                                                                     Ok(_) => {}
                                                                     Err(err) => {
-                                                                        println!("Unable to download file {}: {}", &entry.0, err);
+                                                                        tx.send(Message::Error(format!("Unable to download file {}: {}", &entry.0, err)));
                                                                         ret = None;
                                                                         break;
                                                                     }
@@ -675,7 +660,7 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
 
                                                                                                 match path::get_or_create_dir(&resources, String::from(entry_pathbuf.parent().unwrap().to_str().unwrap())) {
                                                                                                     None => {
-                                                                                                        println!("Unable to get asset path");
+                                                                                                        tx.send(Message::Error(format!("Unable to get asset path")));
                                                                                                         res = None;
                                                                                                         break;
                                                                                                     }
@@ -686,14 +671,14 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                                                                                 match file.write(body.as_slice()) {
                                                                                                                     Ok(_) => {}
                                                                                                                     Err(err) => {
-                                                                                                                        println!("Unable to write to asset file: {}", err);
+                                                                                                                        tx.send(Message::Error(format!("Unable to write to asset file: {}", err)));
                                                                                                                         res = None;
                                                                                                                         break;
                                                                                                                     }
                                                                                                                 }
                                                                                                             }
                                                                                                             Err(err) => {
-                                                                                                                println!("Unable to create asset file: {}", err);
+                                                                                                                tx.send(Message::Error(format!("Unable to create asset file: {}", err)));
                                                                                                                 res = None;
                                                                                                                 break;
                                                                                                             }
@@ -707,14 +692,14 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                                                                         match file.write(body.as_slice()) {
                                                                                                             Ok(_) => {}
                                                                                                             Err(err) => {
-                                                                                                                println!("Unable to write to asset file: {}", err);
+                                                                                                                tx.send(Message::Error(format!("Unable to write to asset file: {}", err)));
                                                                                                                 res = None;
                                                                                                                 break;
                                                                                                             }
                                                                                                         }
                                                                                                     }
                                                                                                     Err(err) => {
-                                                                                                        println!("Unable to create asset file: {}", err);
+                                                                                                        tx.send(Message::Error(format!("Unable to create asset file: {}", err)));
                                                                                                         res = None;
                                                                                                         break;
                                                                                                     }
@@ -722,14 +707,14 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                                                                             }
                                                                                         }
                                                                                         Err(err) => {
-                                                                                            println!("Unable to read asset file: {}", err);
+                                                                                            tx.send(Message::Error(format!("Unable to read asset file: {}", err)));
                                                                                             res = None;
                                                                                             break;
                                                                                         }
                                                                                     }
                                                                                 }
                                                                                 Err(err) => {
-                                                                                    println!("Unable to open asset file: {}", err);
+                                                                                    tx.send(Message::Error(format!("Unable to open asset file: {}", err)));
                                                                                     res = None;
                                                                                     break;
                                                                                 }
@@ -755,24 +740,24 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                         }
                                     }
                                     Err(err) => {
-                                        println!("Unable to parsed index file: {}", err);
+                                        tx.send(Message::Error(format!("Unable to parse index file: {}", err)));
                                         None
                                     }
                                 }
                             }
                             Err(err) => {
-                                println!("Unable to read index file: {}", err);
+                                tx.send(Message::Error(format!("Unable to read index file: {}", err)));
                                 None
                             }
                         }
                     }
                     Err(err) => {
-                        println!("Unable to opened index file: {}", err);
+                        tx.send(Message::Error(format!("Unable to opened index file: {}", err)));
                         None
                     }
                 }
             } else {
-                println!("Asset index file doesn't exist");
+                tx.send(Message::Error(format!("Asset index file doesn't exist")));
                 None
             }
         }
@@ -800,7 +785,7 @@ fn check_log_file(
                 let file_info = client_log.file;
                 match path::get_assets_folder(&String::from("log_configs")) {
                     None => {
-                        println!("Unable to get log_configs folder");
+                        tx.send(Message::Error(format!("Unable to get log_configs folder")));
                         None
                     }
                     Some(log_folder) => {
@@ -812,7 +797,7 @@ fn check_log_file(
                                         match path::download_file_to(&file_info.url, &log_path) {
                                             Ok(_) => Some(tx),
                                             Err(err) => {
-                                                println!("Unable to download logger file: {}", err);
+                                                tx.send(Message::Error(format!("Unable to download logger file: {}", err)));
                                                 None
                                             }
                                         }
@@ -823,7 +808,7 @@ fn check_log_file(
                                 Err(_) => match path::download_file_to(&file_info.url, &log_path) {
                                     Ok(_) => Some(tx),
                                     Err(err) => {
-                                        println!("Unable to download logger file: {}", err);
+                                        tx.send(Message::Error(format!("Unable to download logger file: {}", err)));
                                         None
                                     }
                                 },
@@ -832,7 +817,7 @@ fn check_log_file(
                             match path::download_file_to(&file_info.url, &log_path) {
                                 Ok(_) => Some(tx),
                                 Err(err) => {
-                                    println!("Unable to download logger file: {}", err);
+                                    tx.send(Message::Error(format!("Unable to download logger file: {}", err)));
                                     None
                                 }
                             }

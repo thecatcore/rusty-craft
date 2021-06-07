@@ -79,7 +79,9 @@ impl ModLoaderInstaller for CursedLegacyInstaller {
         let mut key_list = vec![];
 
         let raw_maven_metadata = path::read_file_from_url_to_string(LOADER_VERSIONS)?;
-        let maven_metadata = utils::Metadata::from_str(raw_maven_metadata.as_str())?;
+        let mut maven_metadata = utils::Metadata::from_str(raw_maven_metadata.as_str())?;
+
+        maven_metadata.versioning.versions.versions.sort();
 
         for version in maven_metadata.versioning.versions.versions {
             if version.contains("local") {

@@ -50,7 +50,9 @@ impl ModLoaderInstaller for FabricInstaller {
                 .replace(":game_version", mc_version.as_str())
                 .as_str(),
         )?;
-        let version_list = get_loader_versions(raw_version_list.as_str())?;
+        let mut version_list = get_loader_versions(raw_version_list.as_str())?;
+
+        version_list.sort_by(|a, b| b.loader.version.cmp(&a.loader.version));
 
         for version in version_list {
             versions.insert(version.loader.version, "Unknown".to_string());

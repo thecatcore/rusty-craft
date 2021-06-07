@@ -30,7 +30,7 @@ pub fn check_java_version(
     ))
     .expect("Can't send message to renderer thread");
     match get_java_version_manifest() {
-        None => {
+        Err(err) => {
             tx.send(Message::NewSubStep(
                 String::from("Checking if required version is installed"),
                 3,
@@ -79,7 +79,7 @@ pub fn check_java_version(
             }
         }
 
-        Some(manifest) => match manifest.get_os_version() {
+        Ok(manifest) => match manifest.get_os_version() {
             None => {
                 tx.send(Message::Error(String::from("Unable to get os_version")));
                 None
@@ -324,7 +324,13 @@ fn install_java_version(
                                                         // );
                                                         if executable {
                                                             // println!("Executable");
-                                                            set_executable(file_buf)
+                                                            match set_executable(file_buf) {
+                                                                Ok(_) => Some(()),
+                                                                Err(err) => {
+                                                                    tx.send(Message::Error(err));
+                                                                    None
+                                                                }
+                                                            }
                                                         } else {
                                                             Some(())
                                                         }
@@ -350,7 +356,13 @@ fn install_java_version(
                                                 // println!("Successfully downloaded file");
                                                 if executable {
                                                     // println!("Executable");
-                                                    set_executable(file_buf)
+                                                    match set_executable(file_buf) {
+                                                        Ok(_) => Some(()),
+                                                        Err(err) => {
+                                                            tx.send(Message::Error(err));
+                                                            None
+                                                        }
+                                                    }
                                                 } else {
                                                     Some(())
                                                 }
@@ -393,7 +405,7 @@ fn install_java_version(
                                     // println!("Wrote to .version file")
                                 }
                                 Err(_) => {
-                                    println!("Failed to write to .version file");
+                                    tx.send(Message::Error(format!("Failed to write to .version file")));
                                     status = None
                                 }
                             },
@@ -403,12 +415,12 @@ fn install_java_version(
                                         // println!("Wrote to .version file")
                                     }
                                     Err(_) => {
-                                        println!("Failed to write to .version file");
+                                        tx.send(Message::Error(format!("Failed to write to .version file")));
                                         status = None
                                     }
                                 },
                                 Err(err) => {
-                                    println!("Failed to create .version file: {}", err);
+                                    tx.send(Message::Error(format!("Failed to create .version file: {}", err)));
                                     status = None;
                                 }
                             },
@@ -454,48 +466,44 @@ pub fn get_java_ex_for_os() -> &'static str {
     }
 }
 
-fn get_java_version_manifest() -> Option<java_versions::Main> {
+fn get_java_version_manifest() -> Result<java_versions::Main, String> {
     match path::read_file_from_url_to_string(&"https://launchermeta.mojang.com/v1/products/java-runtime/2ec0cc96c44e5a76b9c8b7c39df7210883d12871/all.json".to_string()) {
         Ok(body) => {
             match java_versions::parse_java_versions_manifest(&body) {
-                Ok(manifest) => Some(manifest),
+                Ok(manifest) => Ok(manifest),
                 Err(err) => {
-                    print!("Error: {}", err.to_string());
-                    None
+                    Err(format!("Error: {}", err.to_string()))
                 }
             }
         }
         Err(err) => {
-            print!("Error: {}", err);
-            None
+            Err(format!("Error: {}", err))
         }
     }
 }
 
 #[cfg(unix)]
-fn set_executable(file_buf: PathBuf) -> Option<()> {
+fn set_executable(file_buf: PathBuf) -> Result<(), String> {
     match &file_buf.metadata() {
         Ok(meta) => {
             let mut perm = meta.permissions();
             perm.set_mode(0o755);
             match std::fs::set_permissions(file_buf, perm) {
-                Ok(_) => Some(()),
+                Ok(_) => Ok(()),
                 Err(err) => {
-                    println!("Unable to set permission: {}", err);
-                    None
+                    Err(format!("Unable to set permission: {}", err))
                 }
             }
         }
         Err(err) => {
-            println!("Unable to get meta: {}", err);
-            None
+            Err(format!("Unable to get meta: {}", err))
         }
     }
 }
 
 #[cfg(windows)]
-fn set_executable(file_buf: PathBuf) -> Option<()> {
-    Some(())
+fn set_executable(file_buf: PathBuf) -> Result<(), String> {
+    Ok(())
 }
 
 #[cfg(unix)]
