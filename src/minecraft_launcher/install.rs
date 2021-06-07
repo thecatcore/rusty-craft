@@ -21,12 +21,12 @@ pub fn install_version(
     versions: Vec<manifest::main::Version>,
     tx: Sender<Message>,
 ) -> Option<()> {
-
     tx.send(Message::NewSubStep(
         String::from("Checking Version folder"),
         1,
         3,
-    )).unwrap_or(());
+    ))
+    .unwrap_or(());
 
     if let Some(version_folder) = path::get_version_folder(&id) {
         let manifest_file_path = version_folder.join(id.clone() + ".json");
@@ -50,12 +50,12 @@ fn install_manifest(
     file_path: PathBuf,
     tx: Sender<Message>,
 ) -> Option<()> {
-
     tx.send(Message::NewSubStep(
         String::from("Downloading Version manifest"),
         2,
         3,
-    )).unwrap_or(());
+    ))
+    .unwrap_or(());
 
     match path::download_file_to(&version.url, &file_path) {
         Ok(_) => read_version_manifest(file_path, tx),
@@ -64,7 +64,6 @@ fn install_manifest(
 }
 
 fn read_version_manifest(manifest_path: PathBuf, tx: Sender<Message>) -> Option<()> {
-
     tx.send(Message::NewSubStep(
         String::from("Reading Version manifest"),
         3,
@@ -89,18 +88,14 @@ fn install_version_from_manifest(
     version_manifest: &version::Main,
     tx: Sender<Message>,
 ) -> Option<()> {
-
     if let Some(tx) = java::check_java_version(version_manifest, tx) {
         if let Some(tx) = install_client_jar(version_manifest, tx) {
             if let Some(tx) = install_libraries(version_manifest, tx) {
                 if let Some(tx) = install_assets_index(version_manifest, tx) {
                     if let Some(tx) = check_log_file(version_manifest, tx) {
-                        launch::pre_launch(
-                            version_manifest.clone(),
-                            tx.clone(),
-                        );
+                        launch::pre_launch(version_manifest.clone(), tx.clone());
                         tx.send(Message::Done(version_manifest.clone()));
-                        return Some(())
+                        return Some(());
                     }
                 }
             }
@@ -114,20 +109,25 @@ fn install_client_jar(
     version_manifest: &version::Main,
     tx: Sender<Message>,
 ) -> Option<Sender<Message>> {
-
     let version_manifest = version_manifest.clone();
     tx.send(Message::NewStep(3)).unwrap_or(());
 
     match version_manifest.downloads {
         None => {
-            tx.send(Message::Error(format!("No client jar to download in version manifest!"))).unwrap_or(());
+            tx.send(Message::Error(format!(
+                "No client jar to download in version manifest!"
+            )))
+            .unwrap_or(());
             None
         }
         Some(d) => {
             let client_entry = d.client;
             match path::get_version_folder(&version_manifest.id) {
                 None => {
-                    tx.send(Message::Error(format!("Unable to access or create version folder"))).unwrap_or(());
+                    tx.send(Message::Error(format!(
+                        "Unable to access or create version folder"
+                    )))
+                    .unwrap_or(());
                     None
                 }
                 Some(v_path) => {
@@ -140,7 +140,8 @@ fn install_client_jar(
                                     match path::download_file_to(&client_entry.url, &jar_path) {
                                         Ok(_) => Some(tx),
                                         Err(err) => {
-                                            tx.send(Message::Error(format!("{}", err))).unwrap_or(());
+                                            tx.send(Message::Error(format!("{}", err)))
+                                                .unwrap_or(());
                                             None
                                         }
                                     }
@@ -149,7 +150,11 @@ fn install_client_jar(
                                 }
                             }
                             Err(err) => {
-                                tx.send(Message::Error(format!("Error while trying to get client jar metadata: {}", err))).unwrap_or(());
+                                tx.send(Message::Error(format!(
+                                    "Error while trying to get client jar metadata: {}",
+                                    err
+                                )))
+                                .unwrap_or(());
                                 None
                             }
                         }
@@ -229,7 +234,10 @@ fn install_libraries(
                                                         ) {
                                                             Ok(_) => {}
                                                             Err(err) => {
-                                                                tx.send(Message::Error(format!("{}", err)));
+                                                                tx.send(Message::Error(format!(
+                                                                    "{}",
+                                                                    err
+                                                                )));
                                                                 result = None;
                                                                 break;
                                                             }
@@ -237,7 +245,10 @@ fn install_libraries(
                                                     }
                                                 }
                                                 Err(meta_err) => {
-                                                    tx.send(Message::Error(format!("{}", meta_err)));
+                                                    tx.send(Message::Error(format!(
+                                                        "{}",
+                                                        meta_err
+                                                    )));
                                                     result = None;
                                                     break;
                                                 }
@@ -293,7 +304,10 @@ fn install_libraries(
                                                     ) {
                                                         Ok(_) => {}
                                                         Err(ohno) => {
-                                                            tx.send(Message::Error(format!("{}", ohno)));
+                                                            tx.send(Message::Error(format!(
+                                                                "{}",
+                                                                ohno
+                                                            )));
                                                             result = None;
                                                             break;
                                                         }
@@ -411,7 +425,9 @@ fn install_assets_index(
     .expect("Can't send message to renderer thread");
     match version_manifest.asset_index {
         None => {
-            tx.send(Message::Error(format!("Version manifest doesn't contain any asset index!")));
+            tx.send(Message::Error(format!(
+                "Version manifest doesn't contain any asset index!"
+            )));
             None
         }
         Some(a_index) => {
@@ -475,7 +491,10 @@ fn install_assets_index(
                                 update_assets(a_index.id, tx)
                             }
                             Err(err_msg) => {
-                                tx.send(Message::Error(format!("Unable to download asset index file: {}", err_msg)));
+                                tx.send(Message::Error(format!(
+                                    "Unable to download asset index file: {}",
+                                    err_msg
+                                )));
                                 None
                             }
                         }
@@ -518,7 +537,9 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                             "objects",
                                         )) {
                                             None => {
-                                                tx.send(Message::Error(format!("Unable to get objects folder")));
+                                                tx.send(Message::Error(format!(
+                                                    "Unable to get objects folder"
+                                                )));
                                                 None
                                             }
                                             Some(object_path) => {
@@ -740,19 +761,28 @@ fn update_assets(index: String, tx: Sender<Message>) -> Option<Sender<Message>> 
                                         }
                                     }
                                     Err(err) => {
-                                        tx.send(Message::Error(format!("Unable to parse index file: {}", err)));
+                                        tx.send(Message::Error(format!(
+                                            "Unable to parse index file: {}",
+                                            err
+                                        )));
                                         None
                                     }
                                 }
                             }
                             Err(err) => {
-                                tx.send(Message::Error(format!("Unable to read index file: {}", err)));
+                                tx.send(Message::Error(format!(
+                                    "Unable to read index file: {}",
+                                    err
+                                )));
                                 None
                             }
                         }
                     }
                     Err(err) => {
-                        tx.send(Message::Error(format!("Unable to opened index file: {}", err)));
+                        tx.send(Message::Error(format!(
+                            "Unable to opened index file: {}",
+                            err
+                        )));
                         None
                     }
                 }
@@ -797,7 +827,10 @@ fn check_log_file(
                                         match path::download_file_to(&file_info.url, &log_path) {
                                             Ok(_) => Some(tx),
                                             Err(err) => {
-                                                tx.send(Message::Error(format!("Unable to download logger file: {}", err)));
+                                                tx.send(Message::Error(format!(
+                                                    "Unable to download logger file: {}",
+                                                    err
+                                                )));
                                                 None
                                             }
                                         }
@@ -808,7 +841,10 @@ fn check_log_file(
                                 Err(_) => match path::download_file_to(&file_info.url, &log_path) {
                                     Ok(_) => Some(tx),
                                     Err(err) => {
-                                        tx.send(Message::Error(format!("Unable to download logger file: {}", err)));
+                                        tx.send(Message::Error(format!(
+                                            "Unable to download logger file: {}",
+                                            err
+                                        )));
                                         None
                                     }
                                 },
@@ -817,7 +853,10 @@ fn check_log_file(
                             match path::download_file_to(&file_info.url, &log_path) {
                                 Ok(_) => Some(tx),
                                 Err(err) => {
-                                    tx.send(Message::Error(format!("Unable to download logger file: {}", err)));
+                                    tx.send(Message::Error(format!(
+                                        "Unable to download logger file: {}",
+                                        err
+                                    )));
                                     None
                                 }
                             }

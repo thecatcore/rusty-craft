@@ -405,7 +405,9 @@ fn install_java_version(
                                     // println!("Wrote to .version file")
                                 }
                                 Err(_) => {
-                                    tx.send(Message::Error(format!("Failed to write to .version file")));
+                                    tx.send(Message::Error(format!(
+                                        "Failed to write to .version file"
+                                    )));
                                     status = None
                                 }
                             },
@@ -415,12 +417,17 @@ fn install_java_version(
                                         // println!("Wrote to .version file")
                                     }
                                     Err(_) => {
-                                        tx.send(Message::Error(format!("Failed to write to .version file")));
+                                        tx.send(Message::Error(format!(
+                                            "Failed to write to .version file"
+                                        )));
                                         status = None
                                     }
                                 },
                                 Err(err) => {
-                                    tx.send(Message::Error(format!("Failed to create .version file: {}", err)));
+                                    tx.send(Message::Error(format!(
+                                        "Failed to create .version file: {}",
+                                        err
+                                    )));
                                     status = None;
                                 }
                             },
@@ -490,14 +497,10 @@ fn set_executable(file_buf: PathBuf) -> Result<(), String> {
             perm.set_mode(0o755);
             match std::fs::set_permissions(file_buf, perm) {
                 Ok(_) => Ok(()),
-                Err(err) => {
-                    Err(format!("Unable to set permission: {}", err))
-                }
+                Err(err) => Err(format!("Unable to set permission: {}", err)),
             }
         }
-        Err(err) => {
-            Err(format!("Unable to get meta: {}", err))
-        }
+        Err(err) => Err(format!("Unable to get meta: {}", err)),
     }
 }
 
