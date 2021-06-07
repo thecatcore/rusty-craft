@@ -1,6 +1,6 @@
 use crate::minecraft_launcher::install::java;
 use crate::minecraft_launcher::manifest::version;
-use crate::minecraft_launcher::manifest::version::JavaVersion;
+
 use directories::BaseDirs;
 use reqwest::blocking::get as get_url;
 use std::env::consts;
@@ -127,7 +127,7 @@ pub fn download_file_to(url: &str, path: &Path) -> Result<String, String> {
             url,
             path.to_str().unwrap(),
             match err {
-                ErrorType::STD(e) => {
+                ErrorType::Std(e) => {
                     e.to_string()
                 }
                 ErrorType::Reqwest(e) => {
@@ -150,7 +150,7 @@ pub fn read_file_from_url_to_string(url: &str) -> Result<String, String> {
             "Failed to download {}: {}",
             url,
             match err {
-                ErrorType::STD(e) => {
+                ErrorType::Std(e) => {
                     e.to_string()
                 }
                 ErrorType::Reqwest(e) => {
@@ -168,14 +168,14 @@ pub fn read_file_from_url_to_type(url: &str, type_: AskedType) -> Result<ReturnT
                 let mut body: Vec<u8> = Vec::new();
                 match data.read_to_end(&mut body) {
                     Ok(_) => Ok(ReturnType::U8Vec(body)),
-                    Err(err) => Err(ErrorType::STD(err)),
+                    Err(err) => Err(ErrorType::Std(err)),
                 }
             }
             AskedType::String => {
                 let mut body = String::new();
                 match data.read_to_string(&mut body) {
                     Ok(_) => Ok(ReturnType::String(body)),
-                    Err(err) => Err(ErrorType::STD(err)),
+                    Err(err) => Err(ErrorType::Std(err)),
                 }
             }
         },
@@ -189,7 +189,7 @@ pub enum ReturnType {
 }
 
 pub enum ErrorType {
-    STD(Error),
+    Std(Error),
     Reqwest(reqwest::Error),
 }
 
@@ -229,7 +229,7 @@ pub fn get_library_path(sub: &str) -> Option<PathBuf> {
                     }
                 }
             } else {
-                get_or_create_dir(&vs, sub.to_string())
+                get_or_create_dir(&vs, sub)
             }
         }
     }

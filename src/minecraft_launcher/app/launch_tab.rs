@@ -7,7 +7,7 @@ use crate::minecraft_launcher::path;
 use crate::minecraft_launcher::rendering::utils::StatefulList;
 use crossterm::event::KeyCode;
 use std::io::{Read, Stdout};
-use std::path::PathBuf;
+
 use std::process::{Child, ChildStderr, ChildStdout};
 use tui::backend::CrosstermBackend;
 use tui::layout::Rect;
@@ -52,21 +52,18 @@ impl GameLogTab {
             Ok(launch_options) => {
                 self.launch_options = Some(launch_options);
             }
-            Err(err) => {}
+            Err(_err) => {}
         };
 
         match self.launch_options.clone() {
             None => {}
             Some(mut launch_options) => {
                 if let Some(args) = arguments::get_args_from_manifest(version, &launch_options) {
-                    match path::get_java_executable_path(version) {
-                        Ok(java_exe) => {
-                            self.child_process = Some(launch::main(
-                                java_exe,
-                                launch_options.fill_argument_list(args),
-                            ));
-                        }
-                        Err(_) => {}
+                    if let Ok(java_exe) = path::get_java_executable_path(version) {
+                        self.child_process = Some(launch::main(
+                            java_exe,
+                            launch_options.fill_argument_list(args),
+                        ));
                     }
                 }
             }
@@ -129,7 +126,7 @@ impl TabTrait for GameLogTab {
 
             lines.push("==========Stdout=========".to_string());
 
-            let stdout_lines: Vec<&str> = stdout_string.split("\n").collect();
+            let stdout_lines: Vec<&str> = stdout_string.split('\n').collect();
 
             for stdout_line in stdout_lines {
                 lines.push(stdout_line.to_string());
@@ -137,7 +134,7 @@ impl TabTrait for GameLogTab {
 
             lines.push("==========Stderr=========".to_string());
 
-            let stderr_lines: Vec<&str> = stderr_string.split("\n").collect();
+            let stderr_lines: Vec<&str> = stderr_string.split('\n').collect();
 
             for stderr_line in stderr_lines {
                 lines.push(stderr_line.to_string());

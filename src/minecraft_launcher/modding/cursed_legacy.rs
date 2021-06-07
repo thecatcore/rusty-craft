@@ -2,10 +2,9 @@ use crate::minecraft_launcher::manifest::version::{Library, Main, VersionType};
 use crate::minecraft_launcher::modding::ModLoaderInstaller;
 use crate::minecraft_launcher::path;
 use crate::minecraft_launcher::utils;
-use crate::minecraft_launcher::utils::Metadata;
-use chrono::{DateTime, Utc};
+
+use chrono::Utc;
 use std::collections::HashMap;
-use std::str::FromStr;
 
 const MC_VERSIONS: [&str; 1] = ["b1.7.3"];
 const LOADER_VERSIONS: &str =

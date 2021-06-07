@@ -30,18 +30,19 @@ pub fn check_java_version(
     ))
     .expect("Can't send message to renderer thread");
     match get_java_version_manifest() {
-        Err(err) => {
+        Err(_err) => {
             tx.send(Message::NewSubStep(
                 String::from("Checking if required version is installed"),
                 3,
                 5,
             ))
-            .expect("Can't send message to renderer thread");
+            .unwrap_or(());
             match get_java_folder_path_sub(&version_manifest) {
                 None => {
                     tx.send(Message::Error(String::from(
                         "Can't get java_folder_path_sub",
-                    )));
+                    )))
+                    .unwrap_or(());
                     None
                 }
                 Some(java_folder) => {
@@ -50,27 +51,30 @@ pub fn check_java_version(
                             tx.send(Message::Error(format!(
                                 "Unable to get or create java folder: {}",
                                 java_folder.display()
-                            )));
+                            )))
+                            .unwrap_or(());
                             None
                         }
                         Some(bin) => {
                             if (&java_folder).exists() {
                                 if bin.join(get_java_ex_for_os()).exists() {
                                     tx.send(Message::NewSubStep(String::from("Done"), 5, 5))
-                                        .expect("Can't send message to renderer thread");
+                                        .unwrap_or(());
                                     Some(tx)
                                 } else {
                                     tx.send(Message::Error(format!(
                                         "Unable to find java executable: {}",
                                         bin.join(get_java_ex_for_os()).display()
-                                    )));
+                                    )))
+                                    .unwrap_or(());
                                     None
                                 }
                             } else {
                                 tx.send(Message::Error(format!(
                                     "Unable to find java folder: {}",
                                     java_folder.display()
-                                )));
+                                )))
+                                .unwrap_or(());
                                 None
                             }
                         }
@@ -81,7 +85,8 @@ pub fn check_java_version(
 
         Ok(manifest) => match manifest.get_os_version() {
             None => {
-                tx.send(Message::Error(String::from("Unable to get os_version")));
+                tx.send(Message::Error(String::from("Unable to get os_version")))
+                    .unwrap_or(());
                 None
             }
             Some(os_version) => {
@@ -90,7 +95,7 @@ pub fn check_java_version(
                     2,
                     5,
                 ))
-                .expect("Can't send message to renderer thread");
+                .unwrap_or(());
                 let java_v_type = match version_manifest.java_version {
                     None => String::from("jre-legacy"),
                     Some(ver) => ver.component,
@@ -100,14 +105,16 @@ pub fn check_java_version(
                         tx.send(Message::Error(format!(
                             "Unable to get java_version from type '{}'",
                             java_v_type
-                        )));
+                        )))
+                        .unwrap_or(());
                         None
                     }
                     Some(versions) => match versions.get(0) {
                         None => {
                             tx.send(Message::Error(String::from(
                                 "Unable to get first java version",
-                            )));
+                            )))
+                            .unwrap_or(());
                             None
                         }
                         Some(version) => {
@@ -117,13 +124,14 @@ pub fn check_java_version(
                                 3,
                                 5,
                             ))
-                            .expect("Can't send message to renderer thread");
+                            .unwrap_or(());
                             match path::get_java_folder_path_sub(&java_v_type) {
                                 None => {
                                     tx.send(Message::Error(format!(
                                         "Unable to get java_folder_path_sub from type '{}'",
                                         java_v_type
-                                    )));
+                                    )))
+                                    .unwrap_or(());
                                     None
                                 }
                                 Some(j_folder) => match path::get_java_folder_path(&java_v_type) {
@@ -131,7 +139,8 @@ pub fn check_java_version(
                                         tx.send(Message::Error(format!(
                                             "Unable to get java_folder_path from type '{}'",
                                             java_v_type
-                                        )));
+                                        )))
+                                        .unwrap_or(());
                                         None
                                     }
                                     Some(os_fol) => check_if_install_is_needed(
@@ -228,12 +237,12 @@ fn install(
         4,
         5,
     ))
-    .expect("Can't send message to renderer thread");
+    .unwrap_or(());
     match install_java_version(&java_v_type, os_fol, manifest, online_version, tx) {
         None => None,
         Some(tx) => {
             tx.send(Message::NewSubStep(String::from("Done"), 5, 5))
-                .expect("Can't send message to renderer thread");
+                .unwrap_or(());
             Some(tx)
         }
     }
@@ -268,7 +277,7 @@ fn install_java_version(
                             current_file_index,
                             (file_amount as u64) + 1,
                         ))
-                        .expect("Can't send message to renderer thread");
+                        .unwrap_or(());
                         let element_info = file.1;
                         let el_type = element_info.element_type;
                         let executable = element_info.executable;
@@ -280,7 +289,7 @@ fn install_java_version(
                                         file_path,
                                         &v_folder.display()
                                     )))
-                                    .expect("Can't send message to renderer thread");
+                                    .unwrap_or(());
                                     None
                                 }
                                 Some(_) => Some(()),
@@ -292,7 +301,7 @@ fn install_java_version(
                                         "Failed to get download for file {}",
                                         file_path
                                     )))
-                                    .expect("Can't send message to renderer thread");
+                                    .unwrap_or(());
                                     None
                                 }
                                 Some(downloads) => {
@@ -309,7 +318,7 @@ fn install_java_version(
                                                 tx.send(Message::Error(
                                                     "Unable to create folders".to_string(),
                                                 ))
-                                                .expect("Can't send message to renderer thread");
+                                                .unwrap_or(());
                                                 None
                                             }
                                             Some(sub_pathh) => {
@@ -327,7 +336,8 @@ fn install_java_version(
                                                             match set_executable(file_buf) {
                                                                 Ok(_) => Some(()),
                                                                 Err(err) => {
-                                                                    tx.send(Message::Error(err));
+                                                                    tx.send(Message::Error(err))
+                                                                        .unwrap_or(());
                                                                     None
                                                                 }
                                                             }
@@ -340,9 +350,7 @@ fn install_java_version(
                                                             "Failed to download file: {}",
                                                             err
                                                         )))
-                                                        .expect(
-                                                            "Can't send message to renderer thread",
-                                                        );
+                                                        .unwrap_or(());
                                                         None
                                                     }
                                                 }
@@ -359,7 +367,8 @@ fn install_java_version(
                                                     match set_executable(file_buf) {
                                                         Ok(_) => Some(()),
                                                         Err(err) => {
-                                                            tx.send(Message::Error(err));
+                                                            tx.send(Message::Error(err))
+                                                                .unwrap_or(());
                                                             None
                                                         }
                                                     }
@@ -372,7 +381,7 @@ fn install_java_version(
                                                     "Failed to download file: \n{}",
                                                     err
                                                 )))
-                                                .expect("Can't send message to renderer thread");
+                                                .unwrap_or(());
                                                 None
                                             }
                                         }
@@ -388,7 +397,7 @@ fn install_java_version(
                             );
                         } else {
                             tx.send(Message::Error(format!("Unknown el_type {}", el_type)))
-                                .expect("Can't send message to renderer thread");
+                                .unwrap_or(());
                         }
                     }
                     if status.is_some() {
@@ -397,7 +406,7 @@ fn install_java_version(
                             (file_amount as u64) + 1,
                             (file_amount as u64) + 1,
                         ))
-                        .expect("Can't send message to renderer thread");
+                        .unwrap_or(());
                         let v_path = os_folder.join(".version");
                         match File::open(&v_path) {
                             Ok(mut v_path) => match v_path.write(online_version.as_bytes()) {
@@ -405,9 +414,10 @@ fn install_java_version(
                                     // println!("Wrote to .version file")
                                 }
                                 Err(_) => {
-                                    tx.send(Message::Error(format!(
-                                        "Failed to write to .version file"
-                                    )));
+                                    tx.send(Message::Error(
+                                        "Failed to write to .version file".to_string(),
+                                    ))
+                                    .unwrap_or(());
                                     status = None
                                 }
                             },
@@ -417,9 +427,10 @@ fn install_java_version(
                                         // println!("Wrote to .version file")
                                     }
                                     Err(_) => {
-                                        tx.send(Message::Error(format!(
-                                            "Failed to write to .version file"
-                                        )));
+                                        tx.send(Message::Error(
+                                            "Failed to write to .version file".to_string(),
+                                        ))
+                                        .unwrap_or(());
                                         status = None
                                     }
                                 },
@@ -427,7 +438,8 @@ fn install_java_version(
                                     tx.send(Message::Error(format!(
                                         "Failed to create .version file: {}",
                                         err
-                                    )));
+                                    )))
+                                    .unwrap_or(());
                                     status = None;
                                 }
                             },
@@ -443,7 +455,7 @@ fn install_java_version(
                         "Failed to parse java_version_manifest {}",
                         err
                     )))
-                    .expect("Can't send message to renderer thread");
+                    .unwrap_or(());
                     None
                 }
             }
@@ -453,7 +465,7 @@ fn install_java_version(
                 "Failed to read java_version_manifest {}",
                 err
             )))
-            .expect("Can't send message to renderer thread");
+            .unwrap_or(());
             None
         }
     }
@@ -518,7 +530,8 @@ fn create_symlink(
 ) -> Option<()> {
     match target {
         None => {
-            tx.send(Message::Error("Link target is none!".to_string()));
+            tx.send(Message::Error("Link target is none!".to_string()))
+                .unwrap_or(());
             None
         }
         Some(target) => {
@@ -531,7 +544,8 @@ fn create_symlink(
                         None => {
                             tx.send(Message::Error(
                                 "Failed to create folder in which symlink is!".to_string(),
-                            ));
+                            ))
+                            .unwrap_or(());
                             return None;
                         }
                         Some(_) => {}
@@ -565,7 +579,8 @@ fn create_symlink(
             match symlink(target_buf, path_buf) {
                 Ok(_) => Some(()),
                 Err(err) => {
-                    tx.send(Message::Error(format!("Failed to create symlink: {}", err)));
+                    tx.send(Message::Error(format!("Failed to create symlink: {}", err)))
+                        .unwrap_or(());
                     None
                 }
             }
@@ -582,6 +597,7 @@ fn create_symlink(
 ) -> Option<()> {
     tx.send(Message::Error(format!(
         "Symlink aren't handled on windows!"
-    )));
+    )))
+    .unwrap_or(());
     None
 }

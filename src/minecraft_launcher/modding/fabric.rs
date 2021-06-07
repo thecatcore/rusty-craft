@@ -3,7 +3,7 @@ use crate::minecraft_launcher::manifest::version::Main;
 use crate::minecraft_launcher::modding::ModLoaderInstaller;
 use crate::minecraft_launcher::path;
 use serde_derive::Deserialize;
-use serde_json::Error;
+
 use std::collections::HashMap;
 
 const MC_VERSIONS: &str = "https://meta.fabricmc.net/v2/versions/game";

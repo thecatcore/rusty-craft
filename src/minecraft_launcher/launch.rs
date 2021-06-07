@@ -10,14 +10,13 @@ use std::fs;
 use std::fs::File;
 use std::io;
 
-use std::io::Write;
 use std::path::PathBuf;
-use std::process::{Child, ChildStderr, ChildStdout, Command, ExitStatus, Stdio};
+use std::process::{Child, Command, Stdio};
 use std::sync::mpsc::Sender;
 
 pub fn main(java_path: PathBuf, args: Vec<String>) -> Child {
-    Command::new(java_path.clone())
-        .args(args.clone())
+    Command::new(java_path)
+        .args(args)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()

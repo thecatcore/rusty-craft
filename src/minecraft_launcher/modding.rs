@@ -52,7 +52,7 @@ impl ModLoaderInstaller for VanillaLoader {
         todo!()
     }
 
-    fn get_loader_versions(&self, mc_version: String) -> Result<HashMap<String, String>, String> {
+    fn get_loader_versions(&self, _mc_version: String) -> Result<HashMap<String, String>, String> {
         todo!()
     }
 
@@ -63,12 +63,12 @@ impl ModLoaderInstaller for VanillaLoader {
     fn get_profile_name_for_loader_version(
         &self,
         mc_version: String,
-        loader_version: String,
+        _loader_version: String,
     ) -> String {
         self.get_profile_name_for_mc_version(mc_version)
     }
 
-    fn create_profile(&self, mc_version: String, loader_version: String) -> Result<Main, String> {
+    fn create_profile(&self, _mc_version: String, _loader_version: String) -> Result<Main, String> {
         todo!()
     }
 

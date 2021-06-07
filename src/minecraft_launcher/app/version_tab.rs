@@ -1,11 +1,9 @@
 use crate::minecraft_launcher::app::{Action, Tab, TabBinding, TabTrait};
 use crate::minecraft_launcher::manifest::main::{MinVersion, Version};
 use crate::minecraft_launcher::modding;
-use crate::minecraft_launcher::modding::ModLoaderInstaller;
 use crate::minecraft_launcher::rendering::utils::{StatefulList, StatefulTable};
 use crossterm::event::KeyCode;
-use std::collections::hash_map::RandomState;
-use std::collections::HashMap;
+
 use std::io::Stdout;
 use tui::backend::CrosstermBackend;
 use tui::layout::{Constraint, Direction, Layout, Rect};
@@ -45,14 +43,14 @@ impl VersionTab {
     }
 
     pub fn build_mod_loader_list(&mut self) {
-        let mut items = match &self.selected {
+        let items = match &self.selected {
             None => vec![],
             Some(min_version) => match self
                 .modding_handler
                 .get_loaders_for_version(min_version.id.clone())
             {
                 Ok(loaders) => loaders,
-                Err(err) => vec![],
+                Err(_err) => vec![],
             },
         };
 
@@ -60,7 +58,7 @@ impl VersionTab {
     }
 
     pub fn build_mod_loader_version_list(&mut self) {
-        let mut items = match &self.selected_mod_loader {
+        let items = match &self.selected_mod_loader {
             None => vec![],
             Some(mod_loader) => {
                 match mod_loader.get_loader_versions(self.selected.clone().unwrap().id) {
@@ -207,7 +205,7 @@ impl TabTrait for VersionTab {
                     None => match &self.selected_mod_loader {
                         None => match &self.selected {
                             None => Action::None,
-                            Some(version) => {
+                            Some(_version) => {
                                 self.build_mod_loader_list();
                                 Action::None
                             }

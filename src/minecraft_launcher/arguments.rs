@@ -1,13 +1,10 @@
 use crate::minecraft_launcher::manifest::version;
-use crate::minecraft_launcher::manifest::version::{
-    AssetIndex, Either, Logging, Os, Rule, RuleAction,
-};
+use crate::minecraft_launcher::manifest::version::{Either, Os, RuleAction};
 use crate::minecraft_launcher::path;
 use os_info::{get as get_os_info, Version};
 
 use std::env::consts;
 use std::ops::Add;
-use std::path::PathBuf;
 
 pub fn get_args_from_manifest(
     version: &version::Main,
@@ -17,15 +14,14 @@ pub fn get_args_from_manifest(
         None => match version.clone().minecraft_arguments {
             None => None,
             Some(minecraft_arguments) => {
-                let mut command: Vec<String> = Vec::new();
+                let mut command: Vec<String> = vec![
+                    "-Djava.library.path=${natives_directory}".to_string(),
+                    "-cp".to_string(),
+                    "${classpath}".to_string(),
+                    version.clone().main_class,
+                ];
 
-                command.push("-Djava.library.path=${natives_directory}".to_string());
-                command.push("-cp".to_string());
-                command.push("${classpath}".to_string());
-
-                command.push(version.clone().main_class);
-
-                let arguments: Vec<&str> = minecraft_arguments.split(" ").collect();
+                let arguments: Vec<&str> = minecraft_arguments.split(' ').collect();
 
                 for argument in arguments {
                     command.push(argument.to_string());

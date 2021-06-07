@@ -1,7 +1,6 @@
-use chrono::{DateTime, Utc};
 use reqwest::blocking::get as get_url;
 use serde_derive::Deserialize;
-use serde_xml_rs;
+
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
