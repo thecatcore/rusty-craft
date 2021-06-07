@@ -33,17 +33,17 @@ pub fn get_body_from_url_else_from_file(url: &str, path: &Path) -> Option<String
 }
 
 #[derive(Deserialize, PartialEq)]
-pub struct MavenMetadata {
+pub struct Metadata {
     #[serde(rename = "groupId")]
     pub group_id: String,
     #[serde(rename = "artifactId")]
     pub artifact_id: String,
-    pub versioning: MavenVersioning,
+    pub versioning: Versioning,
 }
 
-impl MavenMetadata {
-    pub fn from_str(string: &str) -> Result<MavenMetadata, String> {
-        let metadata: MavenMetadata = match serde_xml_rs::from_str(string) {
+impl Metadata {
+    pub fn from_str(string: &str) -> Result<Metadata, String> {
+        let metadata: Metadata = match serde_xml_rs::from_str(string) {
             Ok(meta) => meta,
             Err(err) => return Err(err.to_string()),
         };
@@ -53,20 +53,15 @@ impl MavenMetadata {
 }
 
 #[derive(Deserialize, PartialEq)]
-pub struct MavenVersioning {
+pub struct Versioning {
     pub release: String,
     #[serde(rename = "lastUpdated")]
-    pub last_updated: DateTime<Utc>,
+    pub last_updated: String,
     pub versions: MavenVersion,
 }
 
 #[derive(Deserialize, PartialEq)]
 pub struct MavenVersion {
-    pub version: Vec<MavVersion>,
-}
-
-#[derive(Deserialize, PartialEq)]
-pub struct MavVersion {
-    #[serde(rename = "$value")]
-    pub body: String,
+    #[serde(rename = "version", default)]
+    pub versions: Vec<String>,
 }

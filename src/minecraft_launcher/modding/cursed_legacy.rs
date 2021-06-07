@@ -2,7 +2,7 @@ use crate::minecraft_launcher::manifest::version::{Library, Main, VersionType};
 use crate::minecraft_launcher::modding::ModLoaderInstaller;
 use crate::minecraft_launcher::path;
 use crate::minecraft_launcher::utils;
-use crate::minecraft_launcher::utils::MavenMetadata;
+use crate::minecraft_launcher::utils::Metadata;
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use std::str::FromStr;
@@ -73,26 +73,26 @@ impl ModLoaderInstaller for CursedLegacyInstaller {
         Ok(versions)
     }
 
-    fn get_loader_versions(&self, mc_version: String) -> Result<HashMap<String, String>, String> {
+    fn get_loader_versions(&self, _mc_version: String) -> Result<HashMap<String, String>, String> {
         let mut map = HashMap::new();
 
         let mut key_list = vec![];
 
         let raw_maven_metadata = path::read_file_from_url_to_string(LOADER_VERSIONS)?;
-        let maven_metadata = utils::MavenMetadata::from_str(raw_maven_metadata.as_str())?;
+        let maven_metadata = utils::Metadata::from_str(raw_maven_metadata.as_str())?;
 
-        for version in maven_metadata.versioning.versions.version {
-            if version.body.contains("local") {
+        for version in maven_metadata.versioning.versions.versions {
+            if version.contains("local") {
                 continue;
             }
 
             let mut date = "Unknown".to_string();
-            if version.body == maven_metadata.versioning.release {
+            if version == maven_metadata.versioning.release {
                 date = maven_metadata.versioning.last_updated.to_string();
             }
 
-            map.insert(version.body.clone(), date);
-            key_list.insert(0, version.body);
+            map.insert(version.clone(), date);
+            key_list.insert(0, version);
         }
 
         let mut sorted_map = HashMap::new();
