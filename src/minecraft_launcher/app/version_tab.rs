@@ -71,7 +71,7 @@ impl VersionTab {
 
                         list
                     }
-                    Err(err) => panic!(err),
+                    Err(err) => panic!("{}", err),
                 }
             }
         };

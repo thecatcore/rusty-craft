@@ -141,7 +141,7 @@ fn install_client_jar(
                                     match path::download_file_to(&client_entry.url, &jar_path) {
                                         Ok(_) => Some(tx),
                                         Err(err) => {
-                                            tx.send(Message::Error(err.to_string())).unwrap_or(());
+                                            tx.send(Message::Error(err)).unwrap_or(());
                                             None
                                         }
                                     }
@@ -162,7 +162,7 @@ fn install_client_jar(
                         match path::download_file_to(&client_entry.url, &jar_path) {
                             Ok(_) => Some(tx),
                             Err(err) => {
-                                tx.send(Message::Error(err.to_string())).unwrap_or(());
+                                tx.send(Message::Error(err)).unwrap_or(());
                                 None
                             }
                         }
@@ -233,10 +233,8 @@ fn install_libraries(
                                                         ) {
                                                             Ok(_) => {}
                                                             Err(err) => {
-                                                                tx.send(Message::Error(
-                                                                    err.to_string(),
-                                                                ))
-                                                                .unwrap_or(());
+                                                                tx.send(Message::Error(err))
+                                                                    .unwrap_or(());
                                                                 result = None;
                                                                 break;
                                                             }
@@ -257,8 +255,7 @@ fn install_libraries(
                                             match path::download_file_to(&artifact.url, &lib_path) {
                                                 Ok(_) => {}
                                                 Err(err) => {
-                                                    tx.send(Message::Error(err.to_string()))
-                                                        .unwrap_or(());
+                                                    tx.send(Message::Error(err)).unwrap_or(());
                                                     result = None;
                                                     break;
                                                 }
@@ -304,11 +301,9 @@ fn install_libraries(
                                                         &class.url, &lib_path,
                                                     ) {
                                                         Ok(_) => {}
-                                                        Err(ohno) => {
-                                                            tx.send(Message::Error(
-                                                                ohno.to_string(),
-                                                            ))
-                                                            .unwrap_or(());
+                                                        Err(err) => {
+                                                            tx.send(Message::Error(err))
+                                                                .unwrap_or(());
                                                             result = None;
                                                             break;
                                                         }
@@ -325,9 +320,8 @@ fn install_libraries(
                                     } else {
                                         match path::download_file_to(&class.url, &lib_path) {
                                             Ok(_) => {}
-                                            Err(ohno) => {
-                                                tx.send(Message::Error(ohno.to_string()))
-                                                    .unwrap_or(());
+                                            Err(err) => {
+                                                tx.send(Message::Error(err)).unwrap_or(());
                                                 result = None;
                                                 break;
                                             }
@@ -364,7 +358,7 @@ fn install_libraries(
                                     ) {
                                         Ok(_) => {}
                                         Err(ohno) => {
-                                            tx.send(Message::Error(ohno.to_string())).unwrap_or(());
+                                            tx.send(Message::Error(ohno)).unwrap_or(());
                                             result = None;
                                             break;
                                         }
@@ -391,8 +385,8 @@ fn install_libraries(
                                     &lib_path,
                                 ) {
                                     Ok(_) => {}
-                                    Err(ohno) => {
-                                        tx.send(Message::Error(ohno.to_string())).unwrap_or(());
+                                    Err(err) => {
+                                        tx.send(Message::Error(err)).unwrap_or(());
                                         result = None;
                                         break;
                                     }
