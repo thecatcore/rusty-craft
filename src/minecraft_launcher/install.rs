@@ -13,6 +13,8 @@ use std::fs::File;
 use std::io::{Read};
 use std::path::PathBuf;
 use std::sync::mpsc::Sender;
+use crate::minecraft_launcher::modding::ModLoaderInstaller;
+use crate::minecraft_launcher::manifest::version::Main;
 
 pub(crate) mod java;
 pub(crate) mod assets;
@@ -21,6 +23,8 @@ pub fn install_version(
     id: String,
     versions: Vec<manifest::main::Version>,
     tx: Sender<Message>,
+    loader: Box<dyn ModLoaderInstaller>,
+    loader_version: Option<String>
 ) -> Option<()> {
     tx.send(Message::NewSubStep(
         String::from("Checking Version folder"),
@@ -29,20 +33,90 @@ pub fn install_version(
     ))
     .unwrap_or(());
 
-    if let Some(version_folder) = path::get_version_folder(&id) {
-        let manifest_file_path = version_folder.join(id.clone() + ".json");
-        if manifest_file_path.exists() {
-            read_version_manifest(manifest_file_path, tx)
-        } else {
-            for version in versions {
-                if version.id == id {
-                    return install_manifest(version, manifest_file_path, tx);
+    let version = if !loader.is_vanilla() {
+        Some(loader.create_profile(id.clone(),
+                                   match loader_version.clone() {
+            None => "".to_string(),
+            Some(l_version) => l_version
+        }))
+    } else { None };
+
+    match version {
+        None => if let Some(version_folder) = path::get_version_folder(&id) {
+            let manifest_file_path = version_folder.join(id.clone() + ".json");
+            if manifest_file_path.exists() {
+                read_version_manifest(manifest_file_path, tx)
+            } else {
+                for version in versions {
+                    if version.id == id {
+                        return install_manifest(version, manifest_file_path, tx);
+                    }
                 }
+                None
             }
+        } else {
             None
         }
-    } else {
-        None
+        Some(version) => match version {
+            Ok(version_main) => if version_main.inherits_from.is_some() {
+                let vanilla_install_result = if let Some(version_folder) = path::get_version_folder(&id) {
+                    let manifest_file_path = version_folder.join(id.clone() + ".json");
+                    if manifest_file_path.exists() {
+                        read_version_manifest(manifest_file_path, tx.clone())
+                    } else {
+                        let mut result = None;
+                        for version in versions {
+                            if version.id == id {
+                                result = install_manifest(version, manifest_file_path, tx.clone());
+                                break;
+                            }
+                        }
+                        result
+                    }
+                } else {
+                    None
+                };
+
+                if vanilla_install_result.is_some() {
+                    if let Some(version_folder) = path::get_version_folder(&version_main.id) {
+
+                        let manifest_file_path = version_folder.join(version_main.id.clone() + ".json");
+                        if manifest_file_path.exists() {
+                            read_version_manifest(manifest_file_path, tx.clone())
+                        } else {
+                            let mut result = None;
+                            for version in versions {
+                                if version.id == version_main.inherits_from.unwrap() {
+                                    result = install_manifest(version, manifest_file_path, tx.clone());
+                                    break;
+                                }
+                            }
+                            result
+                        }
+
+                    } else {
+                        None
+                    }
+                } else {vanilla_install_result}
+            } else {
+                if let Some(version_folder) = path::get_version_folder(&id) {
+                    let manifest_file_path = version_folder.join(id.clone() + ".json");
+                    if manifest_file_path.exists() {
+                        read_version_manifest(manifest_file_path, tx)
+                    } else {
+                        for version in versions {
+                            if version.id == id {
+                                return install_manifest(version, manifest_file_path, tx);
+                            }
+                        }
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
+            Err(_) => None
+        }
     }
 }
 
@@ -56,7 +130,7 @@ fn install_manifest(
         2,
         3,
     ))
-    .unwrap_or(());
+        .unwrap_or(());
 
     match path::download_file_to(&version.url, &file_path) {
         Ok(_) => read_version_manifest(file_path, tx),

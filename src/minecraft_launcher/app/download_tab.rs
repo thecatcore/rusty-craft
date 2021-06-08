@@ -51,7 +51,7 @@ impl DownloadTab {
         thread::spawn(move || {
             tx.send(Message::Init)
                 .expect("Cannot send message to receiver!");
-            match install::install_version(version.clone().id, versions, tx) {
+            match install::install_version(version.clone().id, versions, tx, loader, loader_version) {
                 None => {
                     // panic!("Failed to install version {}", version.id)
                 }

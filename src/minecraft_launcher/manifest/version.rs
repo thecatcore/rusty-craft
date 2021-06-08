@@ -52,8 +52,8 @@ impl Main {
             }
         } else if from.arguments.is_some() {
             self.arguments = Some(Arguments::inherit(
-                self.arguments.expect("How?"),
-                from.arguments.expect("How??"),
+                self.arguments.unwrap(),
+                from.arguments.unwrap(),
             ));
         }
 
@@ -73,8 +73,8 @@ impl Main {
             self.downloads = from.downloads
         } else if from.downloads.is_some() {
             self.downloads = Some(Downloads::inherit(
-                self.downloads.expect("Concern"),
-                from.downloads.expect("Concern"),
+                self.downloads.unwrap(),
+                from.downloads.unwrap(),
             ));
         }
 
