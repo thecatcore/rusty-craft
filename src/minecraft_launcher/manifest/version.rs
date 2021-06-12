@@ -339,7 +339,9 @@ impl Main {
 }
 
 pub fn parse_version_manifest(version_str: &str) -> serde_json::Result<Main> {
-    let version_test: serde_json::Result<Main> = serde_json::from_str(version_str);
+    serde_json::from_str(version_str)
+}
 
-    version_test
+pub fn serialize_version_manifest(version: &Main) -> serde_json::Result<String> {
+    serde_json::to_string_pretty(version)
 }

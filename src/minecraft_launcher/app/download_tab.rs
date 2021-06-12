@@ -17,6 +17,7 @@ use tui::style::{Color, Style};
 use tui::text::Spans;
 use tui::widgets::{Block, Borders, Gauge, Paragraph, Wrap};
 use tui::Frame;
+use crate::minecraft_launcher::manifest::version::Main;
 
 pub struct DownloadTab {
     rx: Option<Receiver<Message>>,
@@ -48,10 +49,22 @@ impl DownloadTab {
     ) {
         let (tx, rx) = mpsc::channel();
 
+        let modded_version = if !loader.is_vanilla() {
+            match loader.create_profile(version.id.clone(), match loader_version {
+                None => "".to_string(),
+                Some(v) => v
+            }) {
+                Ok(version) => Some(version),
+                Err(_) => None
+            }
+        } else {
+            None
+        };
+
         thread::spawn(move || {
             tx.send(Message::Init)
                 .expect("Cannot send message to receiver!");
-            match install::install_version(version.clone().id, versions, tx, loader, loader_version) {
+            match install::install_version(version.clone().id, versions, tx, modded_version) {
                 None => {
                     // panic!("Failed to install version {}", version.id)
                 }
