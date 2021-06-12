@@ -138,7 +138,9 @@ pub fn get_natives(version: &version::Main) -> String {
             RuleAction::Allow => {
                 let name_parts: Vec<&str> = library.name.split(':').collect();
 
-                let lib_path = *name_parts.get(0).unwrap_or(&"");
+                let lib_path_temp = *name_parts.get(0).unwrap_or(&"");
+                let lib_path_temp = lib_path_temp.replace(".", "/");
+                let lib_path = lib_path_temp.as_str();
                 let name = *name_parts.get(1).unwrap_or(&"");
                 let version = *name_parts.get(2).unwrap_or(&"");
 

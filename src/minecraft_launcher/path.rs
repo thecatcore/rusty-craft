@@ -216,7 +216,7 @@ pub fn get_library_path(sub: &str) -> Option<PathBuf> {
     match get_minecraft_sub_folder(&String::from("libraries")) {
         None => None,
         Some(vs) => {
-            let sub = sub.replace(".", "/");
+            let sub = sub.replace(":", "/");
             if sub.contains('/') {
                 let sub = PathBuf::from(sub);
                 match get_or_create_dir(

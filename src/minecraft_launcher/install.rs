@@ -416,6 +416,8 @@ fn install_libraries(
                             + "/"
                             + name
                             + "/"
+                            + version
+                            + "/"
                             + name
                             + "-"
                             + version
@@ -446,7 +448,7 @@ fn install_libraries(
 
                 if !downloaded {
                     let url_path =
-                        group.replace(".", "/") + "/" + name + "/" + name + "-" + version + ".jar";
+                        group.replace(".", "/") + "/" + name + "/" + version + "/" + name + "-" + version + ".jar";
                     match path::get_library_path(&url_path) {
                         None => {
                             result = None;
