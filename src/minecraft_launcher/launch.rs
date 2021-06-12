@@ -16,6 +16,7 @@ use std::sync::mpsc::Sender;
 
 pub fn main(java_path: PathBuf, args: Vec<String>) -> Child {
     Command::new(java_path)
+        .current_dir(path::get_minecraft_directory())
         .args(args)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())

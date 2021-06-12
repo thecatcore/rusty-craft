@@ -1,10 +1,3 @@
 /target
-/.minecraft
 /.idea
 *.iml
-/logs/*
-/level.dat
-/.mixin.out/audit/mixin_implementation_report.csv
-/.mixin.out/audit/mixin_implementation_report.txt
-/config/sodium-mixins.properties
-/config/sodium-options.json

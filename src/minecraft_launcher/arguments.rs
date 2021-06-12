@@ -359,7 +359,7 @@ impl LaunchOptions {
             arg = arg.replace("${launcher_version}", crate::get_version().as_str());
             arg = arg.replace("${classpath}", self.classpath.as_str());
             arg = arg.replace("${auth_player_name}", self.player_name.as_str());
-            arg = arg.replace("${version_name}", self.version.as_str());
+            arg = arg.replace("${version_name}", "Rusty-Craft");
             arg = arg.replace("${game_directory}", self.game_directory.as_str());
             arg = arg.replace("${assets_root}", self.assets_directory.as_str());
             arg = arg.replace("${assets_index_name}", self.assets_index.as_str());
