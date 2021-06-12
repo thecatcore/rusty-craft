@@ -119,7 +119,7 @@ impl ModLoaderInstaller for CursedLegacyInstaller {
         loader_version: String,
     ) -> String {
         self.get_profile_name_for_mc_version(mc_version)
-            .replace("${loader_version}", loader_version.as_str())
+            .replace("{loader_version}", loader_version.as_str())
     }
 
     fn create_profile(&self, mc_version: String, loader_version: String) -> Result<Main, String> {
