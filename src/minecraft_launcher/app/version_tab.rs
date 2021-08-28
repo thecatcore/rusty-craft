@@ -232,7 +232,7 @@ impl TabTrait for VersionTab {
                     )),
                 }
             }
-            KeyCode::Up => {
+            KeyCode::Up | KeyCode::Char('u') => {
                 if self.selected_mod_loader.is_some() {
                     self.loader_version_list.previous();
                 } else if self.selected.is_some() {
@@ -242,7 +242,7 @@ impl TabTrait for VersionTab {
                 }
                 Action::None
             }
-            KeyCode::Down => {
+            KeyCode::Down | KeyCode::Char('d') => {
                 if self.selected_mod_loader.is_some() {
                     self.loader_version_list.next();
                 } else if self.selected.is_some() {
@@ -252,7 +252,7 @@ impl TabTrait for VersionTab {
                 }
                 Action::None
             }
-            KeyCode::Left => {
+            KeyCode::Left | KeyCode::Char('l') => {
                 if self.selected_mod_loader_version.is_some() {
                     self.selected_mod_loader_version = None
                 } else if self.selected_mod_loader.is_some() {
