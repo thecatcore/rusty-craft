@@ -268,6 +268,8 @@ pub enum VersionType {
     OldBeta,
     #[serde(rename = "old_alpha")]
     OldAlpha,
+    #[serde(rename = "pending")] // Experimental snapshots
+    Pending,
 }
 
 impl Display for VersionType {
@@ -277,6 +279,7 @@ impl Display for VersionType {
             VersionType::Snapshot => f.write_str("snapshot"),
             VersionType::OldBeta => f.write_str("old_beta"),
             VersionType::OldAlpha => f.write_str("old_alpha"),
+            VersionType::Pending => f.write_str("pending")
         }
     }
 }

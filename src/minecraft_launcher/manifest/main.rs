@@ -47,6 +47,8 @@ pub enum VersionType {
     OldBeta,
     #[serde(rename = "old_alpha")]
     OldAlpha,
+    #[serde(rename = "pending")] // Experimental snapshots
+    Pending,
 }
 
 impl Display for VersionType {
@@ -56,6 +58,7 @@ impl Display for VersionType {
             VersionType::Snapshot => f.write_str("snapshot"),
             VersionType::OldBeta => f.write_str("old_beta"),
             VersionType::OldAlpha => f.write_str("old_alpha"),
+            VersionType::Pending => f.write_str("pending")
         }
     }
 }
@@ -73,6 +76,7 @@ impl VersionType {
             "snapshot" => VersionType::Snapshot,
             "old_beta" => VersionType::OldBeta,
             "old_alpha" => VersionType::OldAlpha,
+            "pending" => VersionType::Pending,
             _ => {
                 panic!("Unknown version type: {}", string)
             }
@@ -89,6 +93,10 @@ impl VersionType {
 
     pub fn is_release(&self) -> bool {
         self == &VersionType::Release
+    }
+
+    pub fn is_experimental(&self) -> bool {
+        self == &VersionType::Pending
     }
 }
 
